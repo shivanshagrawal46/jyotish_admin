@@ -28,10 +28,10 @@
 
         /* Sidebar Styles */
         .sidebar {
-            background: white;
+            background: rgba(103, 111, 157, 0.05);
             min-height: 100vh;
             border-right: 1px solid rgba(0, 0, 0, 0.05);
-            padding: 2rem 0;
+            padding: 0 0;
             position: fixed;
             width: 280px;
             top: 0;
@@ -41,13 +41,14 @@
         }
 
         .sidebar-header {
-            padding: 0 2rem;
-            margin-bottom: 2rem;
-        }
+    padding: 1.5rem 2rem 1rem;
+    flex-shrink: 0;
+}
+
 
         .logo {
-            width: 120px;
-            height: 120px;
+            width: 90px;
+            height: 90px;
             margin-bottom: 1rem;
             border-radius: 50%;
             object-fit: cover;
@@ -56,12 +57,12 @@
         }
 
         .nav-item {
-            margin: 0.5rem 0;
+            margin: 0.1rem 0;
         }
 
         .nav-link {
             color: var(--dark);
-            padding: 0.75rem 2rem;
+            padding: 0.5rem 2rem;
             border-radius: 12px;
             margin: 0 1rem;
             transition: all 0.3s ease;

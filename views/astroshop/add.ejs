@@ -1,0 +1,197 @@
+<% /* eslint-disable */ %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product | Astro Shop</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <link href="/ckeditor/ckeditor.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+            --success: #4CAF50;
+            --error: #F44336;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--light); min-height: 100vh; }
+        .main-content { margin-left: 280px; padding: 2rem; }
+        .topbar { background: white; padding: 1rem 2rem; border-radius: 16px; box-shadow: var(--shadow); margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; }
+        .page-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--dark); margin: 0; }
+        .content-card { background: white; border-radius: 16px; box-shadow: var(--shadow); padding: 2rem; margin-bottom: 2rem; }
+        .form-label { font-weight: 600; color: var(--primary); }
+        .form-control, .form-select { border-radius: 12px; }
+        .form-check-label { font-weight: 500; }
+        .btn-primary { background: var(--primary); border: none; border-radius: 12px; font-weight: 600; }
+        .btn-primary:hover { background: var(--accent); }
+        .offer-group { border: 1px solid #eee; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; background: #fafbfc; }
+        .sticky-footer {
+            position: fixed;
+            left: 280px;
+            right: 0;
+            bottom: 0;
+            background: white;
+            box-shadow: 0 -2px 8px rgba(44,62,80,0.04);
+            padding: 1rem 2rem;
+            z-index: 100;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+        #image-preview {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+        #image-preview img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <%- include('../partials/sidebar', { activePage: 'astro-shop', activeCategory: null, koshCategories: [], mcqCategories: [] }) %>
+    </nav>
+    <main class="main-content">
+        <div class="topbar">
+            <h1 class="page-title">Add Product</h1>
+        </div>
+        <div class="content-card">
+            <form action="/astro-shop/add" method="POST" enctype="multipart/form-data">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Title</label>
+                        <input type="text" name="title" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Category</label>
+                        <select name="category" class="form-select" required>
+                            <option value="">Select a category</option>
+                            <% categories.forEach(function(category) { %>
+                                <option value="<%= category._id %>"><%= category.name %></option>
+                            <% }); %>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Short Description</label>
+                        <input type="text" name="short_description" class="form-control">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Full Description</label>
+                    <textarea name="full_description" id="full_description" class="form-control" rows="6"></textarea>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Price (₹)</label>
+                        <input type="number" name="price" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Original Price (₹)</label>
+                        <input type="number" name="original_price" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Discount (%)</label>
+                        <input type="number" name="discount_percentage" class="form-control">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Stock Quantity</label>
+                        <input type="number" name="stock_quantity" class="form-control" value="0">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Promo Note</label>
+                        <input type="text" name="promo_note" class="form-control">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-center">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="is_active" checked>
+                            <label class="form-check-label" for="is_active">Active</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Product Images</label>
+                    <input type="file" name="images" class="form-control" accept="image/*" multiple onchange="previewImages(event)">
+                    <div id="image-preview"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Offers</label>
+                    <div id="offers-list"></div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addOffer()">Add Offer</button>
+                </div>
+                <div class="sticky-footer">
+                    <button type="submit" form="product-form" class="btn btn-primary">Save Product</button>
+                    <a href="/astro-shop" class="btn btn-secondary ms-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </main>
+    <script src="/ckeditor/ckeditor.js"></script>
+    <script>
+        if (window.CKEDITOR) {
+            CKEDITOR.replace('full_description');
+        }
+        function addOffer() {
+            const offersList = document.getElementById('offers-list');
+            const idx = offersList.children.length;
+            const html = `
+            <div class="offer-group">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <input type="text" name="offers[${idx}][title]" class="form-control" placeholder="Offer Title">
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <input type="text" name="offers[${idx}][description]" class="form-control" placeholder="Description">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <input type="text" name="offers[${idx}][code]" class="form-control" placeholder="Code">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <select name="offers[${idx}][type]" class="form-select">
+                            <option value="percentage">Percentage</option>
+                            <option value="bogo">BOGO</option>
+                            <option value="flat">Flat</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1 mb-2 d-flex align-items-center">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.offer-group').remove()">&times;</button>
+                    </div>
+                </div>
+            </div>`;
+            offersList.insertAdjacentHTML('beforeend', html);
+        }
+        function previewImages(event) {
+            const preview = document.getElementById('image-preview');
+            preview.innerHTML = '';
+            const files = event.target.files;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+</body>
+</html> 

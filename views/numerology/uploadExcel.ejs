@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Numerology Excel | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+            --success: #4CAF50;
+            --error: #F44336;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .topbar {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.25rem;
+            color: var(--dark);
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--accent);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            background: rgba(103, 111, 157, 0.05);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            background: rgba(103, 111, 157, 0.1);
+        }
+
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        .upload-text {
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            color: var(--accent);
+            font-size: 0.875rem;
+        }
+
+        .template-info {
+            background: rgba(103, 111, 157, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .template-title {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 1rem;
+        }
+
+        .template-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .template-list li {
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .template-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .back-button {
+            color: var(--accent);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        .back-button:hover {
+            color: var(--primary);
+        }
+
+        .back-button svg {
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../partials/sidebar', { 
+            activePage: 'numerology',
+            activeCategory: null,
+            koshCategories: [],
+            mcqCategories: []
+        }) %>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h1 class="page-title">Upload Numerology Excel</h1>
+            <div class="user-menu">
+                <div class="user-avatar">
+                    <%= username ? username.charAt(0).toUpperCase() : 'A' %>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Card -->
+        <div class="content-card">
+            <a href="/numerology" class="back-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+                </svg>
+                Back to Numerology
+            </a>
+
+            <h2 class="card-title">Upload Excel File</h2>
+            
+            <form id="uploadForm" action="/numerology/upload-daily" method="POST" enctype="multipart/form-data">
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="excelFile" name="excelFile" accept=".xlsx,.xls" class="d-none">
+                    <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <div class="upload-text">Drag and drop your Excel file here</div>
+                    <div class="upload-subtext">or click to browse</div>
+                </div>
+
+                <div class="template-info">
+                    <div class="template-title">Excel Template Format:</div>
+                    <ul class="template-list">
+                        <li>title_hn - Title in Hindi</li>
+                        <li>title_en - Title in English</li>
+                        <li>date - Date of prediction</li>
+                        <li>details_hn - Details in Hindi</li>
+                        <li>details_en - Details in English</li>
+                        <li>images - Comma-separated image URLs</li>
+                    </ul>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('excelFile');
+            const uploadForm = document.getElementById('uploadForm');
+
+            // Handle click on upload area
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // Handle file selection
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    const fileName = e.target.files[0].name;
+                    uploadArea.querySelector('.upload-text').textContent = fileName;
+                    uploadArea.querySelector('.upload-subtext').textContent = 'Click to change file';
+                    
+                    // Submit form via AJAX
+                    const formData = new FormData(uploadForm);
+                    fetch('/numerology/upload-daily', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.href = '/numerology';
+                        } else {
+                            alert('Error uploading file: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error uploading file');
+                    });
+                }
+            });
+
+            // Handle drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'var(--primary)';
+                uploadArea.style.background = 'rgba(103, 111, 157, 0.1)';
+            });
+
+            uploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'var(--accent)';
+                uploadArea.style.background = 'rgba(103, 111, 157, 0.05)';
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'var(--accent)';
+                uploadArea.style.background = 'rgba(103, 111, 157, 0.05)';
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    const fileName = files[0].name;
+                    uploadArea.querySelector('.upload-text').textContent = fileName;
+                    uploadArea.querySelector('.upload-subtext').textContent = 'Click to change file';
+                    
+                    // Submit form when file is dropped
+                    uploadForm.submit();
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

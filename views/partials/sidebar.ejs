@@ -90,17 +90,29 @@
                 </ul>
             </li>
         <% } %>
-    </ul>
-</div>
 
-<div class="sidebar-footer">
-    <ul class="nav flex-column">
         <li class="nav-item">
             <a class="nav-link <%= activePage === 'users' ? 'active' : '' %>" href="/users">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
                 User Management
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <%= activePage === 'rashifal' ? 'active' : '' %>" href="/rashifal">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Rashifal
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <%= activePage === 'numerology' ? 'active' : '' %>" href="/numerology">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Numerology
             </a>
         </li>
         <li class="nav-item">
@@ -128,6 +140,38 @@
             </a>
         </li>
         <li class="nav-item">
+            <a class="nav-link <%= activePage === 'astro-shop' ? 'active' : '' %>" href="/astro-shop">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 11h14l1 9a2 2 0 01-2 2H6a2 2 0 01-2-2l1-9zm2 0V7a2 2 0 114 0v4" />
+                </svg>
+                Astro Shop
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <%= activePage === 'puja' ? 'active' : '' %>" href="/puja">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Pooja
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <%= activePage === 'book' ? 'active' : '' %>" href="/book">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                Book (Granth)
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <%= activePage === 'prashan-yantra' ? 'active' : '' %>" href="/prashan-yantra">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Prashan Yantra
+            </a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link" href="/logout">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -135,6 +179,12 @@
                 Logout
             </a>
         </li>
+    </ul>
+</div>
+
+<div class="sidebar-footer">
+    <ul class="nav flex-column">
+        
     </ul>
 </div>
 

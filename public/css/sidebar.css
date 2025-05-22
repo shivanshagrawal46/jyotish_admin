@@ -1,6 +1,6 @@
 /* Sidebar Styles */
 .sidebar {
-    background: white;
+    background: rgba(103, 111, 157, 0.05);
     min-height: 100vh;
     border-right: 1px solid rgba(0, 0, 0, 0.05);
     padding: 0;
@@ -49,7 +49,7 @@
 }
 
 .sidebar-footer {
-    padding: 0.5rem 0;
+    padding: 0.25rem 0;
     border-top: 1px solid rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
     background-color: rgba(103, 111, 157, 0.05);
@@ -58,8 +58,12 @@
 }
 
 .sidebar-footer .nav-link {
-    padding: 0.65rem 2rem;
+    padding: 0.5rem 2rem;
     font-weight: 500;
+}
+
+.sidebar-footer .nav-item {
+    margin: 0.1rem 0;
 }
 
 .logo {
@@ -101,4 +105,9 @@
     margin-right: 0.75rem;
     width: 20px;
     height: 20px;
+}
+
+.sidebar-footer .nav-link.active {
+    background: var(--primary) !important;
+    color: white !important;
 } 

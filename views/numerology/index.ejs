@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numerology Management | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+            --success: #4CAF50;
+            --error: #F44336;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .topbar {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.25rem;
+            color: var(--dark);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Navigation Tabs Styles */
+        .nav-tabs {
+            border: none;
+            margin-bottom: 2rem;
+            gap: 1rem;
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            color: var(--dark);
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            background: rgba(103, 111, 157, 0.1);
+        }
+
+        .nav-tabs .nav-link:hover {
+            background: rgba(103, 111, 157, 0.2);
+        }
+
+        .nav-tabs .nav-link.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            padding: 1rem 0;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .numerology-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        .numerology-card-header {
+            background: var(--primary);
+            color: #fff;
+            padding: 1.5rem 2rem 1rem 2rem;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .numerology-actions {
+            padding: 1.5rem 2rem 0.5rem 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+        .pill-btn {
+            background: #F3F4F8;
+            color: var(--primary);
+            border: none;
+            border-radius: 16px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            font-size: 1rem;
+            box-shadow: none;
+            transition: background 0.2s, color 0.2s;
+            text-decoration: none;
+        }
+        .pill-btn svg {
+            margin-right: 0.5rem;
+        }
+        .pill-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            text-decoration: none;
+        }
+        .upload-excel-btn {
+            margin-top: 1.2rem;
+            margin-bottom: 1.2rem;
+            display: inline-block;
+        }
+        .numerology-table-wrap {
+            padding: 0 2rem 2rem 2rem;
+        }
+        .numerology-table {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .numerology-table thead {
+            background: #F3F4F8;
+        }
+        .numerology-table th, .numerology-table td {
+            vertical-align: middle;
+            border: none;
+        }
+        .numerology-table tbody tr {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px 0 rgba(44, 62, 80, 0.04);
+            margin-bottom: 12px;
+        }
+        .numerology-table tbody tr:not(:last-child) {
+            border-bottom: 8px solid #f6f6fa;
+        }
+        .action-icon-btn {
+            background: none;
+            border: none;
+            padding: 0.4rem 0.6rem;
+            border-radius: 8px;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .action-icon-btn.edit {
+            color: var(--primary);
+        }
+        .action-icon-btn.delete {
+            color: #fff;
+            background: #F44336;
+        }
+        .action-icon-btn.delete:hover {
+            background: #d32f2f;
+        }
+        .action-icon-btn.edit:hover {
+            background: #e3e6f0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../partials/sidebar', { 
+            activePage: 'numerology',
+            activeCategory: null,
+            koshCategories: [],
+            mcqCategories: []
+        }) %>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h1 class="page-title">Numerology Management</h1>
+            <div class="user-menu">
+                <div class="user-avatar">
+                    <%= username ? username.charAt(0).toUpperCase() : 'A' %>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Card -->
+        <div class="content-card">
+            <!-- Navigation Tabs -->
+            <ul class="nav nav-tabs mb-4" id="numerologyTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="daily-tab" data-bs-toggle="tab" data-bs-target="#daily" type="button" role="tab" aria-controls="daily" aria-selected="true"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" style="vertical-align:middle;margin-right:0.5rem;opacity:0.7;" viewBox="0 0 16 16">
+                        <path d="M2 2h12v12H2z" fill="none"/>
+                        <path d="M2 2h12v12H2z" stroke="var(--accent)" stroke-width="1.5" fill="none"/>
+                        <path d="M4 6h8M4 10h8" stroke="var(--primary)" stroke-width="1.2" stroke-linecap="round"/>
+                    </svg>
+                        Daily
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab" aria-controls="monthly" aria-selected="false"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" style="vertical-align:middle;margin-right:0.5rem;opacity:0.7;" viewBox="0 0 16 16">
+                        <path d="M2 2h12v12H2z" fill="none"/>
+                        <path d="M2 2h12v12H2z" stroke="var(--accent)" stroke-width="1.5" fill="none"/>
+                        <path d="M4 6h8M4 10h8" stroke="var(--primary)" stroke-width="1.2" stroke-linecap="round"/>
+                    </svg>
+                        Monthly
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="yearly-tab" data-bs-toggle="tab" data-bs-target="#yearly" type="button" role="tab" aria-controls="yearly" aria-selected="false"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" style="vertical-align:middle;margin-right:0.5rem;opacity:0.7;" viewBox="0 0 16 16">
+                        <path d="M2 2h12v12H2z" fill="none"/>
+                        <path d="M2 2h12v12H2z" stroke="var(--accent)" stroke-width="1.5" fill="none"/>
+                        <path d="M4 6h8M4 10h8" stroke="var(--primary)" stroke-width="1.2" stroke-linecap="round"/>
+                    </svg>
+                        Yearly
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="numerologyTabContent">
+                <!-- Daily Tab -->
+                <div class="tab-pane fade show active" id="daily" role="tabpanel" aria-labelledby="daily-tab">
+                    <div class="numerology-card">
+                        <div class="numerology-card-header">
+                            Daily Numerology
+                        </div>
+                        <div class="numerology-actions">
+                            <a href="/numerology/upload" class="pill-btn upload-excel-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                    <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                                </svg>
+                                Upload Excel
+                            </a>
+                        </div>
+                        <div class="numerology-table-wrap">
+                            <div class="table-responsive">
+                                <table class="table numerology-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Date</th>
+                                            <th>Title (Hindi)</th>
+                                            <th>Title (English)</th>
+                                            <th>Details (Hindi)</th>
+                                            <th>Details (English)</th>
+                                            <th>Images</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% if (dailyNumerology && dailyNumerology.length > 0) { %>
+                                            <% dailyNumerology.forEach((entry, idx) => { %>
+                                                <tr>
+                                                    <td><%= idx + 1 %></td>
+                                                    <td><%= entry.date %></td>
+                                                    <td><%= entry.title_hn %></td>
+                                                    <td><%= entry.title_en %></td>
+                                                    <td><%= entry.details_hn %></td>
+                                                    <td><%= entry.details_en %></td>
+                                                    <td><%= entry.images ? entry.images.length : 0 %></td>
+                                                </tr>
+                                            <% }); %>
+                                        <% } else { %>
+                                            <tr>
+                                                <td colspan="7" class="text-center">No daily numerology found</td>
+                                            </tr>
+                                        <% } %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Tab -->
+                <div class="tab-pane fade" id="monthly" role="tabpanel" aria-labelledby="monthly-tab">
+                    <div class="numerology-card">
+                        <div class="numerology-card-header">
+                            Monthly Numerology
+                        </div>
+                        <div class="numerology-actions">
+                            <!-- Month navigation bar -->
+                            <ul class="nav nav-pills mb-3" id="numerologyMonthTabs" role="tablist" style="flex-wrap: wrap;">
+                                <% const months = [
+                                    'January', 'February', 'March', 'April', 'May', 'June',
+                                    'July', 'August', 'September', 'October', 'November', 'December'
+                                ]; %>
+                                <% months.forEach(function(month, idx) { %>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link<%= idx === 0 ? ' active' : '' %>" id="numerology-month-<%= idx %>-tab" data-bs-toggle="pill" data-bs-target="#numerology-month-<%= idx %>" type="button" role="tab" aria-controls="numerology-month-<%= idx %>" aria-selected="<%= idx === 0 ? 'true' : 'false' %>">
+                                            <%= month %>
+                                        </button>
+                                    </li>
+                                <% }); %>
+                            </ul>
+                        </div>
+                        <div class="numerology-table-wrap">
+                            <div class="tab-content" id="numerologyMonthTabContent">
+                                <% months.forEach(function(month, idx) { %>
+                                    <div class="tab-pane fade<%= idx === 0 ? ' show active' : '' %>" id="numerology-month-<%= idx %>" role="tabpanel" aria-labelledby="numerology-month-<%= idx %>-tab">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="mb-0"><%= month %> Numerology</h5>
+                                            <a href="#" class="pill-btn upload-excel-btn" onclick="document.getElementById('numerology-month-file-<%= idx %>').click(); return false;">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                                    <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                                                </svg>
+                                                Upload Excel
+                                            </a>
+                                            <input type="file" id="numerology-month-file-<%= idx %>" class="d-none" accept=".xlsx,.xls" onchange="uploadNumerologyMonthlyExcel('<%= month %>', this)" />
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table numerology-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Title (Hindi)</th>
+                                                        <th>Title (English)</th>
+                                                        <th>Details (Hindi)</th>
+                                                        <th>Details (English)</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="numerology-month-tbody-<%= idx %>">
+                                                    <% if (monthlyNumerology && monthlyNumerology[month] && monthlyNumerology[month].length > 0) { %>
+                                                        <% monthlyNumerology[month].forEach(function(entry, i) { %>
+                                                            <tr>
+                                                                <td><%= i + 1 %></td>
+                                                                <td><%= entry.title_hn %></td>
+                                                                <td><%= entry.title_en %></td>
+                                                                <td><%= entry.details_hn %></td>
+                                                                <td><%= entry.details_en %></td>
+                                                            </tr>
+                                                        <% }); %>
+                                                    <% } else { %>
+                                                        <tr>
+                                                            <td colspan="5" class="text-center">No data for <%= month %></td>
+                                                        </tr>
+                                                    <% } %>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Yearly Tab -->
+                <div class="tab-pane fade" id="yearly" role="tabpanel" aria-labelledby="yearly-tab">
+                    <div class="numerology-card">
+                        <div class="numerology-card-header">
+                            Yearly Numerology
+                        </div>
+                        <div class="numerology-actions">
+                            <a href="/numerology/upload-yearly" class="pill-btn upload-excel-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                    <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                                </svg>
+                                Upload Excel
+                            </a>
+                        </div>
+                        <div class="numerology-table-wrap">
+                            <div class="table-responsive">
+                                <table class="table numerology-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Date</th>
+                                            <th>Title (Hindi)</th>
+                                            <th>Title (English)</th>
+                                            <th>Details (Hindi)</th>
+                                            <th>Details (English)</th>
+                                            <th>Images</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% if (typeof yearlyNumerology !== 'undefined' && yearlyNumerology.length > 0) { %>
+                                            <% yearlyNumerology.forEach((entry, idx) => { %>
+                                                <tr>
+                                                    <td><%= idx + 1 %></td>
+                                                    <td><%= entry.date %></td>
+                                                    <td><%= entry.title_hn %></td>
+                                                    <td><%= entry.title_en %></td>
+                                                    <td><%= entry.details_hn %></td>
+                                                    <td><%= entry.details_en %></td>
+                                                    <td><%= entry.images ? entry.images.length : 0 %></td>
+                                                </tr>
+                                            <% }); %>
+                                        <% } else { %>
+                                            <tr>
+                                                <td colspan="7" class="text-center">No yearly numerology found</td>
+                                            </tr>
+                                        <% } %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <div id="numerology-months-data" data-months='<%- JSON.stringify(months) %>' style="display:none;"></div>
+    <script>
+    const monthsDataDiv = document.getElementById('numerology-months-data');
+    window.numerologyMonths = JSON.parse(monthsDataDiv.getAttribute('data-months'));
+    </script>
+    <script>
+    function uploadNumerologyMonthlyExcel(month, input) {
+        if (!input.files.length) return;
+        const formData = new FormData();
+        formData.append('excelFile', input.files[0]);
+        fetch(`/numerology/upload-monthly/${month}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Update the table for this month
+                const idx = window.numerologyMonths.indexOf(month);
+                const tbody = document.getElementById('numerology-month-tbody-' + idx);
+                if (tbody) {
+                    tbody.innerHTML = data.data.length ? data.data.map((entry, i) => `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>${entry.title_hn}</td>
+                            <td>${entry.title_en}</td>
+                            <td>${entry.details_hn}</td>
+                            <td>${entry.details_en}</td>
+                        </tr>
+                    `).join('') : `<tr><td colspan=\"5\" class=\"text-center\">No data for ${month}</td></tr>`;
+                }
+                alert('Upload successful!');
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(() => alert('Upload failed'));
+    }
+    </script>
+</body>
+</html> 

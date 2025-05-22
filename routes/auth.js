@@ -13,7 +13,8 @@ router.post('/login', async (req, res) => {
       secure: req.secure,
       cookies: req.cookies,
       host: req.get('host'),
-      xForwardedProto: req.get('x-forwarded-proto')
+      xForwardedProto: req.get('x-forwarded-proto'),
+      sessionID: req.sessionID
     });
     
     const { username, password } = req.body;
@@ -45,7 +46,8 @@ router.post('/login', async (req, res) => {
       id: req.session.id,
       userId: req.session.userId,
       username: req.session.username,
-      cookie: req.session.cookie
+      cookie: req.session.cookie,
+      sessionID: req.sessionID
     });
 
     // Save session explicitly

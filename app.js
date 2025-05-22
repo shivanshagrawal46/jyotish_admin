@@ -27,6 +27,16 @@ const aboutUsRouter = require('./routes/aboutUs');
 const aboutTeamApiRouter = require('./routes/api/aboutTeam');
 const aboutUsApiRouter = require('./routes/api/aboutUs');
 const mediaRouter = require('./routes/media');
+const rashifalRouter = require('./routes/rashifal');
+const numerologyRouter = require('./routes/numerology');
+const rashifalApiRouter = require('./routes/api/rashifal');
+const numerologyApiRouter = require('./routes/api/numerology');
+const astroshopRouter = require('./routes/astroshop');
+const astroshopApiRouter = require('./routes/api/astroshop');
+const pujaRouter = require('./routes/puja');
+const pujaApiRouter = require('./routes/api/puja');
+const bookRouter = require('./routes/book');
+const bookApiRouter = require('./routes/api/book');
 
 const app = express();
 
@@ -62,7 +72,7 @@ app.use(
     }),
     cookie: { 
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
-      secure: true, // Required for HTTPS
+      secure: process.env.NODE_ENV === 'production', // Only use secure cookies in production
       httpOnly: true,
       sameSite: 'lax',
       path: '/'
@@ -146,12 +156,26 @@ app.use('/about-us', aboutUsRouter);
 app.use('/api/aboutTeam', aboutTeamApiRouter);
 app.use('/api/aboutUs', aboutUsApiRouter);
 app.use('/media', mediaRouter);
+app.use('/rashifal', rashifalRouter);
+app.use('/numerology', numerologyRouter);
+app.use('/api/rashifal', rashifalApiRouter);
+app.use('/api/numerology', numerologyApiRouter);
 
 // API Routes
 app.use('/api/kosh-category', koshCategoryApi);
 app.use('/api/kosh-subcategory', koshSubCategoryApi);
 app.use('/api/kosh-content', koshContentApi);
 app.use('/api/mcq', mcqApiRouter);
+
+app.use('/astro-shop', astroshopRouter);
+app.use('/api/astro-shop', astroshopApiRouter);
+
+app.use('/puja', pujaRouter);
+app.use('/api/puja', pujaApiRouter);
+
+// Book routes
+app.use('/book', bookRouter);
+app.use('/api/book', bookApiRouter);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {

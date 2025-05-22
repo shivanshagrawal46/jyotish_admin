@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Daily Rashifal | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+            --success: #4CAF50;
+            --error: #F44336;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .topbar {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.25rem;
+            color: var(--dark);
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--accent);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            background: rgba(103, 111, 157, 0.05);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            background: rgba(103, 111, 157, 0.1);
+        }
+
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        .template-download {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(103, 111, 157, 0.05);
+            border-radius: 12px;
+        }
+
+        .template-download h4 {
+            color: var(--dark);
+            margin-bottom: 1rem;
+        }
+
+        .template-download ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .template-download li {
+            margin-bottom: 0.5rem;
+            color: var(--secondary);
+        }
+
+        .template-download li:before {
+            content: "•";
+            color: var(--accent);
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../partials/sidebar', { 
+            activePage: 'rashifal',
+            activeCategory: null,
+            koshCategories: [],
+            mcqCategories: []
+        }) %>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h1 class="page-title">Upload Daily Rashifal</h1>
+            <div class="user-menu">
+                <div class="user-avatar">
+                    <%= username ? username.charAt(0).toUpperCase() : 'A' %>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Card -->
+        <div class="content-card">
+            <form id="excelUploadForm" action="/rashifal/upload-daily" method="POST" enctype="multipart/form-data">
+                <div class="upload-area" onclick="document.getElementById('excelFile').click()">
+                    <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <h3>Drag and drop your Excel file here</h3>
+                    <p class="text-muted">or click to browse files</p>
+                    <input type="file" id="excelFile" name="excelFile" accept=".xlsx,.xls" style="display: none;" required>
+                </div>
+
+                <div class="template-download">
+                    <h4>Excel Template Format</h4>
+                    <p>Your Excel file should have the following columns:</p>
+                    <ul>
+                        <li>title_hn - Hindi title</li>
+                        <li>title_en - English title</li>
+                        <li>date - Date of the rashifal (YYYY-MM-DD format)</li>
+                        <li>details_hn - Hindi details</li>
+                        <li>details_en - English details</li>
+                        <li>images - Comma-separated image URLs (optional)</li>
+                    </ul>
+                    <button type="button" class="btn btn-outline-primary mt-3" onclick="downloadTemplate()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                            <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                        </svg>
+                        Download Template
+                    </button>
+                </div>
+
+                <div class="text-end mt-4">
+                    <a href="/rashifal" class="btn btn-secondary me-2">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Handle file selection
+        document.getElementById('excelFile').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name;
+            if (fileName) {
+                document.querySelector('.upload-area h3').textContent = fileName;
+                document.querySelector('.upload-area p').textContent = 'Click to change file';
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('excelUploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            fetch('/rashifal/upload-daily', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/rashifal';
+                } else {
+                    alert('Error uploading file: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error uploading file');
+            });
+        });
+
+        // Download template function
+        function downloadTemplate() {
+            // TODO: Implement template download
+            alert('Template download functionality will be implemented soon');
+        }
+    </script>
+</body>
+</html> 

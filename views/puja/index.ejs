@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pooja Management | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+            --success: #4CAF50;
+            --error: #F44336;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        .topbar {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin: 0;
+        }
+        .add-puja-btn {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            font-size: 1rem;
+            box-shadow: none;
+            transition: background 0.2s, color 0.2s;
+            text-decoration: none;
+        }
+        .add-puja-btn:hover {
+            background: var(--accent);
+            color: #fff;
+            text-decoration: none;
+        }
+        .puja-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        .puja-card-header {
+            background: var(--primary);
+            color: #fff;
+            padding: 1.5rem 2rem 1rem 2rem;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .puja-table-wrap {
+            padding: 0 2rem 2rem 2rem;
+        }
+        .puja-table {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .puja-table thead {
+            background: #F3F4F8;
+        }
+        .puja-table th, .puja-table td {
+            vertical-align: middle;
+            border: none;
+        }
+        .puja-table tbody tr {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px 0 rgba(44, 62, 80, 0.04);
+            margin-bottom: 12px;
+        }
+        .puja-table tbody tr:not(:last-child) {
+            border-bottom: 8px solid #f6f6fa;
+        }
+        .puja-img-thumb {
+            width: 56px;
+            height: 56px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid #eee;
+        }
+        .status-badge {
+            border-radius: 12px;
+            padding: 0.3rem 1rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        .status-active {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        .status-inactive {
+            background: #ffebee;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../partials/sidebar', { 
+            activePage: 'puja',
+            activeCategory: null,
+            koshCategories: [],
+            mcqCategories: []
+        }) %>
+    </nav>
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h1 class="page-title">Pooja Management</h1>
+            <div>
+                <a href="/puja/add" class="add-puja-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="margin-right:0.5rem;vertical-align:middle;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Pooja
+                </a>
+            </div>
+        </div>
+        <div class="puja-card">
+            <div class="puja-card-header">
+                Pooja List
+            </div>
+            <div class="puja-table-wrap">
+                <div class="table-responsive">
+                    <table class="table puja-table">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Title</th>
+                                <th>Temple</th>
+                                <th>Date</th>
+                                <th>Slots</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (pujas && pujas.length > 0) { %>
+                                <% pujas.forEach(function(puja) { %>
+                                    <tr>
+                                        <td>
+                                            <% if (puja.image_url) { %>
+                                                <img src="<%= puja.image_url %>" class="puja-img-thumb" alt="<%= puja.title %>">
+                                            <% } else { %>
+                                                <span style="color:#aaa;">No Image</span>
+                                            <% } %>
+                                        </td>
+                                        <td><%= puja.title %></td>
+                                        <td><%= puja.temple_name %></td>
+                                        <td><%= new Date(puja.puja_date).toLocaleDateString() %></td>
+                                        <td><%= puja.booked_count %>/<%= puja.total_slots %></td>
+                                        <td>
+                                            <% if (puja.is_active) { %>
+                                                <span class="status-badge status-active">Active</span>
+                                            <% } else { %>
+                                                <span class="status-badge status-inactive">Inactive</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <!-- Actions: Edit/Delete (future) -->
+                                            <button class="btn btn-sm btn-outline-primary" disabled>Edit</button>
+                                            <button class="btn btn-sm btn-outline-danger" disabled>Delete</button>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="7" class="text-center">No poojas found</td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Pagination -->
+    <% if (pagination.totalPages > 1) { %>
+    <div class="container mt-4">
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                <!-- Previous Page -->
+                <li class="page-item <%= !pagination.hasPrevPage ? 'disabled' : '' %>">
+                    <a class="page-link" href="?page=<%= pagination.currentPage - 1 %>" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+
+                <!-- Page Numbers -->
+                <% for(let i = 1; i <= pagination.totalPages; i++) { %>
+                    <li class="page-item <%= pagination.currentPage === i ? 'active' : '' %>">
+                        <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                    </li>
+                <% } %>
+
+                <!-- Next Page -->
+                <li class="page-item <%= !pagination.hasNextPage ? 'disabled' : '' %>">
+                    <a class="page-link" href="?page=<%= pagination.currentPage + 1 %>" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    <% } %>
+
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
