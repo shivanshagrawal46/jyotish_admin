@@ -36,7 +36,8 @@ router.get('/category', async (req, res) => {
         res.render('book/category/index', { 
             categories,
             activePage: 'book',
-            activeSection: 'category'
+            activeSection: 'category',
+            activeTab: 'category'
         });
     } catch (err) {
         console.error(err);
@@ -146,10 +147,13 @@ router.get('/name', async (req, res) => {
         const books = await BookName.find()
             .populate('category')
             .sort({ createdAt: -1 });
+        const categories = await BookCategory.find();
         res.render('book/name/index', { 
             books,
+            categories,
             activePage: 'book',
-            activeSection: 'name'
+            activeSection: 'name',
+            activeTab: 'name'
         });
     } catch (err) {
         console.error(err);
@@ -272,10 +276,15 @@ router.get('/chapter', async (req, res) => {
             .populate('category')
             .populate('book')
             .sort({ createdAt: -1 });
+        const categories = await BookCategory.find();
+        const books = await BookName.find();
         res.render('book/chapter/index', { 
             chapters,
+            categories,
+            books,
             activePage: 'book',
-            activeSection: 'chapter'
+            activeSection: 'chapter',
+            activeTab: 'chapter'
         });
     } catch (err) {
         console.error(err);
@@ -384,18 +393,50 @@ router.post('/chapter/delete/:id', async (req, res) => {
     }
 });
 
+// Show all contents for a chapter
+router.get('/chapter/:chapterId/contents', async (req, res) => {
+    try {
+        const contents = await BookContent.find({ chapter: req.params.chapterId })
+            .populate('category')
+            .populate('book')
+            .populate('chapter');
+        const chapter = await BookChapter.findById(req.params.chapterId)
+            .populate('category')
+            .populate('book');
+        if (!chapter) {
+            return res.status(404).send('Chapter not found');
+        }
+        res.render('book/chapter/contents', {
+            contents,
+            chapter,
+            activePage: 'book',
+            activeSection: 'chapter'
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
 // Book Content Routes
 router.get('/content', async (req, res) => {
     try {
         const contents = await BookContent.find()
-            .populate('category', 'name')
-            .populate('book', 'name')
-            .populate('chapter', 'name')
+            .populate('category')
+            .populate('book')
+            .populate('chapter')
             .sort({ createdAt: -1 });
+        const categories = await BookCategory.find();
+        const books = await BookName.find();
+        const chapters = await BookChapter.find();
         res.render('book/content/index', { 
             contents,
+            categories,
+            books,
+            chapters,
             activePage: 'book',
-            activeSection: 'content'
+            activeSection: 'content',
+            activeTab: 'content'
         });
     } catch (error) {
         console.error('Error fetching contents:', error);
@@ -493,21 +534,41 @@ router.get('/content/edit/:id', async (req, res) => {
     }
 });
 
-router.post('/content/edit/:id', async (req, res) => {
+router.post('/content/edit/:id', upload.array('images', 10), async (req, res) => {
     try {
         const { 
             category, book, chapter, 
             title_hn, title_en, title_hinglish,
-            meaning, details, extra 
+            meaning, details, extra, video_links 
         } = req.body;
+
+        // Process video links
+        const videoLinksArray = video_links ? video_links.split('\n').map(link => link.trim()).filter(link => link) : [];
+        
+        // Process uploaded images
+        const imageLinks = req.files ? req.files.map(file => `/uploads/books/${file.filename}`) : [];
+
+        const updateData = {
+            category,
+            book,
+            chapter,
+            title_hn,
+            title_en,
+            title_hinglish,
+            meaning,
+            details,
+            extra,
+            video_links: videoLinksArray
+        };
+
+        // Only update images if new ones were uploaded
+        if (imageLinks.length > 0) {
+            updateData.images = imageLinks;
+        }
 
         const content = await BookContent.findByIdAndUpdate(
             req.params.id,
-            {
-                category, book, chapter,
-                title_hn, title_en, title_hinglish,
-                meaning, details, extra
-            },
+            updateData,
             { new: true }
         );
 
@@ -517,8 +578,30 @@ router.post('/content/edit/:id', async (req, res) => {
 
         res.redirect('/book/content');
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
+        console.error('Error updating content:', err);
+        // If there's an error, try to redirect to the edit page with error message
+        const content = await BookContent.findById(req.params.id);
+        if (content) {
+            const categories = await BookCategory.find().sort({ name: 1 });
+            const books = await BookName.find()
+                .populate('category', '_id name')
+                .sort({ name: 1 });
+            const chapters = await BookChapter.find()
+                .populate('book', '_id name')
+                .sort({ name: 1 });
+            
+            res.render('book/content/edit', {
+                content,
+                categories,
+                books,
+                chapters,
+                activePage: 'book',
+                activeSection: 'content',
+                error: 'Error updating content. Please try again.'
+            });
+        } else {
+            res.redirect('/book/content');
+        }
     }
 });
 

@@ -37,6 +37,16 @@ const pujaRouter = require('./routes/puja');
 const pujaApiRouter = require('./routes/api/puja');
 const bookRouter = require('./routes/book');
 const bookApiRouter = require('./routes/api/book');
+const prashanYantraRouter = require('./routes/prashanYantra');
+const hanumatJyotishRouter = require('./routes/hanumatJyotish');
+const hanumatPrashanwaliRouter = require('./routes/hanumatPrashanwali');
+const ankPrashanRouter = require('./routes/ankPrashan');
+const karyaPrashanYantraRouter = require('./routes/karyaPrashanYantra');
+const twentyPrashanYantraRouter = require('./routes/twentyPrashanYantra');
+const sixtyFourPrashanYantraRouter = require('./routes/sixtyFourPrashanYantra');
+const beejPrashanYantraRouter = require('./routes/beejPrashanYantra');
+const prashanApiRouter = require('./routes/api/prashan');
+const dashboardApiRouter = require('./routes/api/dashboard');
 
 const app = express();
 
@@ -176,6 +186,36 @@ app.use('/api/puja', pujaApiRouter);
 // Book routes
 app.use('/book', bookRouter);
 app.use('/api/book', bookApiRouter);
+
+// Prashan Yantra routes
+app.use('/prashan-yantra', prashanYantraRouter);
+
+// Hanumat Jyotish routes
+app.use('/hanumat-jyotish', hanumatJyotishRouter);
+
+// Hanumat Prashanwali routes
+app.use('/hanumat-prashanwali', hanumatPrashanwaliRouter);
+
+// Ank Prashan routes
+app.use('/ank-prashan', ankPrashanRouter);
+
+// Karya Prashan Yantra routes
+app.use('/karya-prashan-yantra', karyaPrashanYantraRouter);
+
+// Twenty Prashan Yantra routes
+app.use('/twenty-prashan-yantra', twentyPrashanYantraRouter);
+
+// Sixty Four Prashan Yantra routes
+app.use('/sixty-four-prashan-yantra', sixtyFourPrashanYantraRouter);
+
+// Beej Prashan Yantra routes
+app.use('/beej-prashan-yantra', beejPrashanYantraRouter);
+
+// Prashan API routes
+app.use('/api/prashan', prashanApiRouter);
+
+// Dashboard API routes
+app.use('/api/dashboard', dashboardApiRouter);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {

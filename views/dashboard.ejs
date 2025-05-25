@@ -71,7 +71,7 @@
         /* Dashboard Cards */
         .dashboard-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
@@ -159,6 +159,28 @@
             color: var(--secondary);
             font-size: 0.875rem;
         }
+
+        /* Dashboard Charts Section */
+        #dashboard-charts .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: -0.5rem;
+        }
+
+        #dashboard-charts .col-md-7,
+        #dashboard-charts .col-md-5,
+        #dashboard-charts .col-md-6 {
+            padding: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            #dashboard-charts .col-md-7,
+            #dashboard-charts .col-md-5,
+            #dashboard-charts .col-md-6 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -183,62 +205,44 @@
         <div class="dashboard-cards">
             <div class="card">
                 <h3 class="card-title">Total Kosh Categories</h3>
-                <div class="card-value">12</div>
+                <div class="card-value" id="koshCategories">Loading...</div>
                 <div class="card-description">Active categories in the system</div>
             </div>
             <div class="card">
                 <h3 class="card-title">Total MCQ Categories</h3>
-                <div class="card-value">8</div>
+                <div class="card-value" id="mcqCategories">Loading...</div>
                 <div class="card-description">Active MCQ categories</div>
             </div>
             <div class="card">
                 <h3 class="card-title">Total Users</h3>
-                <div class="card-value">5</div>
+                <div class="card-value" id="totalUsers">Loading...</div>
                 <div class="card-description">Active admin users</div>
             </div>
         </div>
 
-        <!-- Recent Activity -->
-        <div class="recent-activity">
-            <h3 class="activity-title">Recent Activity</h3>
-            <div class="activity-item">
-                <div class="activity-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                        <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
-                    </svg>
+        <!-- Dashboard Charts Section -->
+        <div id="dashboard-charts" class="mt-5">
+            <h2 class="mb-4" style="font-family: 'Playfair Display', serif;">Data Overview</h2>
+            <div class="row">
+                <div class="col-md-7 mb-4">
+                    <canvas id="barChart"></canvas>
                 </div>
-                <div class="activity-details">
-                    <div class="activity-text">New Kosh category added</div>
-                    <div class="activity-time">2 hours ago</div>
+                <div class="col-md-5 mb-4">
+                    <canvas id="pieChart"></canvas>
                 </div>
             </div>
-            <div class="activity-item">
-                <div class="activity-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                        <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
-                    </svg>
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <canvas id="lineChart"></canvas>
                 </div>
-                <div class="activity-details">
-                    <div class="activity-text">MCQ content updated</div>
-                    <div class="activity-time">5 hours ago</div>
-                </div>
-            </div>
-            <div class="activity-item">
-                <div class="activity-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                        <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
-                    </svg>
-                </div>
-                <div class="activity-details">
-                    <div class="activity-text">New admin user registered</div>
-                    <div class="activity-time">1 day ago</div>
+                <div class="col-md-6 mb-4">
+                    <canvas id="doughnutChart"></canvas>
                 </div>
             </div>
         </div>
     </main>
+    <!-- Chart.js library must be loaded before the dashboard script -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Ensure sidebar scrolling works
         document.addEventListener('DOMContentLoaded', function() {
@@ -251,6 +255,138 @@
                 }, 100);
             }
         });
+
+        // Chart.js
+        async function fetchDashboardSummary() {
+            const res = await fetch('/api/dashboard/summary');
+            const data = await res.json();
+            console.log('Dashboard Summary Data:', data);
+            return data;
+        }
+
+        function renderCharts(data) {
+            // Update card values
+            document.getElementById('koshCategories').textContent = data.kosh.categories;
+            document.getElementById('mcqCategories').textContent = data.mcq.categories;
+            document.getElementById('totalUsers').textContent = '1';
+
+            // Bar chart: Content counts per part
+            const barLabels = ['Kosh', 'MCQ', 'Book', 'Prashan Yantra', 'Pooja', 'Astroshop'];
+            const barData = [
+                data.kosh.contents,
+                data.mcq.contents,
+                data.book.contents,
+                data.prashanYantra.hanumatPrashanwali + data.prashanYantra.ankPrashan + data.prashanYantra.karyaPrashanYantra + data.prashanYantra.twentyPrashanYantra + data.prashanYantra.sixtyFourPrashanYantra + data.prashanYantra.beejPrashanYantra,
+                data.pooja.poojas,
+                data.astroshop.products
+            ];
+            const barColors = ['#A8D8EA', '#AA96DA', '#FCBAD3', '#B5EAD7', '#FFFFD2', '#C7CEEA'];
+
+            new Chart(document.getElementById('barChart'), {
+                type: 'bar',
+                data: {
+                    labels: barLabels,
+                    datasets: [{
+                        label: 'Total Contents',
+                        data: barData,
+                        backgroundColor: barColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Content Count by Section' }
+                    }
+                }
+            });
+
+            // Pie chart: Distribution of all content
+            new Chart(document.getElementById('pieChart'), {
+                type: 'pie',
+                data: {
+                    labels: barLabels,
+                    datasets: [{
+                        data: barData,
+                        backgroundColor: barColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        title: { display: true, text: 'Content Distribution' }
+                    }
+                }
+            });
+
+            // Line chart: Categories and Subcategories
+            const lineLabels = ['Kosh', 'MCQ', 'Book', 'Prashan Yantra', 'Pooja', 'Astroshop'];
+            const lineData = [
+                data.kosh.categories,
+                data.mcq.categories,
+                data.book.categories,
+                data.prashanYantra.categories,
+                data.pooja.categories,
+                data.astroshop.categories
+            ];
+            const subLineData = [
+                data.kosh.subcategories,
+                data.mcq.subcategories,
+                data.book.subcategories,
+                data.prashanYantra.subcategories,
+                data.pooja.subcategories,
+                data.astroshop.subcategories
+            ];
+
+            new Chart(document.getElementById('lineChart'), {
+                type: 'line',
+                data: {
+                    labels: lineLabels,
+                    datasets: [
+                        {
+                            label: 'Categories',
+                            data: lineData,
+                            borderColor: '#A8D8EA',
+                            fill: false
+                        },
+                        {
+                            label: 'Subcategories',
+                            data: subLineData,
+                            borderColor: '#AA96DA',
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: { display: true, text: 'Categories and Subcategories' }
+                    }
+                }
+            });
+
+            // Doughnut chart: Subcategories distribution
+            new Chart(document.getElementById('doughnutChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: lineLabels,
+                    datasets: [{
+                        data: subLineData,
+                        backgroundColor: barColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        title: { display: true, text: 'Subcategories Distribution' }
+                    }
+                }
+            });
+        }
+
+        fetchDashboardSummary().then(renderCharts);
     </script>
 </body>
 </html> 

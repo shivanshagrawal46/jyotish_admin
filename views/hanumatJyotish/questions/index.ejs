@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Chapters | Sanskrit Admin</title>
+    <title>Hanumat Jyotish Questions | Sanskrit Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/sidebar.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
         :root {
             --primary: #2D3250;
@@ -58,23 +59,39 @@
         .add-btn svg {
             margin-right: 0.5rem;
         }
-        .chapter-card {
+        .question-card {
             background: white;
             border-radius: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
-        .chapter-table {
+        .question-table {
             margin: 0;
         }
-        .chapter-table th {
+        .question-table th {
             background: #f8f9fa;
             border-bottom: none;
             padding: 1rem 1.5rem;
         }
-        .chapter-table td {
+        .question-table td {
             padding: 1rem 1.5rem;
             vertical-align: middle;
+        }
+        .nav-tabs {
+            border-bottom: none;
+            margin-bottom: 2rem;
+        }
+        .nav-tabs .nav-link {
+            border: none;
+            color: var(--dark);
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            margin-right: 1rem;
+        }
+        .nav-tabs .nav-link.active {
+            background: var(--primary);
+            color: white;
         }
     </style>
 </head>
@@ -82,8 +99,8 @@
     <!-- Sidebar -->
     <nav class="sidebar">
         <%- include('../../partials/sidebar', { 
-            activePage: 'book',
-            activeCategory: null,
+            activePage: activePage,
+            activeCategory: activeCategory,
             koshCategories: [],
             mcqCategories: []
         }) %>
@@ -92,46 +109,58 @@
     <!-- Main Content -->
     <main class="main-content">
         <!-- Topbar -->
-        <div class="topbar">
-            <h1 class="page-title">Book Chapters</h1>
-            <a href="/book/chapter/add" class="add-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add Chapter
-            </a>
+        <div class="topbar d-flex justify-content-between align-items-center">
+            <h1 class="page-title">Hanumat Jyotish Questions</h1>
+            <div class="d-flex gap-3">
+                <a href="/prashan-yantra" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Prashan Yantra
+                </a>
+                <a href="/hanumat-jyotish/questions/add" class="add-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Question
+                </a>
+            </div>
         </div>
 
-        <%- include('../../partials/book-nav', { activeTab: 'chapter' }) %>
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" href="/hanumat-jyotish/questions">Question List</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/hanumat-jyotish/responses">Response List</a>
+            </li>
+        </ul>
 
-        <!-- Chapters List -->
-        <div class="chapter-card">
+        <!-- Questions List -->
+        <div class="question-card">
             <div class="table-responsive">
-                <table class="table chapter-table">
+                <table class="table question-table">
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Chapter Name</th>
-                            <th>Book</th>
-                            <th>Category</th>
+                            <th>Question</th>
+                            <th>Description</th>
+                            <th>Position</th>
                             <th>Created At</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <% if (chapters && chapters.length > 0) { %>
-                            <% chapters.forEach(function(chapter) { %>
+                        <% if (questions && questions.length > 0) { %>
+                            <% questions.forEach(question => { %>
                                 <tr>
-                                    <td><%= chapter.id %></td>
+                                    <td><%= question.id %></td>
+                                    <td><%= question.question %></td>
+                                    <td><%= question.description || 'N/A' %></td>
+                                    <td><%= question.position %></td>
+                                    <td><%= new Date(question.createdAt).toLocaleDateString() %></td>
                                     <td>
-                                        <a href="/book/chapter/<%= chapter._id %>/contents" class="fw-bold text-decoration-underline text-primary"><%= chapter.name %></a>
-                                    </td>
-                                    <td><%= chapter.book.name %></td>
-                                    <td><%= chapter.category.name %></td>
-                                    <td><%= new Date(chapter.createdAt).toLocaleDateString() %></td>
-                                    <td>
-                                        <a href="/book/chapter/edit/<%= chapter._id %>" class="btn btn-sm btn-outline-primary me-2">Edit</a>
-                                        <form action="/book/chapter/delete/<%= chapter._id %>" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this chapter?');">
+                                        <a href="/hanumat-jyotish/responses/<%= question._id %>" class="btn btn-sm btn-outline-primary me-2">Responses</a>
+                                        <a href="/hanumat-jyotish/questions/edit/<%= question._id %>" class="btn btn-sm btn-outline-secondary me-2">Edit</a>
+                                        <form action="/hanumat-jyotish/questions/delete/<%= question._id %>" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this question?');">
                                             <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                                         </form>
                                     </td>
@@ -139,7 +168,7 @@
                             <% }); %>
                         <% } else { %>
                             <tr>
-                                <td colspan="5" class="text-center py-4">No chapters found</td>
+                                <td colspan="6" class="text-center py-4">No questions found</td>
                             </tr>
                         <% } %>
                     </tbody>

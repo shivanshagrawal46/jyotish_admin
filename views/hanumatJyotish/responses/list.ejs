@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hanumat Jyotish Responses | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        .topbar {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin: 0;
+        }
+        .table-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .table {
+            margin-bottom: 0;
+        }
+        .table th {
+            font-weight: 600;
+            color: var(--dark);
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .table td {
+            vertical-align: middle;
+            color: var(--dark);
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        .btn-primary:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        .btn-outline-secondary {
+            color: var(--dark);
+            border-color: #e2e8f0;
+        }
+        .btn-outline-secondary:hover {
+            background: #f8f9fa;
+            color: var(--dark);
+            border-color: #e2e8f0;
+        }
+        .nav-tabs {
+            border-bottom: none;
+            margin-bottom: 2rem;
+        }
+        .nav-tabs .nav-link {
+            border: none;
+            color: var(--dark);
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            margin-right: 1rem;
+        }
+        .nav-tabs .nav-link.active {
+            background: var(--primary);
+            color: white;
+        }
+        .response-preview {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../../partials/sidebar', { 
+            activePage: activePage,
+            activeCategory: activeCategory,
+            koshCategories: [],
+            mcqCategories: []
+        }) %>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Topbar -->
+        <div class="topbar d-flex justify-content-between align-items-center">
+            <h1 class="page-title">Hanumat Jyotish Responses</h1>
+            <a href="/prashan-yantra" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Prashan Yantra
+            </a>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link" href="/hanumat-jyotish/questions">Question List</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="/hanumat-jyotish/responses">Response List</a>
+            </li>
+        </ul>
+
+        <!-- Table Card -->
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Question</th>
+                            <th>Responses</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% questions.forEach(question => { %>
+                            <tr>
+                                <td><%= question.question %></td>
+                                <td>
+                                    <% const response = responses.find(r => String(r.question._id) === String(question._id)) %>
+                                    <% if (response) { %>
+                                        <div class="response-preview">
+                                            <%= response.responses.map(r => r.content).join(', ') %>
+                                        </div>
+                                    <% } else { %>
+                                        <span class="text-muted">No responses yet</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <a href="/hanumat-jyotish/responses/<%= question._id %>" class="btn btn-primary btn-sm">
+                                        <%= response ? 'Edit Responses' : 'Add Responses' %>
+                                    </a>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
