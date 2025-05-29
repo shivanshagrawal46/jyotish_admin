@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add E-Magazine | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 1.75rem;
+            margin-bottom: 0;
+        }
+        .btn-primary, .btn.btn-primary, .btn-primary:active, .btn-primary:focus {
+            background-color: var(--primary) !important;
+            border-color: var(--primary) !important;
+        }
+    </style>
+    <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../../partials/sidebar', { activePage: 'e-magazine', activeCategory: null, koshCategories: [], mcqCategories: [] }) %>
+    </nav>
+    <main class="main-content">
+        <div class="container">
+            <%- include('../../partials/eMagazine-nav', { activeTab: 'magazine' }) %>
+            <div class="topbar mb-4">
+                <h1 class="page-title">Add New Magazine</h1>
+            </div>
+            <div class="card">
+                <form action="/e-magazine/magazine/add" method="POST" enctype="multipart/form-data">
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3">
+                            <label for="language" class="form-label">Language</label>
+                            <select class="form-select" id="language" name="language" required>
+                                <option value="">Select Language</option>
+                                <option value="Hindi">Hindi</option>
+                                <option value="English">English</option>
+                                <option value="Sanskrit">Sanskrit</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Select Category</option>
+                                <% categories.forEach(function(cat) { %>
+                                    <option value="<%= cat._id %>"><%= cat.name %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="subject" class="form-label">Subject</label>
+                            <select class="form-select" id="subject" name="subject" required>
+                                <option value="">Select Subject</option>
+                                <% subjects.forEach(function(sub) { %>
+                                    <option value="<%= sub._id %>"><%= sub.name %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <label for="writer" class="form-label">Writer</label>
+                            <select class="form-select" id="writer" name="writer" required>
+                                <option value="">Select Writer</option>
+                                <% writers.forEach(function(w) { %>
+                                    <option value="<%= w._id %>"><%= w.name %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="month" class="form-label">Month</label>
+                            <select class="form-select" id="month" name="month" required>
+                                <option value="">Select Month</option>
+                                <% ["January","February","March","April","May","June","July","August","September","October","November","December"].forEach(function(m) { %>
+                                    <option value="<%= m %>"><%= m %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="year" class="form-label">Year</label>
+                            <input type="number" class="form-control" id="year" name="year" min="1900" max="2100" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="introduction" class="form-label">Introduction</label>
+                        <textarea class="form-control" id="introduction" name="introduction" rows="3"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label for="subPoints" class="form-label">Sub Points</label>
+                        <textarea class="form-control" id="subPoints" name="subPoints" rows="3"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label for="importance" class="form-label">Importance</label>
+                        <textarea class="form-control" id="importance" name="importance" rows="3"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label for="explain" class="form-label">Explain</label>
+                        <textarea class="form-control" id="explain" name="explain" rows="3"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label for="summary" class="form-label">Summary</label>
+                        <textarea class="form-control" id="summary" name="summary" rows="3"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label for="reference" class="form-label">Reference</label>
+                        <textarea class="form-control" id="reference" name="reference" rows="3"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label for="images" class="form-label">Images</label>
+                        <input type="file" class="form-control" id="images" name="images" accept="image/*" multiple>
+                        <div class="form-text">You can upload multiple images.</div>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <a href="/e-magazine/magazine" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Save Magazine</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+    <script>
+        CKEDITOR.replace('introduction');
+        CKEDITOR.replace('subPoints');
+        CKEDITOR.replace('importance');
+        CKEDITOR.replace('explain');
+        CKEDITOR.replace('summary');
+        CKEDITOR.replace('reference');
+    </script>
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

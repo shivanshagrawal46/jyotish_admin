@@ -100,12 +100,20 @@
         <!-- Topbar -->
         <div class="topbar">
             <h1 class="page-title">Book Content</h1>
-            <a href="/book/content/add" class="add-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add Content
-            </a>
+            <div class="d-flex gap-2">
+                <a href="/book/content/add" class="add-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Content
+                </a>
+                <button type="button" class="add-btn" data-bs-toggle="modal" data-bs-target="#uploadExcelModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Upload Excel
+                </button>
+            </div>
         </div>
 
         <%- include('../../partials/book-nav', { activeTab: 'content' }) %>
@@ -144,15 +152,54 @@
                                 </tr>
                             <% }); %>
                         <% } else { %>
-                            <tr>
-                                <td colspan="7" class="text-center py-4">No content found</td>
-                            </tr>
+                            <tr><td colspan="7" class="text-center">No content found.</td></tr>
                         <% } %>
                     </tbody>
                 </table>
             </div>
         </div>
     </main>
+
+    <!-- Upload Excel Modal -->
+    <div class="modal fade" id="uploadExcelModal" tabindex="-1" aria-labelledby="uploadExcelModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadExcelModalLabel">Upload Content Excel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="/book/content/upload-excel" method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="excelFile" class="form-label">Select Excel File</label>
+                            <input type="file" class="form-control" id="excelFile" name="excelFile" accept=".xlsx,.xls" required>
+                        </div>
+                        <div class="alert alert-info">
+                            <small>
+                                <strong>Note:</strong> The Excel file should have the following columns:
+                                <ul class="mb-0 mt-2">
+                                    <li>Category (Category Name)</li>
+                                    <li>Book (Book Name)</li>
+                                    <li>Chapter (Chapter Name)</li>
+                                    <li>Title (Hindi)</li>
+                                    <li>Title (English)</li>
+                                    <li>Title (Hinglish)</li>
+                                    <li>Meaning</li>
+                                    <li>Details</li>
+                                    <li>Extra (optional)</li>
+                                    <li>Video Links (optional, comma-separated)</li>
+                                </ul>
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Upload</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>

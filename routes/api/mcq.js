@@ -98,6 +98,7 @@ router.get('/categories/:categoryId/:masterId', async (req, res) => {
 
         const [contents, total] = await Promise.all([
             McqContent.find({ master: master._id })
+                .select('question option1 option2 option3 option4 correctAnswers explanation references image isActive createdAt')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
@@ -105,16 +106,6 @@ router.get('/categories/:categoryId/:masterId', async (req, res) => {
         ]);
 
         res.json({
-            category: {
-                id: category.id,
-                name: category.name,
-                description: category.description
-            },
-            master: {
-                id: master.id,
-                name: master.name,
-                description: master.description
-            },
             contents,
             pagination: {
                 currentPage: page,

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learning | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        .topbar {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin: 0;
+        }
+        .nav-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .nav-link {
+            color: var(--dark);
+            text-decoration: none;
+            padding: 1rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .nav-link:hover {
+            background: var(--light);
+            color: var(--primary);
+        }
+        .nav-link svg {
+            margin-right: 1rem;
+            width: 24px;
+            height: 24px;
+        }
+        .nav-link.active {
+            background: var(--primary);
+            color: white;
+        }
+        .nav-link.active:hover {
+            background: var(--accent);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../partials/sidebar', { 
+            activePage: 'learning',
+            activeCategory: null,
+            koshCategories: [],
+            mcqCategories: []
+        }) %>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h1 class="page-title">Learning Management</h1>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-card">
+            <a href="/learning/categories" class="nav-link">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Categories
+            </a>
+            <a href="/learning/chapters" class="nav-link">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Chapters
+            </a>
+            <a href="/learning/contents" class="nav-link">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Contents
+            </a>
+        </div>
+    </main>
+
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

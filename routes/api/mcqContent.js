@@ -7,6 +7,7 @@ const auth = require('../../middleware/auth');
 router.get('/master/:masterId', async (req, res) => {
     try {
         const contents = await McqContent.find({ master: req.params.masterId })
+            .select('question options correctAnswer explanation references image createdAt')
             .sort({ createdAt: -1 });
         res.json(contents);
     } catch (error) {
@@ -17,7 +18,8 @@ router.get('/master/:masterId', async (req, res) => {
 // Get a single MCQ
 router.get('/:id', async (req, res) => {
     try {
-        const content = await McqContent.findById(req.params.id);
+        const content = await McqContent.findById(req.params.id)
+            .select('question options correctAnswer explanation references image createdAt');
         if (!content) {
             return res.status(404).json({ message: 'MCQ not found' });
         }

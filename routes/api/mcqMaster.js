@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
         const skip = (page - 1) * limit;
 
         const masters = await McqMaster.find()
-            .populate('category', 'name')
+            .select('-category')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -37,7 +37,7 @@ router.get('/category/:categoryId', async (req, res) => {
         const skip = (page - 1) * limit;
 
         const masters = await McqMaster.find({ category: req.params.categoryId })
-            .populate('category', 'name')
+            .select('-category')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -59,7 +59,7 @@ router.get('/category/:categoryId', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const master = await McqMaster.findById(req.params.id)
-            .populate('category', 'name');
+            .select('-category');
         if (!master) {
             return res.status(404).json({ message: 'MCQ Master not found' });
         }

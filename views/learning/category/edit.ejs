@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Learning Category | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        .topbar {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin: 0;
+        }
+        .form-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .form-label {
+            font-weight: 500;
+            color: var(--dark);
+        }
+        .form-control {
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem 1rem;
+        }
+        .form-control:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 0.2rem rgba(103, 111, 157, 0.25);
+        }
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: var(--accent);
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../../partials/sidebar', { 
+            activePage: 'learning',
+            activeCategory: null,
+            koshCategories: [],
+            mcqCategories: []
+        }) %>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h1 class="page-title">Edit Learning Category</h1>
+        </div>
+
+        <%- include('../../partials/learning-nav', { 
+            activeTab: 'category',
+            categoryId: null,
+            chapterId: null
+        }) %>
+
+        <!-- Form Card -->
+        <div class="form-card">
+            <form action="/learning/categories/edit/<%= category._id %>" method="POST">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" value="<%= category.name %>" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="fee" class="form-label">Fee</label>
+                        <input type="number" class="form-control" id="fee" name="fee" value="<%= category.fee %>" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="plan" class="form-label">Plan</label>
+                        <input type="text" class="form-control" id="plan" name="plan" value="<%= category.plan %>" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="demo" class="form-label">Demo</label>
+                        <input type="text" class="form-control" id="demo" name="demo" value="<%= category.demo %>" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="introduction" class="form-label">Introduction</label>
+                    <textarea class="form-control" id="introduction" name="introduction" rows="4" required><%= category.introduction %></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="position" class="form-label">Position</label>
+                        <input type="number" class="form-control" id="position" name="position" value="<%= category.position %>" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" id="isActive" name="isActive" <%= category.isActive ? 'checked' : '' %>>
+                            <label class="form-check-label" for="isActive">Active</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Update Category</button>
+                    <a href="/learning/categories" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

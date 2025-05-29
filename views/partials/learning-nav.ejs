@@ -1,0 +1,61 @@
+<nav class="learning-nav mb-4">
+    <div class="nav nav-pills">
+        <a class="nav-link <%= activeTab === 'categories' ? 'active' : '' %>" 
+           href="/learning/categories" 
+           role="tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grid me-1" viewBox="0 0 16 16">
+                <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"/>
+            </svg>
+            Categories
+        </a>
+        <a class="nav-link <%= activeTab === 'chapters' ? 'active' : '' %>" 
+           href="/learning/chapters/<%= categoryId %>" 
+           role="tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-ol me-1" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5z"/>
+                <path d="M1.713 11.865v-.474H2c.217 0 .363-.137.363-.317 0-.185-.158-.31-.361-.31-.223 0-.367.152-.373.31h-.59c.016-.467.434-.787.891-.787.588 0 .891.387.891.852v.47c0 .554-.293.854-.891.854-.591 0-.891-.3-.891-.854zm1.004-.45v.027c0 .332.214.547.547.547.327 0 .546-.201.546-.564v-.036c0-.363-.219-.546-.547-.546-.333 0-.546.201-.546.564zm.803.645v.04c0 .413.248.65.65.65.403 0 .65-.237.65-.65v-.04c0-.412-.247-.65-.65-.65-.402 0-.65.238-.65.65z"/>
+            </svg>
+            Chapters
+        </a>
+        <a class="nav-link <%= activeTab === 'contents' ? 'active' : '' %>" 
+           href="/learning/contents/<%= chapterId %>" 
+           role="tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-text me-1" viewBox="0 0 16 16">
+                <path d="M5 4a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zM5 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1H5z"/>
+                <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/>
+            </svg>
+            Content
+        </a>
+    </div>
+</nav>
+
+<style>
+.learning-nav {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    padding: 0.5rem;
+}
+
+.learning-nav .nav-link {
+    color: var(--dark);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    font-weight: 500;
+}
+
+.learning-nav .nav-link:hover {
+    background: var(--light);
+}
+
+.learning-nav .nav-link.active {
+    background: var(--primary);
+    color: white;
+}
+
+.learning-nav .nav-link svg {
+    margin-right: 0.5rem;
+}
+</style> 

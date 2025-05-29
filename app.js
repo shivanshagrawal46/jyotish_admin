@@ -47,6 +47,17 @@ const sixtyFourPrashanYantraRouter = require('./routes/sixtyFourPrashanYantra');
 const beejPrashanYantraRouter = require('./routes/beejPrashanYantra');
 const prashanApiRouter = require('./routes/api/prashan');
 const dashboardApiRouter = require('./routes/api/dashboard');
+const eMagazineRouter = require('./routes/eMagazine');
+const emagazineApiRouter = require('./routes/api/emagazine');
+const karmkandCategoryRoutes = require('./routes/karmkandCategory');
+const karmkandSubCategoryRoutes = require('./routes/karmkandSubCategory');
+const karmkandContentRoutes = require('./routes/karmkandContent');
+const karmkandApiRouter = require('./routes/api/karmkand');
+const festivalRoutes = require('./routes/festival');
+const festivalApiRouter = require('./routes/api/festival');
+const celebrityKundliRoutes = require('./routes/celebrityKundli');
+const celebrityKundliApiRouter = require('./routes/api/celebrityKundli');
+const learningRoutes = require('./routes/learning');
 
 const app = express();
 
@@ -82,7 +93,7 @@ app.use(
     }),
     cookie: { 
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
-      secure: process.env.NODE_ENV === 'production', // Only use secure cookies in production
+      secure: true, // Only use secure cookies in production
       httpOnly: true,
       sameSite: 'lax',
       path: '/'
@@ -187,6 +198,9 @@ app.use('/api/puja', pujaApiRouter);
 app.use('/book', bookRouter);
 app.use('/api/book', bookApiRouter);
 
+// E-Magazine routes
+app.use('/e-magazine', eMagazineRouter);
+
 // Prashan Yantra routes
 app.use('/prashan-yantra', prashanYantraRouter);
 
@@ -216,6 +230,26 @@ app.use('/api/prashan', prashanApiRouter);
 
 // Dashboard API routes
 app.use('/api/dashboard', dashboardApiRouter);
+
+// E-Magazine API routes
+app.use('/api/emagazine', emagazineApiRouter);
+
+// Karmkand category routes
+app.use('/', karmkandCategoryRoutes);
+app.use('/', karmkandSubCategoryRoutes);
+app.use('/', karmkandContentRoutes);
+app.use('/api/karmkand', karmkandApiRouter);
+
+// Festival routes
+app.use('/', festivalRoutes);
+app.use('/api', festivalApiRouter);
+
+// Celebrity Kundli routes
+app.use('/', celebrityKundliRoutes);
+app.use('/api', celebrityKundliApiRouter);
+
+// Learning routes
+app.use('/learning', learningRoutes);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {

@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const xlsx = require('xlsx');
 const BookCategory = require('../models/BookCategory');
 const BookName = require('../models/BookName');
 const BookChapter = require('../models/BookChapter');
@@ -618,6 +619,169 @@ router.post('/content/delete/:id', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
+    }
+});
+
+// Handle Excel upload for chapters
+router.post('/chapter/upload-excel', upload.single('excelFile'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.render('book/chapter/index', {
+                chapters: await BookChapter.find().populate('category').populate('book').sort({ createdAt: -1 }),
+                categories: await BookCategory.find(),
+                books: await BookName.find(),
+                activePage: 'book',
+                activeSection: 'chapter',
+                activeTab: 'chapter',
+                error: 'Please upload an Excel file.'
+            });
+        }
+
+        const workbook = xlsx.readFile(req.file.path);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = xlsx.utils.sheet_to_json(worksheet);
+
+        const chapters = [];
+        for (const row of data) {
+            if (!row.Category || !row.Book || !row.Name) {
+                continue; // Skip rows with missing required fields
+            }
+
+            // Find category and book by name
+            const category = await BookCategory.findOne({ name: row.Category });
+            const book = await BookName.findOne({ name: row.Book });
+
+            if (!category || !book) {
+                continue; // Skip if category or book not found
+            }
+
+            // Create a new chapter instance to trigger the auto-increment
+            const chapter = new BookChapter({
+                category: category._id,
+                book: book._id,
+                name: row.Name
+            });
+
+            chapters.push(chapter);
+        }
+
+        if (chapters.length > 0) {
+            // Save chapters one by one to ensure proper ID generation
+            for (const chapter of chapters) {
+                await chapter.save();
+            }
+            // Delete the uploaded file
+            fs.unlinkSync(req.file.path);
+            res.redirect('/book/chapter');
+        } else {
+            res.render('book/chapter/index', {
+                chapters: await BookChapter.find().populate('category').populate('book').sort({ createdAt: -1 }),
+                categories: await BookCategory.find(),
+                books: await BookName.find(),
+                activePage: 'book',
+                activeSection: 'chapter',
+                activeTab: 'chapter',
+                error: 'No valid chapter data found in the Excel file.'
+            });
+        }
+    } catch (err) {
+        console.error('Error processing Excel file:', err);
+        res.render('book/chapter/index', {
+            chapters: await BookChapter.find().populate('category').populate('book').sort({ createdAt: -1 }),
+            categories: await BookCategory.find(),
+            books: await BookName.find(),
+            activePage: 'book',
+            activeSection: 'chapter',
+            activeTab: 'chapter',
+            error: 'Error processing Excel file. Please check the file format.'
+        });
+    }
+});
+
+// Handle Excel upload for content
+router.post('/content/upload-excel', upload.single('excelFile'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.render('book/content/index', {
+                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
+                categories: await BookCategory.find(),
+                books: await BookName.find(),
+                chapters: await BookChapter.find(),
+                activePage: 'book',
+                activeSection: 'content',
+                activeTab: 'content',
+                error: 'Please upload an Excel file.'
+            });
+        }
+
+        const workbook = xlsx.readFile(req.file.path);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = xlsx.utils.sheet_to_json(worksheet);
+
+        const contents = [];
+        for (const row of data) {
+            if (!row.Category || !row.Book || !row.Chapter || !row['Title (Hindi)'] || 
+                !row['Title (English)'] || !row['Title (Hinglish)'] || !row.Meaning || !row.Details) {
+                continue; // Skip rows with missing required fields
+            }
+
+            // Find category, book, and chapter by name
+            const category = await BookCategory.findOne({ name: row.Category });
+            const book = await BookName.findOne({ name: row.Book });
+            const chapter = await BookChapter.findOne({ name: row.Chapter });
+
+            if (!category || !book || !chapter) {
+                continue; // Skip if any reference not found
+            }
+
+            // Process video links if present
+            const videoLinks = row['Video Links'] ? 
+                row['Video Links'].split(',').map(link => link.trim()).filter(link => link) : 
+                [];
+
+            contents.push({
+                category: category._id,
+                book: book._id,
+                chapter: chapter._id,
+                title_hn: row['Title (Hindi)'],
+                title_en: row['Title (English)'],
+                title_hinglish: row['Title (Hinglish)'],
+                meaning: row.Meaning,
+                details: row.Details,
+                extra: row.Extra || '',
+                video_links: videoLinks
+            });
+        }
+
+        if (contents.length > 0) {
+            await BookContent.insertMany(contents);
+            // Delete the uploaded file
+            fs.unlinkSync(req.file.path);
+            res.redirect('/book/content');
+        } else {
+            res.render('book/content/index', {
+                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
+                categories: await BookCategory.find(),
+                books: await BookName.find(),
+                chapters: await BookChapter.find(),
+                activePage: 'book',
+                activeSection: 'content',
+                activeTab: 'content',
+                error: 'No valid content data found in the Excel file.'
+            });
+        }
+    } catch (err) {
+        console.error('Error processing Excel file:', err);
+        res.render('book/content/index', {
+            contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
+            categories: await BookCategory.find(),
+            books: await BookName.find(),
+            chapters: await BookChapter.find(),
+            activePage: 'book',
+            activeSection: 'content',
+            activeTab: 'content',
+            error: 'Error processing Excel file. Please check the file format.'
+        });
     }
 });
 

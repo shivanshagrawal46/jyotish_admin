@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Magazine Management | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        .nav-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.2s;
+        }
+        .nav-card:hover {
+            transform: translateY(-2px);
+        }
+        .nav-card h3 {
+            font-family: 'Playfair Display', serif;
+            color: var(--dark);
+            margin-bottom: 1rem;
+        }
+        .nav-card p {
+            color: var(--secondary);
+            margin-bottom: 1.5rem;
+        }
+        .nav-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+        }
+        .nav-link svg {
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../partials/sidebar', { 
+            activePage: 'e-magazine',
+            activeCategory: null,
+            koshCategories: [],
+            mcqCategories: []
+        }) %>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <h1 class="mb-4">E-Magazine Management</h1>
+            <div class="row">
+                <!-- Category -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="nav-card">
+                        <h3>Categories</h3>
+                        <p>Manage magazine categories and their cover images</p>
+                        <a href="/e-magazine/category" class="nav-link">
+                            Manage Categories
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <!-- Subject -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="nav-card">
+                        <h3>Subjects</h3>
+                        <p>Add and manage magazine subjects</p>
+                        <a href="/e-magazine/subject" class="nav-link">
+                            Manage Subjects
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <!-- Writer -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="nav-card">
+                        <h3>Writers</h3>
+                        <p>Add and manage magazine writers</p>
+                        <a href="/e-magazine/writer" class="nav-link">
+                            Manage Writers
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <!-- Magazine -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="nav-card">
+                        <h3>Magazines</h3>
+                        <p>Add and manage magazines and their content</p>
+                        <a href="/e-magazine/magazine" class="nav-link">
+                            Manage Magazines
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

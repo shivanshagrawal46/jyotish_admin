@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Learning Chapter | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        .topbar {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin: 0;
+        }
+        .form-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .form-label {
+            font-weight: 500;
+            color: var(--dark);
+        }
+        .form-control {
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem 1rem;
+        }
+        .form-control:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 0.2rem rgba(103, 111, 157, 0.25);
+        }
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: var(--accent);
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../../partials/sidebar', { 
+            activePage: 'learning',
+            activeCategory: null,
+            koshCategories: [],
+            mcqCategories: []
+        }) %>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h1 class="page-title">Add Learning Chapter</h1>
+        </div>
+
+        <%- include('../../partials/learning-nav', { 
+            activeTab: 'chapter',
+            categoryId: null,
+            chapterId: null
+        }) %>
+
+        <!-- Form Card -->
+        <div class="form-card">
+            <form action="/learning/chapters/add" method="POST">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-control" id="category" name="category" required>
+                            <option value="">Select Category</option>
+                            <% categories.forEach(function(category) { %>
+                                <option value="<%= category._id %>" <%= selectedCategory === category._id.toString() ? 'selected' : '' %>>
+                                    <%= category.name %>
+                                </option>
+                            <% }); %>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="position" class="form-label">Position</label>
+                        <input type="number" class="form-control" id="position" name="position" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" id="isActive" name="isActive" checked>
+                            <label class="form-check-label" for="isActive">Active</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Add Chapter</button>
+                    <a href="/learning/chapters" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit E-Magazine Subject | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        .page-title {
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            color: var(--dark);
+            font-size: 2.5rem;
+            margin-bottom: 0;
+        }
+        .btn-primary, .btn.btn-primary, .btn-primary:active, .btn-primary:focus {
+            background-color: var(--primary) !important;
+            border-color: var(--primary) !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../../partials/sidebar', { activePage: 'e-magazine', activeCategory: null, koshCategories: [], mcqCategories: [] }) %>
+    </nav>
+    <main class="main-content">
+        <div class="container">
+            <%- include('../../partials/eMagazine-nav', { activeTab: 'subject' }) %>
+            <div class="topbar mb-4">
+                <h1 class="page-title">Edit Subject</h1>
+            </div>
+            <div class="card">
+                <form action="/e-magazine/subject/edit/<%= subject._id %>" method="POST">
+                    <div class="mb-4">
+                        <label for="name" class="form-label">Subject Name</label>
+                        <input type="text" class="form-control" id="name" name="name" value="<%= subject.name %>" required>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <a href="/e-magazine/subject" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

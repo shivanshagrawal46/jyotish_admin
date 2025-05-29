@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Celebrity Kundli | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+            --success: #4CAF50;
+            --error: #F44336;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        .topbar {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin: 0;
+        }
+        .content-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 2rem 2.5rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .form-label {
+            font-weight: 500;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+        }
+        .form-control {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(45, 50, 80, 0.1);
+        }
+        .btn-submit {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .btn-submit:hover {
+            background: var(--secondary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+        .btn-cancel {
+            background: white;
+            color: var(--secondary);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .btn-cancel:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--primary);
+        }
+        .alert {
+            border: none;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .alert-danger {
+            background: rgba(244, 67, 54, 0.1);
+            color: var(--error);
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <%- include('partials/sidebar', { activePage: 'celebrity-kundli' }) %>
+    </nav>
+    <main class="main-content">
+        <div class="topbar">
+            <h1 class="page-title">Edit Celebrity Kundli</h1>
+        </div>
+        <% if (error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+        <div class="content-card">
+            <form action="/celebrity-kundli/<%= kundli._id %>/edit" method="POST">
+                <div class="mb-4">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-control" id="category" name="category" required>
+                        <option value="">Select Category</option>
+                        <% categories.forEach(function(cat) { %>
+                            <option value="<%= cat._id %>" <%= kundli.category && cat._id.toString() === kundli.category.toString() ? 'selected' : '' %>><%= cat.name %></option>
+                        <% }) %>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="name" name="name" value="<%= kundli.name %>" required>
+                </div>
+                <div class="mb-4">
+                    <label for="dob" class="form-label">Date of Birth</label>
+                    <input type="date" class="form-control" id="dob" name="dob" value="<%= kundli.dob ? kundli.dob.toISOString().slice(0,10) : '' %>" required>
+                </div>
+                <div class="mb-4">
+                    <label for="time" class="form-label">Time</label>
+                    <input type="time" class="form-control" id="time" name="time" value="<%= kundli.time %>" required>
+                </div>
+                <div class="mb-4">
+                    <label for="place" class="form-label">Place</label>
+                    <input type="text" class="form-control" id="place" name="place" value="<%= kundli.place %>" required>
+                </div>
+                <div class="mb-4">
+                    <label for="about" class="form-label">About</label>
+                    <textarea class="form-control" id="about" name="about" rows="4"><%= kundli.about %></textarea>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-submit">Update Kundli</button>
+                    <a href="/celebrity-kundli" class="btn btn-cancel">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </main>
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

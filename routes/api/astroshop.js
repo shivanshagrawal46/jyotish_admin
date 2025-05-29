@@ -6,8 +6,15 @@ const AstroShopCategory = require('../../models/AstroShopCategory');
 // Helper function for pagination
 const paginateResults = async (query, page = 1, limit = 10) => {
     const skip = (page - 1) * limit;
-    const total = await query.countDocuments();
-    const results = await query.skip(skip).limit(limit);
+    
+    // Create separate queries for count and results
+    const countQuery = Product.find(query.getQuery());
+    const resultsQuery = query.clone();
+    
+    const [total, results] = await Promise.all([
+        countQuery.countDocuments(),
+        resultsQuery.skip(skip).limit(limit)
+    ]);
     
     return {
         total,

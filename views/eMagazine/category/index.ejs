@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Magazine Categories | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        .table th, .table td {
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../../partials/sidebar', { activePage: 'e-magazine', activeCategory: null, koshCategories: [], mcqCategories: [] }) %>
+    </nav>
+    <main class="main-content">
+        <div class="container">
+            <%- include('../../partials/eMagazine-nav', { activeTab: 'category' }) %>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="mb-0">E-Magazine Categories</h1>
+                <a href="/e-magazine/category/add" class="btn btn-primary">Add Category</a>
+            </div>
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Position</th>
+                                <th>Description</th>
+                                <th>Cover Image</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (categories && categories.length > 0) { %>
+                                <% categories.forEach(function(category) { %>
+                                    <tr>
+                                        <td><%= category.name %></td>
+                                        <td><%= category.position %></td>
+                                        <td><%= category.description %></td>
+                                        <td>
+                                            <% if (category.coverImage) { %>
+                                                <img src="<%= category.coverImage %>" alt="Cover" style="height: 60px; width: 60px; object-fit: cover; border-radius: 8px;">
+                                            <% } else { %>
+                                                <span class="text-muted">No Image</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <a href="/e-magazine/category/edit/<%= category._id %>" class="btn btn-sm btn-outline-primary me-2">Edit</a>
+                                            <form action="/e-magazine/category/delete/<%= category._id %>" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this category?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">No categories found.</td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
