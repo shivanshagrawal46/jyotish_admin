@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const LearningCategory = require('../models/LearningCategory');
-const LearningChapter = require('../models/learningChapter');
-const LearningContent = require('../models/learningContent');
+const LearningChapter = require('../models/LearningChapter');
+const LearningContent = require('../models/LearningContent');
 
 // Middleware to require authentication
 function requireAuth(req, res, next) {
