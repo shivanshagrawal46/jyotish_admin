@@ -95,12 +95,12 @@ app.use(
     }),
     cookie: { 
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
-      secure: false, // Only use secure cookies in production
-      httpOnly: false,
+      secure: true, // Only use secure cookies in production
+      httpOnly: true,
       sameSite: 'lax',
       path: '/'
     },
-    proxy: false // Required for Nginx
+    proxy: true // Required for Nginx
   })
 );
 
