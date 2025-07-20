@@ -58,6 +58,8 @@ const festivalApiRouter = require('./routes/api/festival');
 const celebrityKundliRoutes = require('./routes/celebrityKundli');
 const celebrityKundliApiRouter = require('./routes/api/celebrityKundli');
 const learningRoutes = require('./routes/learning');
+const orderRoutes = require('./routes/order');
+const orderApiRoutes = require('./routes/api/order');
 
 const app = express();
 
@@ -93,12 +95,12 @@ app.use(
     }),
     cookie: { 
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
-      secure: true, // Only use secure cookies in production
-      httpOnly: true,
+      secure: false, // Only use secure cookies in production
+      httpOnly: false,
       sameSite: 'lax',
       path: '/'
     },
-    proxy: true // Required for Nginx
+    proxy: false // Required for Nginx
   })
 );
 
@@ -250,6 +252,10 @@ app.use('/api', celebrityKundliApiRouter);
 
 // Learning routes
 app.use('/learning', learningRoutes);
+
+// Order routes
+app.use('/order', orderRoutes);
+app.use('/api/order', orderApiRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

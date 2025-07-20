@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Pooja | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+            --success: #4CAF50;
+            --error: #F44336;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        .topbar {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin: 0;
+        }
+        .content-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            padding: 2rem;
+        }
+        .form-label {
+            font-weight: 500;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+        }
+        .form-control {
+            border-radius: 12px;
+            border: 1px solid #E2E8F0;
+            padding: 0.75rem 1rem;
+        }
+        .form-control:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 0.2rem rgba(103, 111, 157, 0.25);
+        }
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: var(--accent);
+        }
+        .btn-outline-secondary {
+            border-color: #E2E8F0;
+            color: var(--dark);
+            border-radius: 12px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+        }
+        .btn-outline-secondary:hover {
+            background: #F8FAFC;
+            border-color: #CBD5E0;
+            color: var(--dark);
+        }
+        .current-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../partials/sidebar', { 
+            activePage: 'puja',
+            activeCategory: null,
+            koshCategories: [],
+            mcqCategories: []
+        }) %>
+    </nav>
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h1 class="page-title">Edit Pooja</h1>
+        </div>
+        <!-- Content -->
+        <div class="content-card">
+            <form action="/puja/edit/<%= puja._id %>" method="POST" enctype="multipart/form-data">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" name="title" class="form-control" value="<%= puja.title %>" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Tagline</label>
+                        <input type="text" name="tagline" class="form-control" value="<%= puja.tagline || '' %>">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Temple Name</label>
+                        <input type="text" name="temple_name" class="form-control" value="<%= puja.temple_name %>" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Temple Location</label>
+                        <input type="text" name="temple_location" class="form-control" value="<%= puja.temple_location %>" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Pooja Date</label>
+                        <input type="date" name="puja_date" class="form-control" value="<%= puja.puja_date ? puja.puja_date.toISOString().split('T')[0] : '' %>" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Pooja Day</label>
+                        <input type="text" name="puja_day" class="form-control" value="<%= puja.puja_day || '' %>">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Total Slots</label>
+                        <input type="number" name="total_slots" class="form-control" value="<%= puja.total_slots %>" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Countdown Time</label>
+                        <input type="datetime-local" name="countdown_time" class="form-control" value="<%= puja.countdown_time ? puja.countdown_time.toISOString().slice(0, 16) : '' %>">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-control" rows="4"><%= puja.description || '' %></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Banner Text</label>
+                    <input type="text" name="banner_text" class="form-control" value="<%= puja.banner_text || '' %>">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">WhatsApp Link</label>
+                    <input type="url" name="whatsapp_link" class="form-control" value="<%= puja.whatsapp_link || '' %>">
+                </div>
+
+                <!-- Current Image -->
+                <% if (puja.image_url) { %>
+                    <div class="mb-3">
+                        <label class="form-label">Current Image</label>
+                        <div>
+                            <img src="<%= puja.image_url %>" alt="Current Pooja Image" class="current-image">
+                        </div>
+                    </div>
+                <% } %>
+
+                <div class="mb-3">
+                    <label class="form-label">Update Image</label>
+                    <input type="file" name="image" class="form-control" accept="image/*">
+                    <small class="text-muted">Leave empty to keep current image</small>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input type="checkbox" name="is_last_day" class="form-check-input" id="isLastDay" <%= puja.is_last_day ? 'checked' : '' %>>
+                            <label class="form-check-label" for="isLastDay">Is Last Day</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input type="checkbox" name="is_active" class="form-check-input" id="isActive" <%= puja.is_active ? 'checked' : '' %>>
+                            <label class="form-check-label" for="isActive">Active</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="/puja" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Update Pooja</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Form submission handling
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const submitBtn = document.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
+        });
+    </script>
+</body>
+</html> 

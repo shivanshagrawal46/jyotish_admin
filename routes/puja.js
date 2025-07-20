@@ -113,4 +113,113 @@ router.post('/add', upload.single('image'), async (req, res) => {
     }
 });
 
+// Edit Puja form
+router.get('/edit/:id', async (req, res) => {
+    try {
+        const puja = await Puja.findById(req.params.id);
+        
+        if (!puja) {
+            return res.status(404).send('Puja not found');
+        }
+        
+        res.render('puja/edit', { puja });
+    } catch (err) {
+        console.error('Error loading edit form:', err);
+        res.status(500).send('Error loading form: ' + err.message);
+    }
+});
+
+// Handle Edit Puja POST
+router.post('/edit/:id', upload.single('image'), async (req, res) => {
+    try {
+        const {
+            title,
+            tagline,
+            temple_name,
+            temple_location,
+            puja_date,
+            puja_day,
+            description,
+            banner_text,
+            total_slots,
+            countdown_time,
+            is_last_day,
+            is_active,
+            whatsapp_link
+        } = req.body;
+
+        // Find existing puja
+        const puja = await Puja.findById(req.params.id);
+        if (!puja) {
+            return res.status(404).send('Puja not found');
+        }
+
+        // Handle image upload
+        let image_url = puja.image_url; // Keep existing image
+        if (req.file) {
+            // Delete old image if exists
+            if (puja.image_url) {
+                const oldImagePath = path.join(__dirname, '..', 'public', puja.image_url);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+            }
+            image_url = '/uploads/puja/' + req.file.filename;
+        }
+
+        // Generate new slug if title changed
+        const slug = slugify(title, { lower: true, strict: true });
+
+        // Update puja
+        puja.title = title;
+        puja.slug = slug;
+        puja.tagline = tagline;
+        puja.temple_name = temple_name;
+        puja.temple_location = temple_location;
+        puja.puja_date = puja_date;
+        puja.puja_day = puja_day;
+        puja.description = description;
+        puja.image_url = image_url;
+        puja.banner_text = banner_text;
+        puja.total_slots = total_slots;
+        puja.countdown_time = countdown_time;
+        puja.is_last_day = is_last_day === 'on';
+        puja.is_active = is_active === 'on';
+        puja.whatsapp_link = whatsapp_link;
+        puja.updated_at = Date.now();
+
+        await puja.save();
+        console.log('Puja updated successfully:', puja._id);
+        res.redirect('/puja');
+    } catch (err) {
+        console.error('Error updating puja:', err);
+        res.status(500).send('Error updating puja: ' + err.message);
+    }
+});
+
+// Delete Puja
+router.post('/delete/:id', async (req, res) => {
+    try {
+        const puja = await Puja.findById(req.params.id);
+        if (!puja) {
+            return res.status(404).send('Puja not found');
+        }
+
+        // Delete associated image from filesystem
+        if (puja.image_url) {
+            const imagePath = path.join(__dirname, '..', 'public', puja.image_url);
+            if (fs.existsSync(imagePath)) {
+                fs.unlinkSync(imagePath);
+            }
+        }
+
+        await Puja.findByIdAndDelete(req.params.id);
+        console.log('Puja deleted successfully:', req.params.id);
+        res.redirect('/puja');
+    } catch (err) {
+        console.error('Error deleting puja:', err);
+        res.status(500).send('Error deleting puja: ' + err.message);
+    }
+});
+
 module.exports = router; 

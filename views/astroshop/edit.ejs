@@ -4,11 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Product | Astro Shop</title>
+    <title>Edit Product | Astro Shop</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/sidebar.css" rel="stylesheet">
     <link href="/ckeditor/ckeditor.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
             --primary: #2D3250;
@@ -58,6 +59,33 @@
             border-radius: 8px;
             border: 1px solid #eee;
         }
+        .existing-images {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+        .existing-images img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            position: relative;
+        }
+        .remove-image {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -66,21 +94,21 @@
     </nav>
     <main class="main-content">
         <div class="topbar">
-            <h1 class="page-title">Add Product</h1>
+            <h1 class="page-title">Edit Product</h1>
         </div>
         <div class="content-card">
-            <form id="product-form" action="/astro-shop/add" method="POST" enctype="multipart/form-data">
+            <form id="product-form" action="/astro-shop/edit/<%= product._id %>" method="POST" enctype="multipart/form-data">
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label class="form-label">Title</label>
-                        <input type="text" name="title" class="form-control" required>
+                        <input type="text" name="title" class="form-control" value="<%= product.title %>" required>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Category</label>
                         <select name="category" class="form-select" required>
                             <option value="">Select a category</option>
                             <% categories.forEach(function(category) { %>
-                                <option value="<%= category._id %>"><%= category.name %></option>
+                                <option value="<%= category._id %>" <%= (product.category && product.category._id && product.category._id.toString() === category._id.toString()) ? 'selected' : '' %>><%= category.name %></option>
                             <% }); %>
                         </select>
                     </div>
@@ -88,55 +116,104 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label class="form-label">Short Description</label>
-                        <input type="text" name="short_description" class="form-control">
+                        <input type="text" name="short_description" class="form-control" value="<%= product.short_description || '' %>">
                     </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Full Description</label>
-                    <textarea name="full_description" id="full_description" class="form-control" rows="6"></textarea>
+                    <textarea name="full_description" id="full_description" class="form-control" rows="6"><%= product.full_description || '' %></textarea>
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-4">
                         <label class="form-label">Price (₹)</label>
-                        <input type="number" name="price" class="form-control" required>
+                        <input type="number" name="price" class="form-control" value="<%= product.price %>" required>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Original Price (₹)</label>
-                        <input type="number" name="original_price" class="form-control">
+                        <input type="number" name="original_price" class="form-control" value="<%= product.original_price || '' %>">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Discount (%)</label>
-                        <input type="number" name="discount_percentage" class="form-control">
+                        <input type="number" name="discount_percentage" class="form-control" value="<%= product.discount_percentage || '' %>">
                     </div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-4">
                         <label class="form-label">Stock Quantity</label>
-                        <input type="number" name="stock_quantity" class="form-control" value="0">
+                        <input type="number" name="stock_quantity" class="form-control" value="<%= product.stock_quantity || 0 %>">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Promo Note</label>
-                        <input type="text" name="promo_note" class="form-control">
+                        <input type="text" name="promo_note" class="form-control" value="<%= product.promo_note || '' %>">
                     </div>
                     <div class="col-md-4 d-flex align-items-center">
                         <div class="form-check mt-4">
-                            <input class="form-check-input" type="checkbox" name="is_active" id="is_active" checked>
+                            <input class="form-check-input" type="checkbox" name="is_active" id="is_active" <%= product.is_active ? 'checked' : '' %>>
                             <label class="form-check-label" for="is_active">Active</label>
                         </div>
                     </div>
                 </div>
+                
+                <!-- Existing Images -->
+                <% if (product.images && product.images.length > 0) { %>
+                    <div class="mb-3">
+                        <label class="form-label">Existing Images</label>
+                        <div class="existing-images">
+                            <% product.images.forEach(function(image, index) { %>
+                                <div style="position: relative;">
+                                    <img src="<%= image %>" alt="Product Image">
+                                    <button type="button" class="remove-image" data-index="<%= index %>">&times;</button>
+                                    <input type="hidden" name="existing_images[]" value="<%= image %>" id="existing_image_<%= index %>">
+                                </div>
+                            <% }); %>
+                        </div>
+                    </div>
+                <% } %>
+                
                 <div class="mb-3">
-                    <label class="form-label">Product Images</label>
+                    <label class="form-label">Add New Images</label>
                     <input type="file" name="images" class="form-control" accept="image/*" multiple onchange="previewImages(event)">
                     <div id="image-preview"></div>
                 </div>
+                
+                <!-- Existing Offers -->
                 <div class="mb-3">
                     <label class="form-label">Offers</label>
-                    <div id="offers-list"></div>
+                    <div id="offers-list">
+                        <% if (product.offers && product.offers.length > 0) { %>
+                            <% product.offers.forEach(function(offer, index) { %>
+                                <div class="offer-group">
+                                    <div class="row">
+                                        <div class="col-md-3 mb-2">
+                                            <input type="text" name="offers[<%= index %>][title]" class="form-control" placeholder="Offer Title" value="<%= offer.title %>">
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <input type="text" name="offers[<%= index %>][description]" class="form-control" placeholder="Description" value="<%= offer.description %>">
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <input type="text" name="offers[<%= index %>][code]" class="form-control" placeholder="Code" value="<%= offer.code %>">
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <select name="offers[<%= index %>][type]" class="form-select">
+                                                <option value="percentage" <%= offer.type === 'percentage' ? 'selected' : '' %>>Percentage</option>
+                                                <option value="bogo" <%= offer.type === 'bogo' ? 'selected' : '' %>>BOGO</option>
+                                                <option value="flat" <%= offer.type === 'flat' ? 'selected' : '' %>>Flat</option>
+                                                <option value="custom" <%= offer.type === 'custom' ? 'selected' : '' %>>Custom</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-1 mb-2 d-flex align-items-center">
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.offer-group').remove()">&times;</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        <% } %>
+                    </div>
                     <button type="button" class="btn btn-sm btn-outline-primary" onclick="addOffer()">Add Offer</button>
                 </div>
+                
                 <div class="sticky-footer">
-                    <button type="submit" form="product-form" class="btn btn-primary">Save Product</button>
+                    <button type="submit" class="btn btn-primary">Update Product</button>
                     <a href="/astro-shop" class="btn btn-secondary ms-2">Cancel</a>
                 </div>
             </form>
@@ -153,8 +230,25 @@
         document.getElementById('product-form').addEventListener('submit', function(e) {
             const submitBtn = document.querySelector('button[type="submit"]');
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
         });
+
+        // Add event listeners for remove image buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.remove-image').forEach(button => {
+                button.addEventListener('click', function() {
+                    const index = this.getAttribute('data-index');
+                    const hiddenInput = document.getElementById('existing_image_' + index);
+                    if (hiddenInput) {
+                        const imageContainer = hiddenInput.parentElement;
+                        if (imageContainer) {
+                            imageContainer.remove();
+                        }
+                    }
+                });
+            });
+        });
+
         function addOffer() {
             const offersList = document.getElementById('offers-list');
             const idx = offersList.children.length;
@@ -185,6 +279,7 @@
             </div>`;
             offersList.insertAdjacentHTML('beforeend', html);
         }
+
         function previewImages(event) {
             const preview = document.getElementById('image-preview');
             preview.innerHTML = '';

@@ -1,0 +1,457 @@
+<% /* eslint-disable */ %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders Management | Sanskrit Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+            --success: #4CAF50;
+            --error: #F44336;
+            --warning: #FF9800;
+            --info: #2196F3;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        .topbar {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin: 0;
+        }
+        .export-btn {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            font-size: 1rem;
+            box-shadow: none;
+            transition: background 0.2s, color 0.2s;
+            text-decoration: none;
+        }
+        .export-btn:hover {
+            background: var(--accent);
+            color: #fff;
+            text-decoration: none;
+        }
+        .stats-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        .stats-card-header {
+            background: var(--primary);
+            color: #fff;
+            padding: 1.5rem 2rem 1rem 2rem;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .stats-grid {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        .stat-item {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            border-left: 4px solid var(--primary);
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        .stat-label {
+            color: var(--accent);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+        .filters-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        .filters-card-header {
+            background: var(--secondary);
+            color: #fff;
+            padding: 1.5rem 2rem 1rem 2rem;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .filters-content {
+            padding: 2rem;
+        }
+        .orders-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        .orders-card-header {
+            background: var(--primary);
+            color: #fff;
+            padding: 1.5rem 2rem 1rem 2rem;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .orders-table-wrap {
+            padding: 0 2rem 2rem 2rem;
+        }
+        .orders-table {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .orders-table thead {
+            background: #F3F4F8;
+        }
+        .orders-table th, .orders-table td {
+            vertical-align: middle;
+            border: none;
+        }
+        .orders-table tbody tr {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px 0 rgba(44, 62, 80, 0.04);
+            margin-bottom: 12px;
+        }
+        .orders-table tbody tr:not(:last-child) {
+            border-bottom: 8px solid #f6f6fa;
+        }
+        .status-badge {
+            border-radius: 12px;
+            padding: 0.3rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .pagination {
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        .pagination .page-link {
+            border-radius: 12px;
+            margin: 0 0.25rem;
+            border: none;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .pagination .page-item.active .page-link {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--accent);
+        }
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../partials/sidebar', { 
+            activePage: 'order',
+            activeCategory: null,
+            koshCategories: koshCategories || [],
+            koshSubCategoriesMap: koshSubCategoriesMap || {}
+        }) %>
+    </nav>
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h1 class="page-title">Orders Management</h1>
+            <div>
+                <button type="button" class="export-btn" onclick="exportOrders()">
+                    <i class="fas fa-download" style="margin-right:0.5rem;"></i>
+                    Export Orders
+                </button>
+            </div>
+        </div>
+              <!-- Statistics Cards -->
+        <div class="stats-card">
+            <div class="stats-card-header">
+                Order Statistics
+            </div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number"><%= stats.totalOrders %></div>
+                    <div class="stat-label">Total Orders</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">₹<%= stats.totalRevenue.toLocaleString() %></div>
+                    <div class="stat-label">Total Revenue</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number"><%= statusCounts.pending || 0 %></div>
+                    <div class="stat-label">Pending Orders</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number"><%= statusCounts.delivered || 0 %></div>
+                    <div class="stat-label">Delivered Orders</div>
+                </div>
+            </div>
+        </div>
+
+              <!-- Filters and Search -->
+        <div class="filters-card">
+            <div class="filters-card-header">
+                Filters & Search
+            </div>
+            <div class="filters-content">
+                <form method="GET" action="/order" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="search" class="form-label fw-bold">Search</label>
+                        <input type="text" class="form-control" id="search" name="search" value="<%= search || '' %>" placeholder="Customer name, email, or product">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="status" class="form-label fw-bold">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">All Status</option>
+                            <option value="pending" <%= status === 'pending' ? 'selected' : '' %>>Pending</option>
+                            <option value="confirmed" <%= status === 'confirmed' ? 'selected' : '' %>>Confirmed</option>
+                            <option value="processing" <%= status === 'processing' ? 'selected' : '' %>>Processing</option>
+                            <option value="shipped" <%= status === 'shipped' ? 'selected' : '' %>>Shipped</option>
+                            <option value="delivered" <%= status === 'delivered' ? 'selected' : '' %>>Delivered</option>
+                            <option value="cancelled" <%= status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="category" class="form-label fw-bold">Category</label>
+                        <select class="form-select" id="category" name="category">
+                            <option value="">All Categories</option>
+                            <option value="astroshop" <%= category === 'astroshop' ? 'selected' : '' %>>Astroshop</option>
+                            <option value="pooja" <%= category === 'pooja' ? 'selected' : '' %>>Pooja</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div>
+                            <button type="submit" class="btn btn-primary px-4">Filter</button>
+                            <a href="/order" class="btn btn-outline-secondary px-4">Clear</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+              <!-- Orders Table -->
+        <div class="orders-card">
+            <div class="orders-card-header">
+                Orders (<%= total %> total)
+            </div>
+            <div class="orders-table-wrap">
+                <% if (orders.length === 0) { %>
+                    <div class="empty-state">
+                        <i class="fas fa-shopping-cart"></i>
+                        <h5>No orders found</h5>
+                        <p>No orders match your current filters.</p>
+                    </div>
+                <% } else { %>
+                    <div class="table-responsive">
+                        <table class="table orders-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Product</th>
+                                    <th>Category</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Payment</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% orders.forEach(order => { %>
+                                    <tr>
+                                        <td>
+                                            <strong><%= order._id.toString().substring(0, 8) %>...</strong>
+                                        </td>
+                                                                <td>
+                          <div>
+                            <strong><%= order.customerName %></strong><br>
+                            <small class="text-muted"><%= order.email %></small><br>
+                            <small class="text-muted"><%= order.phoneNumber %></small><br>
+                            <small class="text-muted"><%= order.address %>, <%= order.city %></small>
+                          </div>
+                        </td>
+                                        <td><%= order.productName %></td>
+                                        <td>
+                                            <span class="status-badge <%= order.category === 'astroshop' ? 'bg-primary' : 'bg-success' %>">
+                                                <%= order.category.charAt(0).toUpperCase() + order.category.slice(1) %>
+                                            </span>
+                                        </td>
+                                        <td><strong>₹<%= order.totalAmount.toLocaleString() %></strong></td>
+                                        <td>
+                                            <span class="status-badge bg-<%= getStatusColor(order.status) %>">
+                                                <%= order.status.charAt(0).toUpperCase() + order.status.slice(1) %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge bg-<%= getPaymentStatusColor(order.paymentStatus) %>">
+                                                <%= order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1) %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small>
+                                                <%= new Date(order.orderDate).toLocaleDateString() %><br>
+                                                <%= new Date(order.orderDate).toLocaleTimeString() %>
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="/order/<%= order._id %>" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteOrder('<%= order._id %>')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+
+                                <!-- Pagination -->
+                    <% if (totalPages > 1) { %>
+                        <nav aria-label="Orders pagination">
+                            <ul class="pagination">
+                                <% if (hasPrev) { %>
+                                    <li class="page-item">
+                                        <a class="page-link" href="/order?page=<%= currentPage - 1 %><%= status ? '&status=' + status : '' %><%= category ? '&category=' + category : '' %><%= search ? '&search=' + search : '' %>">Previous</a>
+                                    </li>
+                                <% } %>
+                                
+                                <% for (let i = 1; i <= totalPages; i++) { %>
+                                    <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                                        <a class="page-link" href="/order?page=<%= i %><%= status ? '&status=' + status : '' %><%= category ? '&category=' + category : '' %><%= search ? '&search=' + search : '' %>"><%= i %></a>
+                                    </li>
+                                <% } %>
+                                
+                                <% if (hasNext) { %>
+                                    <li class="page-item">
+                                        <a class="page-link" href="/order?page=<%= currentPage + 1 %><%= status ? '&status=' + status : '' %><%= category ? '&category=' + category : '' %><%= search ? '&search=' + search : '' %>">Next</a>
+                                    </li>
+                                <% } %>
+                            </ul>
+                        </nav>
+                    <% } %>
+                <% } %>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
+
+<script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script>
+function getStatusColor(status) {
+    const colors = {
+        'pending': 'warning',
+        'confirmed': 'info',
+        'processing': 'primary',
+        'shipped': 'info',
+        'delivered': 'success',
+        'cancelled': 'danger'
+    };
+    return colors[status] || 'secondary';
+}
+
+function getPaymentStatusColor(paymentStatus) {
+    const colors = {
+        'pending': 'warning',
+        'paid': 'success',
+        'failed': 'danger',
+        'refunded': 'info'
+    };
+    return colors[paymentStatus] || 'secondary';
+}
+
+function deleteOrder(orderId) {
+    if (confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+        fetch(`/order/${orderId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Error deleting order');
+            }
+        }).catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting order');
+        });
+    }
+}
+
+function exportOrders() {
+    // Implementation for exporting orders
+    alert('Export functionality will be implemented here');
+}
+</script> 

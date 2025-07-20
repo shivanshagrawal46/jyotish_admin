@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/sidebar.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
             --primary: #2D3250;
@@ -197,9 +198,14 @@
                                             <% } %>
                                         </td>
                                         <td>
-                                            <!-- Actions: Edit/Delete (future) -->
-                                            <button class="btn btn-sm btn-outline-primary" disabled>Edit</button>
-                                            <button class="btn btn-sm btn-outline-danger" disabled>Delete</button>
+                                            <div class="btn-group" role="group">
+                                                <a href="/astro-shop/edit/<%= product._id %>" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteProduct('<%= product._id %>', '<%= product.title %>')">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 <% }); %>
@@ -246,5 +252,19 @@
     <% } %>
 
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function deleteProduct(productId, productTitle) {
+            if (confirm(`Are you sure you want to delete "${productTitle}"? This action cannot be undone.`)) {
+                // Create a form to submit POST request
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/astro-shop/delete/${productId}`;
+                
+                // Submit the form
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
 </body>
 </html> 

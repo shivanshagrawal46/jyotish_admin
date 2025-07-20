@@ -73,6 +73,25 @@ router.get('/category/:categoryId', async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
+        // Get all contents for vishesh_suchi
+        const allContents = await KoshContent.find({ category: req.params.categoryId });
+        console.log('Category API - Found total contents:', allContents.length);
+
+        // Process search terms
+        const searchTermsSet = new Set();
+        allContents.forEach((content, index) => {
+            console.log(`Category Content ${index + 1} search field: "${content.search}"`);
+            if (content.search && typeof content.search === 'string' && content.search.trim() !== '') {
+                const terms = content.search.split(',')
+                    .map(term => term.trim())
+                    .filter(term => term !== '');
+                terms.forEach(term => searchTermsSet.add(term));
+            }
+        });
+
+        // Convert Set to sorted array
+        const vishesh_suchi = Array.from(searchTermsSet).sort();
+
         const contents = await KoshContent.find({ category: req.params.categoryId })
             .populate('category', 'name')
             .populate('subcategory', 'name')
@@ -83,6 +102,7 @@ router.get('/category/:categoryId', async (req, res) => {
         const total = await KoshContent.countDocuments({ category: req.params.categoryId });
 
         res.json({
+            vishesh_suchi: vishesh_suchi,
             contents,
             currentPage: page,
             totalPages: Math.ceil(total / limit),
@@ -100,22 +120,49 @@ router.get('/subcategory/:subcategoryId', async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        const contents = await KoshContent.find({ subcategory: req.params.subcategoryId })
-            .populate('category', 'name')
-            .populate('subcategory', 'name')
-            .sort({ createdAt: -1 })
+        // Get all contents for vishesh_suchi
+        const allContents = await KoshContent.find({ subCategory: req.params.subcategoryId });
+        console.log('1. Found total contents for subcategory:', allContents.length);
+
+        // Process search terms
+        const searchTermsSet = new Set();
+        allContents.forEach((content, index) => {
+            console.log(`Content ${index + 1} search field: "${content.search}" (type: ${typeof content.search})`);
+            if (content.search && typeof content.search === 'string' && content.search.trim() !== '') {
+                const terms = content.search.split(',')
+                    .map(term => term.trim())
+                    .filter(term => term !== '');
+                console.log(`Content ${index + 1} extracted terms:`, terms);
+                terms.forEach(term => searchTermsSet.add(term));
+            }
+        });
+
+        // Convert Set to sorted array
+        const vishesh_suchi = Array.from(searchTermsSet).sort();
+        console.log('2. Extracted vishesh_suchi:', vishesh_suchi);
+
+        // Get paginated contents
+        const contents = await KoshContent.find({ subCategory: req.params.subcategoryId })
+            .populate('subCategory', 'name')
+            .sort({ sequenceNo: 1 })
             .skip(skip)
             .limit(limit);
 
-        const total = await KoshContent.countDocuments({ subcategory: req.params.subcategoryId });
+        const total = await KoshContent.countDocuments({ subCategory: req.params.subcategoryId });
 
-        res.json({
-            contents,
+        // Always include vishesh_suchi in response, even if empty
+        const response = {
+            vishesh_suchi: vishesh_suchi,
+            contents: contents,
             currentPage: page,
             totalPages: Math.ceil(total / limit),
             totalContents: total
-        });
+        };
+
+        console.log('3. Final response structure:', Object.keys(response));
+        res.json(response);
     } catch (error) {
+        console.error('Error in subcategory API:', error);
         res.status(500).json({ message: error.message });
     }
 });

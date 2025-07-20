@@ -67,19 +67,45 @@ router.get('/:categoryId/:subCategoryId', async (req, res) => {
         if (!category) return res.status(404).json({ message: 'Category not found' });
         const subcategory = await KoshSubCategory.findOne({ id: parseInt(req.params.subCategoryId), parentCategory: category._id });
         if (!subcategory) return res.status(404).json({ message: 'Subcategory not found' });
+        
+        // Get all contents for vishesh_suchi
+        const allContents = await KoshContent.find({ subCategory: subcategory._id });
+        console.log('1. Found total contents for subcategory:', allContents.length);
+
+        // Process search terms
+        const searchTermsSet = new Set();
+        allContents.forEach((content, index) => {
+            console.log(`Content ${index + 1} search field: "${content.search}" (type: ${typeof content.search})`);
+            if (content.search && typeof content.search === 'string' && content.search.trim() !== '') {
+                const terms = content.search.split(',')
+                    .map(term => term.trim())
+                    .filter(term => term !== '');
+                console.log(`Content ${index + 1} extracted terms:`, terms);
+                terms.forEach(term => searchTermsSet.add(term));
+            }
+        });
+
+        // Convert Set to sorted array
+        const vishesh_suchi = Array.from(searchTermsSet).sort();
+        console.log('2. Extracted vishesh_suchi:', vishesh_suchi);
+
+        // Get paginated contents
         const contents = await KoshContent.find({ subCategory: subcategory._id })
             .sort({ sequenceNo: 1 })
             .skip(skip)
             .limit(limit)
             .select('-_id id sequenceNo hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image createdAt');
         const total = await KoshContent.countDocuments({ subCategory: subcategory._id });
+        
         res.json({
             contents,
+            vishesh_suchi: vishesh_suchi,
             currentPage: page,
             totalPages: Math.ceil(total / limit),
             totalContents: total
         });
     } catch (error) {
+        console.error('Error in category/subcategory API:', error);
         res.status(500).json({ message: error.message });
     }
 });
