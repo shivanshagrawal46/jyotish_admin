@@ -408,28 +408,6 @@
 
 <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script>
-function getStatusColor(status) {
-    const colors = {
-        'pending': 'warning',
-        'confirmed': 'info',
-        'processing': 'primary',
-        'shipped': 'info',
-        'delivered': 'success',
-        'cancelled': 'danger'
-    };
-    return colors[status] || 'secondary';
-}
-
-function getPaymentStatusColor(paymentStatus) {
-    const colors = {
-        'pending': 'warning',
-        'paid': 'success',
-        'failed': 'danger',
-        'refunded': 'info'
-    };
-    return colors[paymentStatus] || 'secondary';
-}
-
 function deleteOrder(orderId) {
     if (confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
         fetch(`/order/${orderId}`, {

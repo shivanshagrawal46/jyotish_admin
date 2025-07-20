@@ -320,28 +320,6 @@
 
 <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script>
-function getStatusColor(status) {
-    const colors = {
-        'pending': 'warning',
-        'confirmed': 'info',
-        'processing': 'primary',
-        'shipped': 'info',
-        'delivered': 'success',
-        'cancelled': 'danger'
-    };
-    return colors[status] || 'secondary';
-}
-
-function getPaymentStatusColor(paymentStatus) {
-    const colors = {
-        'pending': 'warning',
-        'paid': 'success',
-        'failed': 'danger',
-        'refunded': 'info'
-    };
-    return colors[paymentStatus] || 'secondary';
-}
-
 function sendEmail() {
     const email = '<%= order.email %>';
     const subject = 'Order Update - <%= order._id %>';

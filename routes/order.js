@@ -3,6 +3,29 @@ const router = express.Router();
 const Order = require('../models/Order');
 const requireAuth = require('../middleware/requireAuth');
 
+// Helper functions for status colors
+function getStatusColor(status) {
+  const colors = {
+    'pending': 'warning',
+    'confirmed': 'info',
+    'processing': 'primary',
+    'shipped': 'info',
+    'delivered': 'success',
+    'cancelled': 'danger'
+  };
+  return colors[status] || 'secondary';
+}
+
+function getPaymentStatusColor(paymentStatus) {
+  const colors = {
+    'pending': 'warning',
+    'paid': 'success',
+    'failed': 'danger',
+    'refunded': 'info'
+  };
+  return colors[paymentStatus] || 'secondary';
+}
+
 // Apply authentication middleware to all routes
 router.use(requireAuth);
 
@@ -80,6 +103,8 @@ router.get('/', async (req, res) => {
         acc[item._id] = item.count;
         return acc;
       }, {}),
+      getStatusColor,
+      getPaymentStatusColor,
       activePage: 'order',
       activeCategory: null,
       koshCategories: res.locals.koshCategories || [],
@@ -105,6 +130,8 @@ router.get('/:id', async (req, res) => {
 
     res.render('order/view', { 
       order,
+      getStatusColor,
+      getPaymentStatusColor,
       activePage: 'order',
       activeCategory: null,
       koshCategories: res.locals.koshCategories || [],
