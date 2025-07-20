@@ -5,6 +5,16 @@ const Order = require('../../models/Order');
 // Create new order (for Flutter app)
 router.post('/create', async (req, res) => {
   try {
+    console.log('Received order request:', req.body);
+    
+    // Check if req.body exists
+    if (!req.body) {
+      return res.status(400).json({
+        success: false,
+        message: 'Request body is missing or invalid'
+      });
+    }
+    
     const {
       customerName,
       email,
