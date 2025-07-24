@@ -62,10 +62,10 @@ router.get('/kosh-subcategory/:id/edit', requireAuth, async (req, res) => {
 
 // Edit subcategory (POST)
 router.post('/kosh-subcategory/:id/edit', requireAuth, async (req, res) => {
-  const { name, position, introduction } = req.body;
+  const { name, position, introduction, cover_image } = req.body;
   const subcategory = await KoshSubCategory.findById(req.params.id);
   try {
-    await KoshSubCategory.findByIdAndUpdate(req.params.id, { name, position, introduction });
+    await KoshSubCategory.findByIdAndUpdate(req.params.id, { name, position, introduction, cover_image });
     res.redirect(`/kosh-subcategories?category=${subcategory.parentCategory}`);
   } catch (err) {
     const parent = await KoshCategory.findById(subcategory.parentCategory);
