@@ -34,9 +34,9 @@ router.get('/kosh-category/:parentId/add-subcategory', requireAuth, async (req, 
 
 // Add subcategory (POST)
 router.post('/kosh-category/:parentId/add-subcategory', requireAuth, async (req, res) => {
-  const { name, position, introduction } = req.body;
+  const { name, position, introduction, cover_image } = req.body;
   try {
-    await KoshSubCategory.create({ parentCategory: req.params.parentId, name, position, introduction });
+    await KoshSubCategory.create({ parentCategory: req.params.parentId, name, position, introduction, cover_image });
     res.redirect(`/kosh-subcategories?category=${req.params.parentId}`);
   } catch (err) {
     const parent = await KoshCategory.findById(req.params.parentId);

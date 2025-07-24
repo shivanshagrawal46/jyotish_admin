@@ -42,7 +42,7 @@ router.get('/:categoryId', async (req, res) => {
             .sort({ position: 1 })
             .skip(skip)
             .limit(limit)
-            .select('-_id id name position introduction createdAt');
+            .select('-_id id name position introduction cover_image createdAt');
         const total = await KoshSubCategory.countDocuments({ parentCategory: category._id });
         res.json({
             subcategories,
