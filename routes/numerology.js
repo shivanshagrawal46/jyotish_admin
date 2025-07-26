@@ -127,7 +127,7 @@ router.post('/upload-daily', requireAuth, upload.single('excelFile'), async (req
 // Numerology yearly page
 router.get('/yearly', requireAuth, async (req, res) => {
     try {
-        const yearlyNumerology = await NumerologyYearly.find().sort({ date: -1 });
+        const yearlyNumerology = await NumerologyYearly.find().sort({ sequence: 1 });
         res.render('numerology/yearly', {
             username: req.session.username,
             activePage: 'numerology',
