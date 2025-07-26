@@ -37,9 +37,9 @@ router.get('/karmkand-category/:parentId/add-subcategory', requireAuth, async (r
 
 // Add subcategory (POST)
 router.post('/karmkand-category/:parentId/add-subcategory', requireAuth, async (req, res) => {
-  const { name, position, introduction } = req.body;
+  const { name, position, introduction, cover_image } = req.body;
   try {
-    await KarmkandSubCategory.create({ parentCategory: req.params.parentId, name, position, introduction });
+    await KarmkandSubCategory.create({ parentCategory: req.params.parentId, name, position, introduction, cover_image });
     res.redirect(`/karmkand-subcategories?category=${req.params.parentId}`);
   } catch (err) {
     const parent = await KarmkandCategory.findById(req.params.parentId);
@@ -67,10 +67,10 @@ router.get('/karmkand-subcategory/:id/edit', requireAuth, async (req, res) => {
 
 // Edit subcategory (POST)
 router.post('/karmkand-subcategory/:id/edit', requireAuth, async (req, res) => {
-  const { name, position, introduction } = req.body;
+  const { name, position, introduction, cover_image } = req.body;
   const subcategory = await KarmkandSubCategory.findById(req.params.id);
   try {
-    await KarmkandSubCategory.findByIdAndUpdate(req.params.id, { name, position, introduction });
+    await KarmkandSubCategory.findByIdAndUpdate(req.params.id, { name, position, introduction, cover_image });
     res.redirect(`/karmkand-subcategories?category=${subcategory.parentCategory}`);
   } catch (err) {
     const parent = await KarmkandCategory.findById(subcategory.parentCategory);

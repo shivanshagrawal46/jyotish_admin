@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const rashifalYearlySchema = new mongoose.Schema({
+    sequence: {
+        type: Number,
+        default: 0
+    },
     title_hn: {
         type: String,
         required: [true, 'Hindi title is required'],
@@ -42,6 +46,7 @@ const rashifalYearlySchema = new mongoose.Schema({
 });
 
 rashifalYearlySchema.index({ date: 1 });
+rashifalYearlySchema.index({ sequence: 1 });
 
 rashifalYearlySchema.pre('save', function(next) {
     this.updatedAt = Date.now();

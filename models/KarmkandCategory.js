@@ -6,6 +6,7 @@ const karmkandCategorySchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   position: { type: Number, required: true },
   introduction: { type: String },
+  cover_image: { type: String }, // Optional cover image URL
   createdAt: { type: Date, default: Date.now }
 });
 

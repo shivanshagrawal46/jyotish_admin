@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const rashifalMonthlySchema = new mongoose.Schema({
+    sequence: {
+        type: Number,
+        default: 0
+    },
     month: {
         type: String,
         required: true
@@ -29,7 +33,8 @@ const rashifalMonthlySchema = new mongoose.Schema({
 });
 
 // Index for faster queries
-rashifalMonthlySchema.index({ date: 1 });
+rashifalMonthlySchema.index({ month: 1 });
+rashifalMonthlySchema.index({ sequence: 1 });
 
 // Pre-save middleware to update the updatedAt field
 rashifalMonthlySchema.pre('save', function(next) {

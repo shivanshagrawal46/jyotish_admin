@@ -9,7 +9,7 @@ router.get('/category', async (req, res) => {
     try {
         const categories = await KarmkandCategory.find()
             .sort({ position: 1 })
-            .select('id name position introduction -_id');
+            .select('id name position introduction cover_image -_id');
 
         res.json({
             success: true,
@@ -39,7 +39,7 @@ router.get('/category/:categoryId', async (req, res) => {
 
         const subcategories = await KarmkandSubCategory.find({ parentCategory: category._id })
             .sort({ position: 1 })
-            .select('id name position introduction -_id');
+            .select('id name position introduction cover_image -_id');
 
         res.json({
             success: true,
@@ -87,6 +87,23 @@ router.get('/category/:categoryId/:subcategoryId', async (req, res) => {
             subCategory: subcategory._id
         });
 
+        // Get all contents for vishesh_suchi extraction (no pagination)
+        const allContents = await KarmkandContent.find({
+            subCategory: subcategory._id
+        });
+
+        // Process search terms for vishesh_suchi
+        const searchTermsSet = new Set();
+        allContents.forEach((content) => {
+            if (content.search && typeof content.search === 'string' && content.search.trim() !== '') {
+                const terms = content.search.split(',')
+                    .map(term => term.trim())
+                    .filter(term => term !== '');
+                terms.forEach(term => searchTermsSet.add(term));
+            }
+        });
+        const vishesh_suchi = Array.from(searchTermsSet).sort();
+
         // Get contents with pagination (filter only by subCategory)
         const contents = await KarmkandContent.find({
             subCategory: subcategory._id
@@ -99,6 +116,7 @@ router.get('/category/:categoryId/:subcategoryId', async (req, res) => {
         res.json({
             success: true,
             data: {
+                vishesh_suchi,
                 contents,
                 pagination: {
                     currentPage: page,

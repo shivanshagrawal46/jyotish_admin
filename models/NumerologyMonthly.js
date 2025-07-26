@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const numerologyMonthlySchema = new mongoose.Schema({
+    sequence: {
+        type: Number,
+        default: 0
+    },
     month: {
         type: String,
         required: true
@@ -27,5 +31,9 @@ const numerologyMonthlySchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+// Index for faster queries
+numerologyMonthlySchema.index({ month: 1 });
+numerologyMonthlySchema.index({ sequence: 1 });
 
 module.exports = mongoose.model('NumerologyMonthly', numerologyMonthlySchema); 

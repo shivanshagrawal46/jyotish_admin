@@ -182,6 +182,10 @@
                     <label for="introduction" class="form-label">Introduction</label>
                     <textarea class="form-control" id="introduction" name="introduction" rows="4"><%= subcategory.introduction %></textarea>
                 </div>
+                <div class="mb-4">
+                    <label for="cover_image" class="form-label">Cover Image URL</label>
+                    <input type="url" class="form-control" id="cover_image" name="cover_image" value="<%= subcategory.cover_image || '' %>" placeholder="https://example.com/image.jpg">
+                </div>
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-submit">Update Subcategory</button>
                     <a href="/karmkand-subcategories?category=<%= parent._id %>" class="btn btn-cancel">Cancel</a>

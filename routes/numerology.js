@@ -43,12 +43,12 @@ const MONTHS = [
 // Numerology main page
 router.get('/', requireAuth, async (req, res) => {
     try {
-        const dailyNumerology = await NumerologyDaily.find().sort({ date: -1 });
-        const yearlyNumerology = await NumerologyYearly.find().sort({ date: -1 });
+        const dailyNumerology = await NumerologyDaily.find().sort({ sequence: 1 });
+        const yearlyNumerology = await NumerologyYearly.find().sort({ sequence: 1 });
         // Fetch all monthly data for all months
         const monthlyNumerology = {};
         for (const month of MONTHS) {
-            monthlyNumerology[month] = await NumerologyMonthly.find({ month }).sort({ createdAt: -1 });
+            monthlyNumerology[month] = await NumerologyMonthly.find({ month }).sort({ sequence: 1 });
         }
         res.render('numerology/index', {
             username: req.session.username,
@@ -91,7 +91,8 @@ router.post('/upload-daily', requireAuth, upload.single('excelFile'), async (req
         const worksheet = workbook.Sheets[sheetName];
         const data = xlsx.utils.sheet_to_json(worksheet);
 
-        const numerologyEntries = data.map(row => ({
+        const numerologyEntries = data.map((row, index) => ({
+            sequence: index + 1, // Maintain Excel order
             title_hn: row.title_hn || '',
             title_en: row.title_en || '',
             date: row.date || '',
@@ -106,8 +107,8 @@ router.post('/upload-daily', requireAuth, upload.single('excelFile'), async (req
         // Save to database
         await NumerologyDaily.insertMany(numerologyEntries);
 
-        // Fetch updated data
-        const dailyNumerology = await NumerologyDaily.find().sort({ date: -1 });
+        // Fetch updated data in Excel order (by sequence)
+        const dailyNumerology = await NumerologyDaily.find().sort({ sequence: 1 });
 
         res.json({
             success: true,
@@ -160,7 +161,8 @@ router.post('/upload-yearly', requireAuth, upload.single('excelFile'), async (re
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const data = xlsx.utils.sheet_to_json(worksheet);
-        const numerologyEntries = data.map(row => ({
+        const numerologyEntries = data.map((row, index) => ({
+            sequence: index + 1, // Maintain Excel order
             title_hn: row.title_hn || '',
             title_en: row.title_en || '',
             date: row.date || '',
@@ -170,7 +172,7 @@ router.post('/upload-yearly', requireAuth, upload.single('excelFile'), async (re
         }));
         await NumerologyYearly.deleteMany({});
         await NumerologyYearly.insertMany(numerologyEntries);
-        const yearlyNumerology = await NumerologyYearly.find().sort({ date: -1 });
+        const yearlyNumerology = await NumerologyYearly.find().sort({ sequence: 1 });
         res.json({
             success: true,
             message: 'Excel data uploaded successfully',
@@ -201,7 +203,8 @@ router.post('/upload-monthly/:month', requireAuth, upload.single('excelFile'), a
         // Remove all existing entries for this month
         await NumerologyMonthly.deleteMany({ month });
         // Insert new entries
-        const entries = data.map(row => ({
+        const entries = data.map((row, index) => ({
+            sequence: index + 1, // Maintain Excel order
             month,
             title_hn: row.title_hn || '',
             title_en: row.title_en || '',
@@ -210,8 +213,8 @@ router.post('/upload-monthly/:month', requireAuth, upload.single('excelFile'), a
             images: row.images ? row.images.split(',').map(img => img.trim()) : []
         }));
         await NumerologyMonthly.insertMany(entries);
-        // Fetch updated data for this month
-        const monthData = await NumerologyMonthly.find({ month }).sort({ createdAt: -1 });
+        // Fetch updated data for this month in Excel order
+        const monthData = await NumerologyMonthly.find({ month }).sort({ sequence: 1 });
         res.json({
             success: true,
             message: 'Excel data uploaded successfully',

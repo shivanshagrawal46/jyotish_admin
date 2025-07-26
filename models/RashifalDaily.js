@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const rashifalDailySchema = new mongoose.Schema({
+    sequence: {
+        type: Number,
+        default: 0
+    },
     title_hn: {
         type: String,
         required: [true, 'Hindi title is required'],
@@ -43,6 +47,7 @@ const rashifalDailySchema = new mongoose.Schema({
 
 // Index for faster queries
 rashifalDailySchema.index({ date: 1 });
+rashifalDailySchema.index({ sequence: 1 });
 
 // Pre-save middleware to update the updatedAt field
 rashifalDailySchema.pre('save', function(next) {

@@ -32,9 +32,9 @@ router.get('/karmkand-categories/add', requireAuth, (req, res) => {
 
 // Add Karmkand Category (POST)
 router.post('/karmkand-categories/add', requireAuth, async (req, res) => {
-  const { name, position, introduction } = req.body;
+  const { name, position, introduction, cover_image } = req.body;
   try {
-    await KarmkandCategory.create({ name, position, introduction });
+    await KarmkandCategory.create({ name, position, introduction, cover_image });
     res.redirect('/karmkand-categories');
   } catch (err) {
     res.render('addKarmkandCategory', {
@@ -56,9 +56,9 @@ router.get('/karmkand-categories/:id/edit', requireAuth, async (req, res) => {
 
 // Edit Karmkand Category (POST)
 router.post('/karmkand-categories/:id/edit', requireAuth, async (req, res) => {
-  const { name, position, introduction } = req.body;
+  const { name, position, introduction, cover_image } = req.body;
   try {
-    await KarmkandCategory.findByIdAndUpdate(req.params.id, { name, position, introduction });
+    await KarmkandCategory.findByIdAndUpdate(req.params.id, { name, position, introduction, cover_image });
     res.redirect('/karmkand-categories');
   } catch (err) {
     const category = await KarmkandCategory.findById(req.params.id);

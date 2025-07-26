@@ -23,7 +23,7 @@ const MONTHS = [
 // Get all daily rashifals with sequential IDs
 router.get('/daily', async (req, res) => {
     try {
-        const dailyRashifals = await RashifalDaily.find().sort({ date: -1 });
+        const dailyRashifals = await RashifalDaily.find().sort({ sequence: 1 });
         
         // Add sequential IDs to the data
         const rashifalsWithIds = dailyRashifals.map((rashifal, index) => ({
@@ -100,7 +100,7 @@ router.get('/months/:monthId', async (req, res) => {
             });
         }
 
-        const monthlyRashifals = await RashifalMonthly.find({ month: month.name }).sort({ createdAt: -1 });
+        const monthlyRashifals = await RashifalMonthly.find({ month: month.name }).sort({ sequence: 1 });
         
         // Add sequential IDs to the data
         const rashifalsWithIds = monthlyRashifals.map((rashifal, index) => ({
@@ -164,7 +164,7 @@ router.get('/months/:monthId/:id', async (req, res) => {
 // Get all yearly rashifals with sequential IDs
 router.get('/yearly', async (req, res) => {
     try {
-        const yearlyRashifals = await RashifalYearly.find().sort({ date: -1 });
+        const yearlyRashifals = await RashifalYearly.find().sort({ sequence: 1 });
         
         // Add sequential IDs to the data
         const rashifalsWithIds = yearlyRashifals.map((rashifal, index) => ({
