@@ -116,8 +116,8 @@ router.get('/category/:categoryId/:subcategoryId', async (req, res) => {
         res.json({
             success: true,
             data: {
-                vishesh_suchi,
                 contents,
+                vishesh_suchi,
                 pagination: {
                     currentPage: page,
                     totalPages: Math.ceil(total / limit),
