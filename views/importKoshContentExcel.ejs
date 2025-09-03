@@ -181,6 +181,7 @@
                         <input type="file" class="form-control" id="excel" name="excel" accept=".xlsx,.xls" required>
                     </div>
                     <button type="submit" class="btn btn-primary">Import Excel</button>
+                    <a href="/kosh-subcategory/<%= subcategory._id %>/export-excel" class="btn btn-success ms-2">Export Excel Template</a>
                     <a href="/kosh-subcategories/<%= subcategory.parentCategory %>?sub=<%= subcategory._id %>" class="btn btn-secondary ms-2">Back</a>
                 </form>
                 <div class="mt-3">

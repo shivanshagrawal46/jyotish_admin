@@ -718,11 +718,61 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const data = xlsx.utils.sheet_to_json(worksheet);
 
+        if (data.length === 0) {
+            fs.unlinkSync(req.file.path);
+            return res.render('book/content/index', {
+                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
+                categories: await BookCategory.find(),
+                books: await BookName.find(),
+                chapters: await BookChapter.find(),
+                activePage: 'book',
+                activeSection: 'content',
+                activeTab: 'content',
+                error: 'Excel file is empty or has no data rows.'
+            });
+        }
+
+        // Check for required headers
+        const requiredHeaders = ['Category', 'Book', 'Chapter', 'Title (Hindi)', 'Title (English)', 'Title (Hinglish)', 'Meaning', 'Details'];
+        const firstRow = data[0];
+        const missingHeaders = requiredHeaders.filter(header => !(header in firstRow));
+        
+        if (missingHeaders.length > 0) {
+            fs.unlinkSync(req.file.path);
+            return res.render('book/content/index', {
+                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
+                categories: await BookCategory.find(),
+                books: await BookName.find(),
+                chapters: await BookChapter.find(),
+                activePage: 'book',
+                activeSection: 'content',
+                activeTab: 'content',
+                error: `Missing required column headers: ${missingHeaders.join(', ')}. Please ensure your Excel file has the correct headers.`
+            });
+        }
+
         const contents = [];
-        for (const row of data) {
-            if (!row.Category || !row.Book || !row.Chapter || !row['Title (Hindi)'] || 
-                !row['Title (English)'] || !row['Title (Hinglish)'] || !row.Meaning || !row.Details) {
-                continue; // Skip rows with missing required fields
+        const errors = [];
+        let processedRows = 0;
+
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const rowNumber = i + 2; // Excel row number (accounting for header row)
+
+            // Check for missing required fields
+            const missingFields = [];
+            if (!row.Category) missingFields.push('Category');
+            if (!row.Book) missingFields.push('Book');
+            if (!row.Chapter) missingFields.push('Chapter');
+            if (!row['Title (Hindi)']) missingFields.push('Title (Hindi)');
+            if (!row['Title (English)']) missingFields.push('Title (English)');
+            if (!row['Title (Hinglish)']) missingFields.push('Title (Hinglish)');
+            if (!row.Meaning) missingFields.push('Meaning');
+            if (!row.Details) missingFields.push('Details');
+
+            if (missingFields.length > 0) {
+                errors.push(`Row ${rowNumber}: Missing required fields: ${missingFields.join(', ')}`);
+                continue;
             }
 
             // Find category, book, and chapter by name
@@ -730,8 +780,14 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
             const book = await BookName.findOne({ name: row.Book });
             const chapter = await BookChapter.findOne({ name: row.Chapter });
 
-            if (!category || !book || !chapter) {
-                continue; // Skip if any reference not found
+            const notFound = [];
+            if (!category) notFound.push(`Category: "${row.Category}"`);
+            if (!book) notFound.push(`Book: "${row.Book}"`);
+            if (!chapter) notFound.push(`Chapter: "${row.Chapter}"`);
+
+            if (notFound.length > 0) {
+                errors.push(`Row ${rowNumber}: Not found in database: ${notFound.join(', ')}`);
+                continue;
             }
 
             // Process video links if present
@@ -751,15 +807,18 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                 extra: row.Extra || '',
                 video_links: videoLinks
             });
+            processedRows++;
         }
+
+        // Delete the uploaded file
+        fs.unlinkSync(req.file.path);
 
         if (contents.length > 0) {
             await BookContent.insertMany(contents);
-            // Delete the uploaded file
-            fs.unlinkSync(req.file.path);
-            res.redirect('/book/content');
-        } else {
-            res.render('book/content/index', {
+            const successMessage = `Successfully imported ${contents.length} records.`;
+            const errorMessage = errors.length > 0 ? ` However, ${errors.length} rows had errors: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? '...' : ''}` : '';
+            
+            return res.render('book/content/index', {
                 contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
                 categories: await BookCategory.find(),
                 books: await BookName.find(),
@@ -767,11 +826,25 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                 activePage: 'book',
                 activeSection: 'content',
                 activeTab: 'content',
-                error: 'No valid content data found in the Excel file.'
+                success: successMessage + errorMessage
+            });
+        } else {
+            return res.render('book/content/index', {
+                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
+                categories: await BookCategory.find(),
+                books: await BookName.find(),
+                chapters: await BookChapter.find(),
+                activePage: 'book',
+                activeSection: 'content',
+                activeTab: 'content',
+                error: `No valid content data found. Errors: ${errors.slice(0, 5).join('; ')}${errors.length > 5 ? '...' : ''}`
             });
         }
     } catch (err) {
         console.error('Error processing Excel file:', err);
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
         res.render('book/content/index', {
             contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
             categories: await BookCategory.find(),
@@ -780,8 +853,62 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
             activePage: 'book',
             activeSection: 'content',
             activeTab: 'content',
-            error: 'Error processing Excel file. Please check the file format.'
+            error: `Error processing Excel file: ${err.message}. Please check the file format and try again.`
         });
+    }
+});
+
+// Export Excel template for book content
+router.get('/content/export-excel', async (req, res) => {
+    try {
+        // Create a new workbook
+        const workbook = xlsx.utils.book_new();
+        
+        // Create sample data with proper headers
+        const sampleData = [
+            {
+                'Category': 'Vedic',
+                'Book': 'Rigveda',
+                'Chapter': 'Chapter 1',
+                'Title (Hindi)': 'श्लोक १',
+                'Title (English)': 'Shloka 1',
+                'Title (Hinglish)': 'Shloka 1',
+                'Meaning': 'This is the meaning of the shloka',
+                'Details': 'Detailed explanation of the shloka content',
+                'Extra': 'Additional information (optional)',
+                'Video Links': 'https://youtube.com/video1,https://youtube.com/video2'
+            },
+            {
+                'Category': 'Vedic',
+                'Book': 'Rigveda',
+                'Chapter': 'Chapter 1',
+                'Title (Hindi)': 'श्लोक २',
+                'Title (English)': 'Shloka 2',
+                'Title (Hinglish)': 'Shloka 2',
+                'Meaning': 'This is the meaning of the second shloka',
+                'Details': 'Detailed explanation of the second shloka content',
+                'Extra': 'Additional information (optional)',
+                'Video Links': 'https://youtube.com/video3'
+            }
+        ];
+
+        // Create worksheet
+        const worksheet = xlsx.utils.json_to_sheet(sampleData);
+        
+        // Add the worksheet to workbook
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'Book Content Template');
+        
+        // Set response headers
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="book_content_template.xlsx"');
+        
+        // Write the workbook to response
+        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+        res.send(buffer);
+        
+    } catch (err) {
+        console.error('Error creating Excel template:', err);
+        res.status(500).send('Error creating Excel template');
     }
 });
 

@@ -182,16 +182,17 @@ router.post('/kosh-subcategory/:subId/import-excel', requireAuth, upload.single(
       });
     }
 
-    // Validate required fields
-    const requiredFields = ['sequenceNo', 'hindiWord', 'englishWord', 'meaning'];
-    const missingFields = rows.some(row => 
-      requiredFields.some(field => !row[field] && !row[field.charAt(0).toUpperCase() + field.slice(1)])
+    // Check for required headers
+    const requiredHeaders = ['sequenceNo', 'hindiWord', 'englishWord', 'meaning'];
+    const firstRow = rows[0];
+    const missingHeaders = requiredHeaders.filter(header => 
+      !(header in firstRow) && !(header.charAt(0).toUpperCase() + header.slice(1) in firstRow)
     );
 
-    if (missingFields) {
+    if (missingHeaders.length > 0) {
       return res.render('importKoshContentExcel', {
         subcategory,
-        error: 'Excel file is missing required fields: sequenceNo, hindiWord, englishWord, meaning',
+        error: `Missing required column headers: ${missingHeaders.join(', ')}. Please ensure your Excel file has the correct headers.`,
         success: null,
         username: req.session.username,
         koshCategories
@@ -199,13 +200,32 @@ router.post('/kosh-subcategory/:subId/import-excel', requireAuth, upload.single(
     }
 
     // Map and validate the data
-    const contents = rows.map((row, index) => {
-      const sequenceNo = row.sequenceNo || row.SequenceNo;
-      if (!sequenceNo || isNaN(sequenceNo)) {
-        throw new Error(`Invalid sequence number in row ${index + 2}`);
+    const contents = [];
+    const errors = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNumber = i + 2; // Excel row number (accounting for header row)
+
+      // Check for missing required fields
+      const missingFields = [];
+      if (!row.sequenceNo && !row.SequenceNo) missingFields.push('sequenceNo');
+      if (!row.hindiWord && !row.HindiWord) missingFields.push('hindiWord');
+      if (!row.englishWord && !row.EnglishWord) missingFields.push('englishWord');
+      if (!row.meaning && !row.Meaning) missingFields.push('meaning');
+
+      if (missingFields.length > 0) {
+        errors.push(`Row ${rowNumber}: Missing required fields: ${missingFields.join(', ')}`);
+        continue;
       }
 
-      return {
+      const sequenceNo = row.sequenceNo || row.SequenceNo;
+      if (isNaN(sequenceNo)) {
+        errors.push(`Row ${rowNumber}: Invalid sequence number: "${sequenceNo}"`);
+        continue;
+      }
+
+      contents.push({
         subCategory: req.params.subId,
         sequenceNo: parseInt(sequenceNo),
         hindiWord: row.hindiWord || row.HindiWord || '',
@@ -217,8 +237,8 @@ router.post('/kosh-subcategory/:subId/import-excel', requireAuth, upload.single(
         search: row.search || row.Search || '',
         youtubeLink: row.youtubeLink || row.YouTubeLink || '',
         image: row.image || row.Image || ''
-      };
-    });
+      });
+    }
 
     // Insert the data one by one to handle auto-incrementing id
     for (const content of contents) {
@@ -229,13 +249,26 @@ router.post('/kosh-subcategory/:subId/import-excel', requireAuth, upload.single(
     const fs = require('fs');
     fs.unlinkSync(req.file.path);
 
-    res.render('importKoshContentExcel', {
-      subcategory,
-      error: null,
-      success: `Successfully imported ${contents.length} records!`,
-      username: req.session.username,
-      koshCategories
-    });
+    if (contents.length > 0) {
+      const successMessage = `Successfully imported ${contents.length} records.`;
+      const errorMessage = errors.length > 0 ? ` However, ${errors.length} rows had errors: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? '...' : ''}` : '';
+      
+      res.render('importKoshContentExcel', {
+        subcategory,
+        error: null,
+        success: successMessage + errorMessage,
+        username: req.session.username,
+        koshCategories
+      });
+    } else {
+      res.render('importKoshContentExcel', {
+        subcategory,
+        error: `No valid content data found. Errors: ${errors.slice(0, 5).join('; ')}${errors.length > 5 ? '...' : ''}`,
+        success: null,
+        username: req.session.username,
+        koshCategories
+      });
+    }
   } catch (err) {
     console.error('Excel import error:', err);
     res.render('importKoshContentExcel', {
@@ -248,6 +281,63 @@ router.post('/kosh-subcategory/:subId/import-excel', requireAuth, upload.single(
   }
 });
 
-// TODO: Excel import route (to be implemented)
+// Export Excel template for kosh content
+router.get('/kosh-subcategory/:subId/export-excel', requireAuth, async (req, res) => {
+  try {
+    const subcategory = await KoshSubCategory.findById(req.params.subId);
+    if (!subcategory) {
+      return res.status(404).send('Subcategory not found');
+    }
+
+    // Create a new workbook
+    const workbook = XLSX.utils.book_new();
+    
+    // Create sample data with proper headers
+    const sampleData = [
+      {
+        'sequenceNo': 1,
+        'hindiWord': 'शब्द',
+        'englishWord': 'word',
+        'hinglishWord': 'word',
+        'meaning': 'This is the meaning of the word',
+        'extra': 'Additional information (optional)',
+        'structure': 'Word structure (optional)',
+        'search': 'Search keywords (optional)',
+        'youtubeLink': 'https://youtube.com/video1',
+        'image': 'image_url_here (optional)'
+      },
+      {
+        'sequenceNo': 2,
+        'hindiWord': 'अर्थ',
+        'englishWord': 'meaning',
+        'hinglishWord': 'meaning',
+        'meaning': 'This is the meaning of the second word',
+        'extra': 'Additional information (optional)',
+        'structure': 'Word structure (optional)',
+        'search': 'Search keywords (optional)',
+        'youtubeLink': 'https://youtube.com/video2',
+        'image': 'image_url_here (optional)'
+      }
+    ];
+
+    // Create worksheet
+    const worksheet = XLSX.utils.json_to_sheet(sampleData);
+    
+    // Add the worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Kosh Content Template');
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="kosh_content_${subcategory.name}_template.xlsx"`);
+    
+    // Write the workbook to response
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    res.send(buffer);
+    
+  } catch (err) {
+    console.error('Error creating Excel template:', err);
+    res.status(500).send('Error creating Excel template');
+  }
+});
 
 module.exports = router; 
