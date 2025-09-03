@@ -96,8 +96,8 @@ app.use(
     }),
     cookie: { 
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
-      //secure: true, // Only use secure cookies in production
-      //httpOnly: true,
+      secure: true, // Only use secure cookies in production
+      httpOnly: true,
       sameSite: 'lax',
       path: '/'
     },
