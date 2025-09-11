@@ -135,7 +135,7 @@ router.post('/add', requireAuth, async (req, res) => {
             actionUrl: actionUrl || null,
             actionText: actionText || null,
             imageUrl: imageUrl || null,
-            createdBy: req.session.userId
+            createdBy: null // No user management in this backend
         });
 
         await notification.save();
@@ -373,8 +373,8 @@ router.post('/api/register-token', async (req, res) => {
     }
 });
 
-// API endpoint to send test notification (admin only)
-router.post('/api/send-test', requireAuth, async (req, res) => {
+// API endpoint to send test notification (public for testing)
+router.post('/api/send-test', async (req, res) => {
     try {
         const { message } = req.body;
         
