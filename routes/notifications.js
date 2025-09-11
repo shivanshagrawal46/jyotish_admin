@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
-const User = require('../models/User');
 const requireAuth = require('../middleware/requireAuth');
 const FCMService = require('../services/fcmService');
 
@@ -335,58 +334,34 @@ router.post('/api/read/:id', async (req, res) => {
 // API endpoint for Flutter app to register FCM token
 router.post('/api/register-token', async (req, res) => {
     try {
-        const { userId, fcmToken, platform = 'android', appVersion = '1.0.0', osVersion = '' } = req.body;
+        const { fcmToken, platform = 'android', appVersion = '1.0.0', osVersion = '' } = req.body;
         
-        if (!userId || !fcmToken) {
+        if (!fcmToken) {
             return res.status(400).json({
                 success: false,
-                error: 'userId and fcmToken are required'
+                error: 'fcmToken is required'
             });
         }
 
-        // Update user with FCM token and device info
-        const user = await User.findByIdAndUpdate(
-            userId,
-            {
-                fcmToken: fcmToken,
-                deviceInfo: {
-                    platform: platform,
-                    appVersion: appVersion,
-                    osVersion: osVersion
-                },
-                lastActiveAt: new Date()
-            },
-            { new: true }
-        );
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                error: 'User not found'
-            });
-        }
-
-        // Subscribe user to general notifications topic
+        // Subscribe device to general notifications topic
         try {
             await FCMService.subscribeToTopic([fcmToken], 'all_users');
-            
-            // Subscribe based on user type (if you have user types)
-            if (user.notificationSettings) {
-                const userType = user.notificationSettings.frequency === 'instant' ? 'premium_users' : 'free_users';
-                await FCMService.subscribeToTopic([fcmToken], userType);
-            }
+            console.log('✅ Device subscribed to all_users topic');
         } catch (topicError) {
-            console.error('Error subscribing to topics:', topicError);
-            // Continue even if topic subscription fails
+            console.error('❌ Error subscribing to topic:', topicError);
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to register for notifications'
+            });
         }
 
         res.json({
             success: true,
-            message: 'FCM token registered successfully',
-            user: {
-                id: user._id,
-                username: user.username,
-                notificationSettings: user.notificationSettings
+            message: 'FCM token registered successfully - device will receive all notifications',
+            deviceInfo: {
+                platform: platform,
+                appVersion: appVersion,
+                osVersion: osVersion
             }
         });
     } catch (err) {
@@ -398,80 +373,10 @@ router.post('/api/register-token', async (req, res) => {
     }
 });
 
-// API endpoint to update notification settings
-router.post('/api/update-settings', async (req, res) => {
-    try {
-        const { userId, pushEnabled, types, frequency } = req.body;
-        
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                error: 'userId is required'
-            });
-        }
-
-        const updateData = {};
-        if (pushEnabled !== undefined) updateData['notificationSettings.pushEnabled'] = pushEnabled;
-        if (types) updateData['notificationSettings.types'] = types;
-        if (frequency) updateData['notificationSettings.frequency'] = frequency;
-
-        const user = await User.findByIdAndUpdate(
-            userId,
-            updateData,
-            { new: true }
-        );
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                error: 'User not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            message: 'Notification settings updated successfully',
-            settings: user.notificationSettings
-        });
-    } catch (err) {
-        console.error('Error updating notification settings:', err);
-        res.status(500).json({
-            success: false,
-            error: 'Error updating notification settings'
-        });
-    }
-});
-
-// API endpoint to get user's notification settings
-router.get('/api/settings/:userId', async (req, res) => {
-    try {
-        const user = await User.findById(req.params.userId).select('notificationSettings fcmToken');
-        
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                error: 'User not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            settings: user.notificationSettings,
-            hasFCMToken: !!user.fcmToken
-        });
-    } catch (err) {
-        console.error('Error fetching notification settings:', err);
-        res.status(500).json({
-            success: false,
-            error: 'Error fetching notification settings'
-        });
-    }
-});
-
 // API endpoint to send test notification (admin only)
 router.post('/api/send-test', requireAuth, async (req, res) => {
     try {
-        const { userId, message } = req.body;
+        const { message } = req.body;
         
         const testNotification = {
             _id: 'test-' + Date.now(),
@@ -486,20 +391,12 @@ router.post('/api/send-test', requireAuth, async (req, res) => {
             imageUrl: ''
         };
 
-        if (userId) {
-            // Send to specific user
-            const user = await User.findById(userId);
-            if (user && user.fcmToken) {
-                await FCMService.sendToUser(user.fcmToken, testNotification);
-                res.json({ success: true, message: 'Test notification sent to user' });
-            } else {
-                res.status(404).json({ success: false, error: 'User not found or no FCM token' });
-            }
-        } else {
-            // Send to all users
-            await FCMService.sendToAll(testNotification);
-            res.json({ success: true, message: 'Test notification sent to all users' });
-        }
+        // Send to all users via topic
+        await FCMService.sendToAll(testNotification);
+        res.json({ 
+            success: true, 
+            message: 'Test notification sent to all users successfully' 
+        });
     } catch (err) {
         console.error('Error sending test notification:', err);
         res.status(500).json({
