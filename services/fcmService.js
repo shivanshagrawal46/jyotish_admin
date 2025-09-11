@@ -6,23 +6,23 @@ let isInitialized = false;
 function initializeFirebase() {
     if (!isInitialized) {
         try {
-            // For now, we'll use a placeholder - you need to add your actual service account key
+            // Use environment variables for Firebase configuration
             const serviceAccount = {
                 "type": "service_account",
-                "project_id": "astrologyapp-462210",
-                "private_key_id": "0c0a372751730f5c41de01fd2002f3b24e66fd05",
-               "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCUtX2vgxfOVY36\n/3h7cWP0tKV13FqAnV5gt1y+YFNAWP4lWq6wNStlM1Ds24b4OdrVhIJ2yigZyUvQ\n2gdhO2oXTicuNNO9NDu3EPbiJunEwGOKecQ2qFOpI3rmNP8XVnmO8LWwRinKBzNt\nXDrubpeFDEY3gf3bBmQdxQgYDPvbLiQgc67eTaYmt3kAbpTVtGHQwOdxAdo+x5cn\nZT0WmoLbLnTXIoP+unTUqfisgeNBcrASkYU6GbkxMLLZAcc7tTqsHqYcwxutjo7W\nJzpdVa89SvMf4i8Ki1q2+EKXRE03rK+m86hzQrRujGHbj6W6OP6Giasd3lfiayIj\nE64uECPFAgMBAAECggEAAUY3MWpok+XN8ufpWXjHWr4z3xlC3vBvnIQNuSWRqQ7q\nKe9Hk8PM30/hLQ+/gxUvKnO5e3jwKYe8936aysBBKznJ96klDwK+0pWEYWaPIRa7\nSPaR/Mbp+px5eItdNo8Q48LtHPl+Rlh+nhII1j4Khy3A/0eaTDFsk7MPxpxRNIJY\nHbC27oxoMJD/8PFskpvlzl2dlIgzo9RR3ry42PLhItn3iXjQC/weeSnuBjti+LAo\nSERMJjPVQhkwoemku5NI0tgoWzPkWQ/ezTKmEaBwJfSibG+QRrdLqxousVwpZdmd\nIdWmszArK6YDWCQnX2nkw+Mht2bPeg6JNkCVnMWq+QKBgQDEJ41aed1HzTRCgmaE\ndHfUSZX7hjyqFuD/P1PX4TFn7gBXIpreJZ6mSj4xuijbfJBni+EFzM9V+1sSGhB2\nirQiI4yHC/MM3VaUfa8o/lBjcZkw9Eq5vA7YH2++26tHoTLwEtTnufSfxkUCh90b\nRzvNTsSLqOpG54Cp7pe7YQJLyQKBgQDCFECSMU4Ibu1iqQTnYDlwRXJJkNao+yGm\nRyXBl9j6iBXkhfzBe0dvmBpSScxh9MQO+J3YlZqPTrPAYYTLLawpwlvb94N9Q9SD\nEhmpFT7CodEdkzC37HumsF6OMrfJ09vNlOcVvOXUngOubFo2dx9MvrY47nbWgFyA\nIIT5qoweHQKBgQCbIQSjhzk/bcRkzSgynMGf/EpHT5RumAV9GCJA2vHt1cYjI1UD\nVxEvRgwF28owO0Ug/vkJUz6uK0mM+VwHxA5N6Xtb2lFv3SR57yQ18Vq2KsMSekEW\nvummdsYzVRsSXSQhxWLnmKMkMPOm2rg8uItNBXxfT0lopfGVcwJAyKm+MQKBgQCF\nc3eTDuQhWGVS2fXNQ5U7ZgVYIIf6WfShaXrEy60fWEP1h0xtnl9YlLZErwoisTO/\nN6USMIy+zdc8CdJOA3HGpSaU8nUvxVxzZBbQ9RLasnogY/2z+qBr1gqurKFD3rHd\ngu4DPIis0pqlbUv6955GHz0dmJuOk2UHlVTaeDMw4QKBgGMoOV4eA78xNiMM6w/p\nQoIc6uEU/cR8khgUVFruWFesd2QPT96Q7vR9KhC82fEbLLITY8zwccLOHKsAktPV\nGIgdhvA7vGv6Q3SUhaQ2ZomHjin9r15eKydtFQZ3x30p2ZWQoUqanWt2NbQpkl+o\nXle6QCsBKDeW3aZY1bNfBQ4e\n-----END PRIVATE KEY-----\n",
-                "client_email": "firebase-adminsdk-fbsvc@astrologyapp-462210.iam.gserviceaccount.com",
-                "client_id": "117224486117089611420",
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/             firebase-adminsdk-fbsvc%40astrologyapp-462210.iam.gserviceaccount.com",
-                "universe_domain": "googleapis.com"
+                "project_id": process.env.FIREBASE_PROJECT_ID,
+                "private_key_id": process.env.FIREBASE_PRIVATE_KEY_ID,
+                "private_key": process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+                "client_email": process.env.FIREBASE_CLIENT_EMAIL,
+                "client_id": process.env.FIREBASE_CLIENT_ID,
+                "auth_uri": process.env.FIREBASE_AUTH_URI,
+                "token_uri": process.env.FIREBASE_TOKEN_URI,
+                "auth_provider_x509_cert_url": process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
+                "client_x509_cert_url": process.env.FIREBASE_CLIENT_X509_CERT_URL
             };
 
             admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
+                credential: admin.credential.cert(serviceAccount),
+                projectId: process.env.FIREBASE_PROJECT_ID
             });
             
             isInitialized = true;
