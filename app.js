@@ -48,6 +48,7 @@ const beejPrashanYantraRouter = require('./routes/beejPrashanYantra');
 const prashanApiRouter = require('./routes/api/prashan');
 const dashboardApiRouter = require('./routes/api/dashboard');
 const eMagazineRouter = require('./routes/eMagazine');
+const notificationRouter = require('./routes/notifications');
 const emagazineApiRouter = require('./routes/api/emagazine');
 const karmkandCategoryRoutes = require('./routes/karmkandCategory');
 const karmkandSubCategoryRoutes = require('./routes/karmkandSubCategory');
@@ -203,6 +204,9 @@ app.use('/api/book', bookApiRouter);
 
 // E-Magazine routes
 app.use('/e-magazine', eMagazineRouter);
+
+// Notification routes
+app.use('/notifications', notificationRouter);
 
 // Prashan Yantra routes
 app.use('/prashan-yantra', prashanYantraRouter);
