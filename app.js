@@ -62,6 +62,8 @@ const learningRoutes = require('./routes/learning');
 const orderRoutes = require('./routes/order');
 const orderApiRoutes = require('./routes/api/order');
 const calculatorApiRoutes = require('./routes/api/calculators');
+const locationApiRoutes = require('./routes/api/locations');
+const enhancedJyotishApiRoutes = require('./routes/api/enhanced-jyotish');
 
 const app = express();
 
@@ -265,6 +267,12 @@ app.use('/api/order', orderApiRoutes);
 
 // Calculator API routes
 app.use('/api/calculators', calculatorApiRoutes);
+
+// Location API routes
+app.use('/api/locations', locationApiRoutes);
+
+// Enhanced Jyotish API routes
+app.use('/api/jyotish', enhancedJyotishApiRoutes.router);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

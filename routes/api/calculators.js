@@ -1903,7 +1903,7 @@ router.post('/numerology/loshu-grid', (req, res) => {
     }
 });
 
-// Complete numerology report
+// Enhanced Complete numerology report with amazing insights
 router.post('/numerology/complete-report', (req, res) => {
     try {
         const { fullName, dateOfBirth } = req.body;
@@ -1917,47 +1917,701 @@ router.post('/numerology/complete-report', (req, res) => {
         const nameNumber = calculateNameNumerology(fullName);
         const loShuResult = calculateLoShuGrid(dateOfBirth);
         
+        // Calculate age for life phase analysis
+        const age = new Date().getFullYear() - new Date(dateOfBirth).getFullYear();
+        
+        // Generate enhanced analysis
+        const enhancedAnalysis = generateEnhancedNumerologyAnalysis(
+            bhagyank, mulank, nameNumber, loShuResult, fullName, dateOfBirth, age
+        );
+        
         res.json({
             success: true,
-            personalDetails: { fullName, dateOfBirth },
+            personalDetails: { fullName, dateOfBirth, age },
             numerologyReport: {
                 bhagyank: {
                     number: bhagyank,
-                    meaning: getBhagyankMeaning(bhagyank)
+                    meaning: getBhagyankMeaning(bhagyank),
+                    lifeImpact: getPositiveBhagyankImpact(bhagyank)
                 },
                 mulank: {
                     number: mulank,
-                    meaning: getMulankMeaning(mulank)
+                    meaning: getMulankMeaning(mulank),
+                    personalityGifts: getPositiveMulankGifts(mulank)
                 },
                 nameNumber: {
                     number: nameNumber,
-                    meaning: getNameNumberMeaning(nameNumber)
+                    meaning: getNameNumberMeaning(nameNumber),
+                    publicImage: getPositiveNameImpact(nameNumber)
                 },
-                loShuGrid: loShuResult
+                loShuGrid: {
+                    ...loShuResult,
+                    hiddenTalents: getLoShuHiddenTalents(loShuResult),
+                    strengthAreas: getLoShuStrengthAreas(loShuResult)
+                }
             },
-            compatibility: calculateNumerologyCompatibility(bhagyank, mulank, nameNumber),
-            recommendations: getNumerologyRecommendations(bhagyank, mulank, nameNumber)
+            enhancedInsights: enhancedAnalysis,
+            compatibility: calculateEnhancedNumerologyCompatibility(bhagyank, mulank, nameNumber),
+            recommendations: getPositiveNumerologyRecommendations(bhagyank, mulank, nameNumber),
+            description: 'Enhanced Numerology Report with Deep Career and Relationship Insights'
         });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
 });
 
+/**
+ * Generate Enhanced Numerology Analysis with Career and Relationship Insights
+ */
+function generateEnhancedNumerologyAnalysis(bhagyank, mulank, nameNumber, loShuResult, fullName, dateOfBirth, age) {
+    return {
+        personalityProfile: generatePositivePersonalityProfile(bhagyank, mulank, nameNumber, fullName),
+        careerInsights: generateNumerologyCareerInsights(bhagyank, mulank, nameNumber, age),
+        relationshipInsights: generateNumerologyRelationshipInsights(bhagyank, mulank, nameNumber, age),
+        lifePhaseAnalysis: generateNumerologyLifePhaseAnalysis(bhagyank, mulank, age),
+        luckyElements: generateNumerologyLuckyElements(bhagyank, mulank, nameNumber),
+        strengthsAndGifts: generateNumerologyStrengths(bhagyank, mulank, nameNumber, loShuResult),
+        futureOpportunities: generateNumerologyFutureOpportunities(bhagyank, mulank, nameNumber, age),
+        successFormula: generatePersonalSuccessFormula(bhagyank, mulank, nameNumber),
+        amazingPredictions: generateAmazingNumerologyPredictions(bhagyank, mulank, nameNumber, age, fullName)
+    };
+}
+
+/**
+ * Generate Positive Personality Profile
+ */
+function generatePositivePersonalityProfile(bhagyank, mulank, nameNumber, fullName) {
+    const profile = {
+        coreEssence: '',
+        uniqueGifts: [],
+        naturalMagnetism: '',
+        innerStrength: '',
+        specialQualities: []
+    };
+    
+    // Core essence based on Bhagyank
+    const bhagyankEssence = {
+        1: 'You possess the rare gift of natural leadership and pioneering spirit that inspires others to follow your vision.',
+        2: 'Your soul radiates cooperation and harmony, making you a natural peacemaker and bridge-builder in any situation.',
+        3: 'You carry the divine spark of creativity and communication, bringing joy and inspiration wherever you go.',
+        4: 'Your essence is stability and foundation-building, creating security and trust for everyone around you.',
+        5: 'You embody freedom and adventure, bringing excitement and new perspectives to every situation.',
+        6: 'Your heart overflows with nurturing love and responsibility, making you a natural healer and caretaker.',
+        7: 'You possess deep spiritual wisdom and intuitive understanding that guides both yourself and others.',
+        8: 'You have the powerful gift of material manifestation and authority, capable of achieving great success.',
+        9: 'Your soul purpose is humanitarian service and universal wisdom, touching countless lives with your compassion.',
+        11: 'You are a spiritual beacon and inspiration to others, carrying divine light and healing energy.',
+        22: 'You are a master builder with the rare ability to turn grand visions into concrete reality.',
+        33: 'You are a master teacher and healer, destined to guide humanity toward higher consciousness.'
+    };
+    
+    profile.coreEssence = bhagyankEssence[bhagyank] || 'You possess unique gifts that make you special and valuable to the world.';
+    
+    // Unique gifts based on Mulank
+    const mulankGifts = {
+        1: ['Natural leadership abilities', 'Pioneering spirit', 'Independent thinking', 'Original ideas'],
+        2: ['Exceptional diplomatic skills', 'Natural cooperation', 'Emotional intelligence', 'Peacemaking abilities'],
+        3: ['Creative expression', 'Communication mastery', 'Artistic talents', 'Inspiring personality'],
+        4: ['Organizational excellence', 'Practical wisdom', 'Reliable nature', 'Foundation building'],
+        5: ['Adventurous spirit', 'Versatility', 'Freedom-loving nature', 'Dynamic energy'],
+        6: ['Nurturing abilities', 'Healing touch', 'Responsibility', 'Family devotion'],
+        7: ['Analytical mind', 'Spiritual insight', 'Research abilities', 'Deep understanding'],
+        8: ['Business acumen', 'Material success', 'Authority', 'Achievement orientation'],
+        9: ['Humanitarian heart', 'Universal wisdom', 'Generous nature', 'Completion abilities'],
+        11: ['Intuitive powers', 'Inspirational qualities', 'Spiritual awareness', 'Healing abilities'],
+        22: ['Master building skills', 'Visionary thinking', 'Large-scale achievement', 'Practical idealism'],
+        33: ['Teaching mastery', 'Healing powers', 'Compassionate service', 'Spiritual guidance']
+    };
+    
+    profile.uniqueGifts = mulankGifts[mulank] || ['Special talents that make you unique'];
+    
+    // Natural magnetism based on Name Number
+    const nameMagnetism = {
+        1: 'You project confident leadership that naturally attracts followers and opportunities.',
+        2: 'Your gentle, cooperative nature draws people who seek harmony and understanding.',
+        3: 'Your creative and expressive energy attracts artistic and innovative opportunities.',
+        4: 'Your reliable and stable presence attracts those seeking security and trust.',
+        5: 'Your dynamic and adventurous spirit attracts exciting opportunities and like-minded people.',
+        6: 'Your caring and nurturing nature attracts those who need healing and support.',
+        7: 'Your mysterious and wise aura attracts those seeking deeper understanding and knowledge.',
+        8: 'Your successful and authoritative presence attracts business opportunities and influential people.',
+        9: 'Your wise and humanitarian nature attracts opportunities to serve and lead others.',
+        11: 'Your inspirational and intuitive energy attracts spiritual seekers and healing opportunities.',
+        22: 'Your master builder energy attracts large-scale projects and visionary collaborations.',
+        33: 'Your teaching and healing presence attracts those ready for transformation and growth.'
+    };
+    
+    profile.naturalMagnetism = nameMagnetism[nameNumber] || 'You have a unique magnetic presence that attracts positive opportunities.';
+    
+    // Inner strength
+    profile.innerStrength = `The combination of your ${bhagyank} life path with ${mulank} personality creates an unshakeable inner foundation of ${getBhagyankStrength(bhagyank)} and ${getMulankStrength(mulank)}.`;
+    
+    // Special qualities
+    profile.specialQualities = [
+        `Your ${bhagyank}-${mulank}-${nameNumber} number combination is rare and powerful`,
+        `You have the perfect blend of ${getBhagyankQuality(bhagyank)} and ${getMulankQuality(mulank)}`,
+        `Your name vibration of ${nameNumber} amplifies your natural gifts`,
+        `You possess the unique ability to balance material success with spiritual growth`
+    ];
+    
+    return profile;
+}
+
+/**
+ * Generate Numerology Career Insights
+ */
+function generateNumerologyCareerInsights(bhagyank, mulank, nameNumber, age) {
+    const careerInsights = {
+        naturalCareerPath: '',
+        hiddenTalents: [],
+        careerBreakthroughs: [],
+        leadershipStyle: '',
+        businessPotential: '',
+        careerTiming: {
+            earlyCareer: '',
+            peakCareer: '',
+            laterCareer: ''
+        },
+        incomePattern: '',
+        workEnvironment: '',
+        careerRecommendations: []
+    };
+    
+    // Natural career path based on Bhagyank
+    const bhagyankCareers = {
+        1: 'You are destined for leadership roles where you can pioneer new ideas and inspire others to achieve greatness.',
+        2: 'Your career path leads to collaboration and partnership roles where your diplomatic skills create harmony and success.',
+        3: 'Creative expression and communication are your career superpowers, leading to success in artistic and media fields.',
+        4: 'Building solid foundations and systems is your career calling, bringing stability and security to organizations.',
+        5: 'Your career involves freedom, travel, and variety, bringing excitement and innovation to traditional fields.',
+        6: 'Nurturing and healing others through your career brings both personal fulfillment and material success.',
+        7: 'Your analytical and spiritual gifts lead to careers in research, analysis, and wisdom-based professions.',
+        8: 'Material success and business leadership are your natural career domains, bringing wealth and recognition.',
+        9: 'Your humanitarian calling leads to careers that serve the greater good and touch many lives positively.'
+    };
+    
+    careerInsights.naturalCareerPath = bhagyankCareers[bhagyank] || 'You have a unique career path that combines multiple talents for extraordinary success.';
+    
+    // Hidden talents based on Mulank
+    const mulankTalents = {
+        1: ['Natural leadership in crisis situations', 'Ability to start new ventures', 'Original problem-solving'],
+        2: ['Exceptional teamwork abilities', 'Conflict resolution skills', 'Behind-the-scenes influence'],
+        3: ['Creative innovation', 'Inspiring communication', 'Artistic vision'],
+        4: ['System optimization', 'Process improvement', 'Reliable execution'],
+        5: ['Adaptability to change', 'Multi-tasking excellence', 'Trend identification'],
+        6: ['Team nurturing', 'Responsibility management', 'Healing workplace dynamics'],
+        7: ['Deep analysis', 'Research excellence', 'Intuitive decision-making'],
+        8: ['Business strategy', 'Resource management', 'Authority building'],
+        9: ['Vision casting', 'Mentoring abilities', 'Universal perspective']
+    };
+    
+    careerInsights.hiddenTalents = mulankTalents[mulank] || ['Unique talents waiting to be discovered'];
+    
+    // Career breakthroughs
+    careerInsights.careerBreakthroughs = generateCareerBreakthroughs(bhagyank, mulank, age);
+    
+    // Leadership style
+    careerInsights.leadershipStyle = generateLeadershipStyle(bhagyank, mulank, nameNumber);
+    
+    // Business potential
+    careerInsights.businessPotential = generateBusinessPotential(bhagyank, mulank, nameNumber);
+    
+    // Career timing
+    careerInsights.careerTiming = generateCareerTiming(bhagyank, mulank, age);
+    
+    // Income pattern
+    careerInsights.incomePattern = generateIncomePattern(bhagyank, mulank, nameNumber);
+    
+    // Work environment
+    careerInsights.workEnvironment = generateWorkEnvironment(mulank, nameNumber);
+    
+    // Career recommendations
+    careerInsights.careerRecommendations = generatePositiveCareerRecommendations(bhagyank, mulank, nameNumber);
+    
+    return careerInsights;
+}
+
+/**
+ * Generate Numerology Relationship Insights
+ */
+function generateNumerologyRelationshipInsights(bhagyank, mulank, nameNumber, age) {
+    const relationshipInsights = {
+        loveStyle: '',
+        idealPartner: {
+            numbers: [],
+            characteristics: [],
+            compatibility: ''
+        },
+        relationshipStrengths: [],
+        attractionFactors: [],
+        relationshipTiming: {
+            bestAges: [],
+            favorablePeriods: [],
+            meetingCircumstances: ''
+        },
+        marriageHappiness: '',
+        familyLife: '',
+        relationshipAdvice: []
+    };
+    
+    // Love style based on combination
+    relationshipInsights.loveStyle = generateLoveStyle(bhagyank, mulank, nameNumber);
+    
+    // Ideal partner analysis
+    relationshipInsights.idealPartner = generateIdealPartnerNumerology(bhagyank, mulank, nameNumber);
+    
+    // Relationship strengths
+    relationshipInsights.relationshipStrengths = generateRelationshipStrengths(bhagyank, mulank, nameNumber);
+    
+    // Attraction factors
+    relationshipInsights.attractionFactors = generateAttractionFactors(mulank, nameNumber);
+    
+    // Relationship timing
+    relationshipInsights.relationshipTiming = generateRelationshipTiming(bhagyank, mulank, age);
+    
+    // Marriage happiness
+    relationshipInsights.marriageHappiness = generateMarriageHappiness(bhagyank, mulank, nameNumber);
+    
+    // Family life
+    relationshipInsights.familyLife = generateFamilyLife(bhagyank, mulank, nameNumber);
+    
+    // Relationship advice
+    relationshipInsights.relationshipAdvice = generatePositiveRelationshipAdvice(bhagyank, mulank, nameNumber);
+    
+    return relationshipInsights;
+}
+
+/**
+ * Generate Career Breakthroughs
+ */
+function generateCareerBreakthroughs(bhagyank, mulank, age) {
+    const breakthroughs = [];
+    
+    // Age-based breakthroughs
+    if (age < 25) {
+        breakthroughs.push(`Around age ${23 + bhagyank % 3}, you'll discover a hidden talent that becomes your career superpower`);
+        breakthroughs.push(`Age ${25 + mulank % 2} brings a mentor who recognizes your potential and opens important doors`);
+    } else if (age < 35) {
+        breakthroughs.push(`Between ages ${28 + bhagyank % 3} and ${32 + mulank % 2}, a major opportunity will transform your career trajectory`);
+        breakthroughs.push(`Your unique combination of skills will be recognized, leading to a significant promotion or career change`);
+    } else if (age < 45) {
+        breakthroughs.push(`This decade establishes you as an expert in your field with opportunities for leadership and recognition`);
+        breakthroughs.push(`Your accumulated experience opens doors to consulting and advisory roles`);
+    } else {
+        breakthroughs.push(`Your wisdom and experience become highly valued, leading to prestigious positions and speaking opportunities`);
+        breakthroughs.push(`A second career or passion project brings both fulfillment and additional income`);
+    }
+    
+    return breakthroughs;
+}
+
+/**
+ * Generate Leadership Style
+ */
+function generateLeadershipStyle(bhagyank, mulank, nameNumber) {
+    const styles = {
+        1: 'You lead by example with confidence and vision, inspiring others to achieve their highest potential.',
+        2: 'Your collaborative leadership style brings out the best in teams through cooperation and understanding.',
+        3: 'You lead through inspiration and creativity, motivating others with your enthusiasm and innovative ideas.',
+        4: 'Your steady, reliable leadership provides security and direction, building strong foundations for success.',
+        5: 'Your dynamic leadership brings change and excitement, encouraging others to embrace new possibilities.',
+        6: 'You lead with compassion and responsibility, creating supportive environments where everyone can thrive.',
+        7: 'Your thoughtful, analytical leadership provides deep insights and strategic direction for complex challenges.',
+        8: 'Your authoritative leadership commands respect and achieves ambitious goals through determination and strategy.',
+        9: 'Your visionary leadership serves the greater good, inspiring others to contribute to meaningful causes.'
+    };
+    
+    const primaryStyle = styles[bhagyank] || 'You have a unique leadership style that combines multiple approaches.';
+    const supportingStyle = styles[mulank] || '';
+    
+    return `${primaryStyle} ${supportingStyle}`.trim();
+}
+
+/**
+ * Generate Business Potential
+ */
+function generateBusinessPotential(bhagyank, mulank, nameNumber) {
+    let potential = 'Your numerological combination shows ';
+    
+    const businessNumbers = [1, 3, 5, 8, 9];
+    const bhagyankBusiness = businessNumbers.includes(bhagyank);
+    const mulankBusiness = businessNumbers.includes(mulank);
+    const nameBusiness = businessNumbers.includes(nameNumber);
+    
+    const businessScore = (bhagyankBusiness ? 1 : 0) + (mulankBusiness ? 1 : 0) + (nameBusiness ? 1 : 0);
+    
+    if (businessScore >= 2) {
+        potential += 'exceptional business potential with natural entrepreneurial instincts. You have the vision, courage, and determination needed for successful ventures.';
+    } else if (businessScore === 1) {
+        potential += 'good business potential that can be developed with proper planning and partnerships. Your analytical skills will help you make sound business decisions.';
+    } else {
+        potential += 'excellent potential for stable employment and service-oriented careers. Your reliability and dedication will lead to steady advancement and recognition.';
+    }
+    
+    return potential;
+}
+
+/**
+ * Generate Love Style
+ */
+function generateLoveStyle(bhagyank, mulank, nameNumber) {
+    const loveStyles = {
+        1: 'You love with passion and leadership, taking initiative in relationships and inspiring your partner to grow.',
+        2: 'You love with gentleness and cooperation, creating harmony and emotional security in relationships.',
+        3: 'You love with creativity and expression, bringing joy, laughter, and artistic beauty to relationships.',
+        4: 'You love with stability and devotion, providing security and building lasting foundations for partnership.',
+        5: 'You love with freedom and adventure, bringing excitement and new experiences to relationships.',
+        6: 'You love with nurturing and responsibility, creating a caring and supportive home environment.',
+        7: 'You love with depth and understanding, seeking spiritual and intellectual connection with your partner.',
+        8: 'You love with intensity and commitment, providing material security and ambitious goals for the partnership.',
+        9: 'You love with wisdom and compassion, bringing universal understanding and growth to relationships.'
+    };
+    
+    return loveStyles[bhagyank] || 'You have a unique and special way of loving that brings happiness to relationships.';
+}
+
+/**
+ * Generate Ideal Partner Numerology
+ */
+function generateIdealPartnerNumerology(bhagyank, mulank, nameNumber) {
+    const compatibility = {
+        1: [1, 5, 9], 2: [2, 4, 6, 8], 3: [3, 6, 9], 4: [2, 4, 6, 8],
+        5: [1, 5, 9], 6: [2, 3, 6, 9], 7: [7], 8: [2, 4, 6, 8],
+        9: [1, 3, 6, 9], 11: [2, 11, 22], 22: [4, 11, 22], 33: [6, 9, 33]
+    };
+    
+    const idealNumbers = compatibility[bhagyank] || [bhagyank];
+    
+    const partnerCharacteristics = idealNumbers.map(num => {
+        const characteristics = {
+            1: 'confident, independent, and leadership-oriented',
+            2: 'gentle, cooperative, and emotionally supportive',
+            3: 'creative, expressive, and joyful',
+            4: 'stable, reliable, and practical',
+            5: 'adventurous, free-spirited, and dynamic',
+            6: 'nurturing, responsible, and family-oriented',
+            7: 'wise, spiritual, and intellectually deep',
+            8: 'ambitious, successful, and materially secure',
+            9: 'wise, humanitarian, and universally minded',
+            11: 'intuitive, inspirational, and spiritually aware',
+            22: 'visionary, practical, and achievement-oriented',
+            33: 'compassionate, healing, and spiritually advanced'
+        };
+        return characteristics[num];
+    }).filter(Boolean);
+    
+    return {
+        numbers: idealNumbers,
+        characteristics: partnerCharacteristics,
+        compatibility: `Your ideal partner will be ${partnerCharacteristics.join(' or ')}, creating perfect harmony and mutual growth in your relationship.`
+    };
+}
+
+/**
+ * Generate Amazing Numerology Predictions
+ */
+function generateAmazingNumerologyPredictions(bhagyank, mulank, nameNumber, age, fullName) {
+    const predictions = [];
+    
+    // Life path predictions
+    predictions.push(`Your ${bhagyank} life path is leading you toward extraordinary achievements that will inspire others and create lasting impact.`);
+    
+    // Career predictions
+    predictions.push(`Your natural ${mulank} personality will attract a career opportunity that perfectly matches your talents within the next ${3 + bhagyank % 2} years.`);
+    
+    // Relationship predictions
+    predictions.push(`Your ${nameNumber} name vibration will attract a life partner who complements your personality perfectly and supports your highest aspirations.`);
+    
+    // Success predictions
+    predictions.push(`The combination of your numbers creates a success formula that will bring both material prosperity and spiritual fulfillment.`);
+    
+    // Age-specific predictions
+    if (age < 30) {
+        predictions.push(`Between ages ${age + 2} and ${age + 5}, you'll experience a major life transformation that aligns you with your true purpose.`);
+    } else if (age < 50) {
+        predictions.push(`This decade will establish you as a respected figure in your field, with your reputation growing significantly.`);
+    } else {
+        predictions.push(`Your accumulated wisdom will create opportunities to mentor others and leave a lasting legacy.`);
+    }
+    
+    // Name-specific predictions
+    const firstLetter = fullName.charAt(0).toUpperCase();
+    predictions.push(`The first letter '${firstLetter}' of your name carries special vibrations that enhance your natural magnetism and attract positive opportunities.`);
+    
+    // Positive future predictions
+    predictions.push(`Your unique number combination is rare and indicates that you're meant for something special and extraordinary in this lifetime.`);
+    predictions.push(`The universe is aligning circumstances to bring you the perfect opportunities for growth, love, and success.`);
+    
+    return predictions;
+}
+
+/**
+ * Generate helper functions for positive analysis
+ */
+function getBhagyankStrength(number) {
+    const strengths = {
+        1: 'leadership and independence', 2: 'cooperation and harmony', 3: 'creativity and expression',
+        4: 'stability and foundation', 5: 'freedom and adventure', 6: 'nurturing and healing',
+        7: 'wisdom and spirituality', 8: 'achievement and success', 9: 'service and completion',
+        11: 'inspiration and intuition', 22: 'master building', 33: 'master teaching'
+    };
+    return strengths[number] || 'unique spiritual gifts';
+}
+
+function getMulankStrength(number) {
+    const strengths = {
+        1: 'pioneering courage', 2: 'diplomatic wisdom', 3: 'creative joy',
+        4: 'practical reliability', 5: 'dynamic versatility', 6: 'caring responsibility',
+        7: 'analytical depth', 8: 'material mastery', 9: 'humanitarian wisdom'
+    };
+    return strengths[number] || 'special personality gifts';
+}
+
+function getPositiveBhagyankImpact(number) {
+    const impacts = {
+        1: 'Your life path brings natural leadership opportunities and the ability to inspire others toward greatness.',
+        2: 'Your destiny involves creating harmony and cooperation, making you a natural peacemaker and bridge-builder.',
+        3: 'Your life purpose centers on creative expression and bringing joy to others through your talents.',
+        4: 'Your path involves building lasting foundations that provide security and stability for many people.',
+        5: 'Your journey brings freedom and adventure, opening new horizons and possibilities for yourself and others.',
+        6: 'Your destiny is to nurture and heal, creating loving environments where others can flourish.',
+        7: 'Your path leads to spiritual wisdom and deep understanding that guides both yourself and others.',
+        8: 'Your life purpose involves achieving material success and using your authority to benefit others.',
+        9: 'Your destiny is humanitarian service, touching countless lives with your wisdom and compassion.'
+    };
+    return impacts[number] || 'Your life path brings unique opportunities for growth and service.';
+}
+
+function getPositiveMulankGifts(number) {
+    const gifts = {
+        1: 'You possess the rare gift of natural leadership and the courage to pioneer new paths.',
+        2: 'Your gentle strength and cooperative spirit make you invaluable in any team or relationship.',
+        3: 'Your creative spark and joyful expression bring light and inspiration to everyone around you.',
+        4: 'Your reliability and practical wisdom create stability and trust wherever you go.',
+        5: 'Your adventurous spirit and versatility open doors to exciting opportunities and experiences.',
+        6: 'Your nurturing heart and sense of responsibility make you a natural healer and caretaker.',
+        7: 'Your analytical mind and spiritual insight provide deep understanding and wise guidance.',
+        8: 'Your business acumen and determination create pathways to material success and recognition.',
+        9: 'Your humanitarian heart and universal wisdom enable you to serve and uplift humanity.'
+    };
+    return gifts[number] || 'You possess special gifts that make you unique and valuable.';
+}
+
+function getPositiveNameImpact(number) {
+    const impacts = {
+        1: 'Your name projects confident leadership that attracts opportunities and followers naturally.',
+        2: 'Your name radiates gentle cooperation that draws people seeking harmony and understanding.',
+        3: 'Your name vibrates with creative energy that attracts artistic and expressive opportunities.',
+        4: 'Your name conveys reliability and stability that attracts trust and long-term partnerships.',
+        5: 'Your name pulses with dynamic energy that attracts adventure and exciting possibilities.',
+        6: 'Your name emanates caring warmth that attracts those needing nurturing and support.',
+        7: 'Your name carries mysterious wisdom that attracts seekers of knowledge and truth.',
+        8: 'Your name projects success and authority that attracts business opportunities and influence.',
+        9: 'Your name resonates with humanitarian wisdom that attracts opportunities to serve and lead.'
+    };
+    return impacts[number] || 'Your name carries positive vibrations that attract beneficial opportunities.';
+}
+
+/**
+ * Generate missing helper functions for enhanced numerology
+ */
+function getLoShuHiddenTalents(loShuResult) {
+    const talents = [];
+    const grid = loShuResult.grid;
+    
+    // Analyze repeated numbers for hidden talents
+    Object.entries(grid).forEach(([number, count]) => {
+        if (count > 1) {
+            const hiddenTalents = {
+                1: 'Exceptional leadership and independence abilities',
+                2: 'Master of cooperation and emotional intelligence',
+                3: 'Extraordinary creative and communication gifts',
+                4: 'Superior organizational and foundation-building skills',
+                5: 'Remarkable adaptability and freedom-seeking nature',
+                6: 'Outstanding nurturing and healing capabilities',
+                7: 'Deep spiritual wisdom and analytical powers',
+                8: 'Exceptional material success and authority potential',
+                9: 'Extraordinary humanitarian and completion abilities'
+            };
+            if (hiddenTalents[number]) {
+                talents.push(`${hiddenTalents[number]} (Number ${number} appears ${count} times)`);
+            }
+        }
+    });
+    
+    return talents.length > 0 ? talents : ['Your unique number pattern reveals special talents waiting to be discovered'];
+}
+
+function getLoShuStrengthAreas(loShuResult) {
+    const strengths = [];
+    const analysis = loShuResult.analysis;
+    
+    // Analyze planes for strength areas
+    if (analysis.planes.mental > 0) {
+        strengths.push('Strong mental plane - Excellent thinking and memory abilities');
+    }
+    if (analysis.planes.emotional > 0) {
+        strengths.push('Strong emotional plane - Great emotional intelligence and sensitivity');
+    }
+    if (analysis.planes.physical > 0) {
+        strengths.push('Strong physical plane - Excellent practical skills and physical coordination');
+    }
+    
+    // Analyze arrows for additional strengths
+    if (analysis.arrows.determination > 0) {
+        strengths.push('Arrow of Determination - Exceptional willpower and goal achievement');
+    }
+    if (analysis.arrows.spirituality > 0) {
+        strengths.push('Arrow of Spirituality - Deep spiritual understanding and intuition');
+    }
+    if (analysis.arrows.intellect > 0) {
+        strengths.push('Arrow of Intellect - Superior thinking and analytical abilities');
+    }
+    
+    return strengths.length > 0 ? strengths : ['Your unique pattern creates special strengths in multiple life areas'];
+}
+
+function calculateEnhancedNumerologyCompatibility(bhagyank, mulank, nameNumber) {
+    const harmony = Math.abs(bhagyank - mulank) <= 2 && Math.abs(bhagyank - nameNumber) <= 2;
+    const compatibilityScore = calculateCompatibilityScore(bhagyank, mulank, nameNumber);
+    
+    return {
+        isHarmonious: harmony,
+        compatibilityScore: compatibilityScore,
+        analysis: harmony ? 
+            `Your numbers are in perfect harmony (${compatibilityScore}% compatibility), indicating a beautifully balanced personality with natural magnetism and success potential.` :
+            `Your numbers create dynamic tension (${compatibilityScore}% compatibility) that, when properly channeled, leads to extraordinary achievements and personal growth.`,
+        recommendations: harmony ?
+            'Continue developing your natural talents and maintain this beautiful balance for maximum success.' :
+            'Use this dynamic energy to fuel your ambitions and transform challenges into stepping stones for greatness.',
+        positiveOutlook: 'This number combination is specially designed for your unique life purpose and will bring you exactly the experiences you need for growth and fulfillment.'
+    };
+}
+
+function calculateCompatibilityScore(bhagyank, mulank, nameNumber) {
+    let score = 70; // Base compatibility
+    
+    // Perfect matches
+    if (bhagyank === mulank) score += 15;
+    if (bhagyank === nameNumber) score += 15;
+    if (mulank === nameNumber) score += 10;
+    
+    // Harmonious combinations
+    if (Math.abs(bhagyank - mulank) <= 1) score += 10;
+    if (Math.abs(bhagyank - nameNumber) <= 1) score += 10;
+    if (Math.abs(mulank - nameNumber) <= 1) score += 5;
+    
+    // Master number bonuses
+    if ([11, 22, 33].includes(bhagyank)) score += 10;
+    if ([11, 22, 33].includes(mulank)) score += 5;
+    if ([11, 22, 33].includes(nameNumber)) score += 5;
+    
+    return Math.min(100, score);
+}
+
+function getPositiveNumerologyRecommendations(bhagyank, mulank, nameNumber) {
+    return [
+        `Embrace your ${bhagyank} life path energy by taking on leadership opportunities and inspiring others`,
+        `Use your ${mulank} personality gifts to build meaningful relationships and create positive impact`,
+        `Leverage your ${nameNumber} name vibration to attract the right opportunities and people into your life`,
+        'Trust in your unique number combination - it\'s perfectly designed for your extraordinary life journey',
+        'Focus on your natural talents and gifts rather than trying to be someone you\'re not',
+        'Use meditation and positive affirmations to align with your highest potential',
+        'Surround yourself with people who appreciate and support your unique qualities',
+        'Remember that challenges are opportunities for growth and will ultimately strengthen your character'
+    ];
+}
+
+function generateNumerologyLifePhaseAnalysis(bhagyank, mulank, age) {
+    const currentPhase = age < 25 ? 'Foundation' : age < 40 ? 'Growth' : age < 55 ? 'Mastery' : 'Wisdom';
+    
+    const phaseAnalysis = {
+        Foundation: `You're in the foundation-building phase where your ${bhagyank} life path and ${mulank} personality are developing their full potential. This is a time of learning, exploration, and discovering your unique gifts.`,
+        Growth: `You're in the growth phase where your talents are blossoming and opportunities are multiplying. Your ${bhagyank} life path is opening doors to leadership and achievement.`,
+        Mastery: `You're in the mastery phase where your accumulated skills and wisdom are being recognized. Your ${bhagyank} life path is bringing you respect and authority in your chosen field.`,
+        Wisdom: `You're in the wisdom phase where your life experience becomes valuable to others. Your ${bhagyank} life path is guiding you toward mentoring and legacy-building.`
+    };
+    
+    return phaseAnalysis[currentPhase];
+}
+
+function generateNumerologyLuckyElements(bhagyank, mulank, nameNumber) {
+    const luckyNumbers = [bhagyank, mulank, nameNumber];
+    const luckyColors = {
+        1: ['Red', 'Orange', 'Gold'], 2: ['White', 'Cream', 'Silver'], 3: ['Yellow', 'Orange', 'Pink'],
+        4: ['Green', 'Brown', 'Grey'], 5: ['Blue', 'Turquoise', 'Silver'], 6: ['Pink', 'Blue', 'White'],
+        7: ['Purple', 'Violet', 'Green'], 8: ['Black', 'Dark Blue', 'Grey'], 9: ['Red', 'Orange', 'Gold']
+    };
+    
+    return {
+        numbers: [...new Set(luckyNumbers)],
+        colors: [...new Set([...luckyColors[bhagyank] || [], ...luckyColors[mulank] || [], ...luckyColors[nameNumber] || []])],
+        days: getLuckyDays(bhagyank, mulank, nameNumber),
+        directions: getLuckyDirections(bhagyank, mulank),
+        gemstones: getLuckyGemstones(bhagyank, mulank, nameNumber)
+    };
+}
+
+function getLuckyDays(bhagyank, mulank, nameNumber) {
+    const dayMapping = {
+        1: 'Sunday', 2: 'Monday', 3: 'Wednesday', 4: 'Sunday', 5: 'Wednesday',
+        6: 'Friday', 7: 'Monday', 8: 'Saturday', 9: 'Tuesday'
+    };
+    
+    const days = [dayMapping[bhagyank], dayMapping[mulank], dayMapping[nameNumber]].filter(Boolean);
+    return [...new Set(days)];
+}
+
+function getLuckyDirections(bhagyank, mulank) {
+    const directionMapping = {
+        1: 'East', 2: 'West', 3: 'Northeast', 4: 'Southwest', 5: 'North',
+        6: 'Southeast', 7: 'West', 8: 'South', 9: 'South'
+    };
+    
+    return [directionMapping[bhagyank], directionMapping[mulank]].filter(Boolean);
+}
+
+function getLuckyGemstones(bhagyank, mulank, nameNumber) {
+    const gemstones = {
+        1: 'Ruby', 2: 'Pearl', 3: 'Yellow Sapphire', 4: 'Emerald', 5: 'Diamond',
+        6: 'Blue Sapphire', 7: 'Cat\'s Eye', 8: 'Blue Sapphire', 9: 'Red Coral'
+    };
+    
+    return [gemstones[bhagyank], gemstones[mulank], gemstones[nameNumber]].filter(Boolean);
+}
+
 // Jyotish Endpoints
-router.post('/jyotish/comprehensive-chart', (req, res) => {
+router.post('/jyotish/comprehensive-chart', async (req, res) => {
     try {
-        const { dateOfBirth, timeOfBirth, placeOfBirth, fullName } = req.body;
+        const { dateOfBirth, timeOfBirth, locationId, fullName } = req.body;
         
-        if (!dateOfBirth || !timeOfBirth || !placeOfBirth) {
-            return res.status(400).json({ error: 'Date, time, and place of birth are required' });
+        if (!dateOfBirth || !timeOfBirth || !locationId) {
+            return res.status(400).json({ 
+                error: 'Date of birth, time of birth, and location ID are required. Use /api/locations/search to find location ID.' 
+            });
         }
         
-        const chart = calculateComprehensiveJyotishChart(dateOfBirth, timeOfBirth, placeOfBirth, fullName);
+        // Get location coordinates from location API
+        const locationResponse = await fetch(`${req.protocol}://${req.get('host')}/api/locations/city/${locationId}`);
+        const locationData = await locationResponse.json();
+        
+        if (!locationData.success) {
+            return res.status(400).json({ error: 'Invalid location ID' });
+        }
+        
+        const coordinates = locationData.city.coordinates;
+        
+        // Use enhanced Jyotish calculation
+        const { calculateEnhancedJyotishChart } = require('./enhanced-jyotish');
+        const chart = await calculateEnhancedJyotishChart(
+            dateOfBirth, timeOfBirth, coordinates, fullName
+        );
         
         res.json({
             success: true,
             ...chart,
-            description: 'Comprehensive Jyotish chart analysis with detailed predictions, name compatibility, and personalized guidance'
+            location: locationData.city,
+            description: 'Enhanced Jyotish chart analysis with deep career and marriage predictions, planetary house analysis, and name compatibility'
         });
     } catch (error) {
         res.status(400).json({ error: error.message });
