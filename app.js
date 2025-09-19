@@ -61,6 +61,7 @@ const celebrityKundliApiRouter = require('./routes/api/celebrityKundli');
 const learningRoutes = require('./routes/learning');
 const orderRoutes = require('./routes/order');
 const orderApiRoutes = require('./routes/api/order');
+const calculatorApiRoutes = require('./routes/api/calculators');
 
 const app = express();
 
@@ -261,6 +262,9 @@ app.use('/learning', learningRoutes);
 // Order routes
 app.use('/order', orderRoutes);
 app.use('/api/order', orderApiRoutes);
+
+// Calculator API routes
+app.use('/api/calculators', calculatorApiRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
