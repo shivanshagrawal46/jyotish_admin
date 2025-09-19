@@ -918,7 +918,7 @@ async function calculateEnhancedJyotishChart(dateOfBirth, timeOfBirth, coordinat
         let nameAnalysis = null;
         if (fullName) {
             // Use existing name analysis function
-            const nakshatra = calculateNakshatra(finalPlanets.Moon.longitude);
+            const nakshatra = calculateNakshatraFromLongitude(finalPlanets.Moon.longitude);
             const rashi = { name: finalPlanets.Moon.sign, number: ZODIAC_SIGNS[finalPlanets.Moon.sign].number };
             nameAnalysis = calculateNameCompatibilityWithChart(fullName, rashi, nakshatra);
         }
@@ -1077,6 +1077,303 @@ function getPlanetaryRemedies(planetName) {
     };
     
     return remedies[planetName] || remedies.Sun;
+}
+
+/**
+ * Calculate Nakshatra from longitude
+ */
+function calculateNakshatraFromLongitude(longitude) {
+    const nakshatraNumber = Math.floor(longitude / 13.333333) + 1;
+    const pada = Math.floor((longitude % 13.333333) / 3.333333) + 1;
+    const nakshatraNames = Object.keys(NAKSHATRAS);
+    
+    return {
+        number: nakshatraNumber,
+        name: nakshatraNames[nakshatraNumber - 1] || 'Ashwini',
+        pada: pada,
+        degree: (longitude % 13.333333).toFixed(2)
+    };
+}
+
+/**
+ * Calculate name compatibility with birth chart
+ */
+function calculateNameCompatibilityWithChart(fullName, rashi, nakshatra) {
+    const nameNumber = calculateNameNumerology(fullName);
+    
+    // Check if name's first letter matches nakshatra sounds
+    const nakshatraSounds = getNakshatraSounds(nakshatra.name);
+    const nameFirstLetter = fullName.charAt(0).toLowerCase();
+    
+    const isNakshatraCompatible = nakshatraSounds.some(sound => 
+        nameFirstLetter.startsWith(sound.toLowerCase())
+    );
+    
+    // Calculate name-rashi harmony
+    const compatibleNumbers = getCompatibleNumbers(rashi.number);
+    const isRashiCompatible = compatibleNumbers.includes(nameNumber);
+    
+    return {
+        nameNumber,
+        firstLetter: nameFirstLetter.toUpperCase(),
+        nakshatraCompatibility: {
+            isCompatible: isNakshatraCompatible,
+            expectedSounds: nakshatraSounds,
+            analysis: isNakshatraCompatible ? 
+                'Your name resonates well with your birth star' : 
+                `Consider names starting with: ${nakshatraSounds.join(', ')}`
+        },
+        rashiCompatibility: {
+            isCompatible: isRashiCompatible,
+            analysis: isRashiCompatible ?
+                'Your name number harmonizes with your moon sign' :
+                'Your name may create some challenges, but can be balanced with proper remedies'
+        },
+        overallScore: calculateNameChartCompatibilityScore(isNakshatraCompatible, isRashiCompatible),
+        recommendations: generateNameRecommendations(isNakshatraCompatible, isRashiCompatible, nakshatraSounds)
+    };
+}
+
+/**
+ * Calculate name numerology using Chaldean system
+ */
+function calculateNameNumerology(fullName) {
+    const chaldeanValues = {
+        'A': 1, 'I': 1, 'J': 1, 'Q': 1, 'Y': 1,
+        'B': 2, 'K': 2, 'R': 2,
+        'C': 3, 'G': 3, 'L': 3, 'S': 3,
+        'D': 4, 'M': 4, 'T': 4,
+        'E': 5, 'H': 5, 'N': 5, 'X': 5,
+        'U': 6, 'V': 6, 'W': 6,
+        'O': 7, 'Z': 7,
+        'F': 8, 'P': 8
+    };
+    
+    let sum = 0;
+    const name = fullName.toUpperCase().replace(/[^A-Z]/g, '');
+    
+    for (let char of name) {
+        if (chaldeanValues[char]) {
+            sum += chaldeanValues[char];
+        }
+    }
+    
+    // Reduce to single digit unless it's a master number
+    while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+        const temp = sum;
+        sum = 0;
+        while (temp > 0) {
+            sum += temp % 10;
+            temp = Math.floor(temp / 10);
+        }
+    }
+    
+    return sum;
+}
+
+/**
+ * Get Nakshatra sounds for name compatibility
+ */
+function getNakshatraSounds(nakshatraName) {
+    const nakshatraSounds = {
+        'Ashwini': ['chu', 'che', 'cho', 'la'],
+        'Bharani': ['li', 'lu', 'le', 'lo'],
+        'Krittika': ['a', 'i', 'u', 'e'],
+        'Rohini': ['o', 'va', 'vi', 'vu'],
+        'Mrigashira': ['ve', 'vo', 'ka', 'ki'],
+        'Ardra': ['ku', 'gha', 'nga', 'chha'],
+        'Punarvasu': ['ke', 'ko', 'ha', 'hi'],
+        'Pushya': ['hu', 'he', 'ho', 'da'],
+        'Ashlesha': ['di', 'du', 'de', 'do'],
+        'Magha': ['ma', 'mi', 'mu', 'me'],
+        'Purva Phalguni': ['mo', 'ta', 'ti', 'tu'],
+        'Uttara Phalguni': ['te', 'to', 'pa', 'pi'],
+        'Hasta': ['pu', 'sha', 'na', 'tha'],
+        'Chitra': ['pe', 'po', 'ra', 'ri'],
+        'Swati': ['ru', 're', 'ro', 'ta'],
+        'Vishakha': ['ti', 'tu', 'te', 'to'],
+        'Anuradha': ['na', 'ni', 'nu', 'ne'],
+        'Jyeshtha': ['no', 'ya', 'yi', 'yu'],
+        'Mula': ['ye', 'yo', 'bha', 'bhi'],
+        'Purva Ashadha': ['bhu', 'dha', 'pha', 'da'],
+        'Uttara Ashadha': ['bhe', 'bho', 'ja', 'ji'],
+        'Shravana': ['ju', 'je', 'jo', 'gha'],
+        'Dhanishta': ['ga', 'gi', 'gu', 'ge'],
+        'Shatabhisha': ['go', 'sa', 'si', 'su'],
+        'Purva Bhadrapada': ['se', 'so', 'da', 'di'],
+        'Uttara Bhadrapada': ['du', 'tha', 'jha', 'da'],
+        'Revati': ['de', 'do', 'cha', 'chi']
+    };
+    
+    return nakshatraSounds[nakshatraName] || ['a', 'i', 'u', 'e'];
+}
+
+/**
+ * Get compatible numbers for rashi
+ */
+function getCompatibleNumbers(rashiNumber) {
+    const compatibility = {
+        1: [1, 5, 9], 2: [2, 6, 7], 3: [3, 6, 9], 4: [1, 4, 8],
+        5: [1, 5, 9], 6: [2, 3, 6], 7: [2, 7, 9], 8: [1, 4, 8],
+        9: [1, 3, 5, 7, 9], 10: [1, 4, 8], 11: [2, 6, 7], 12: [3, 6, 9]
+    };
+    return compatibility[rashiNumber] || [1, 5, 9];
+}
+
+/**
+ * Calculate name-chart compatibility score
+ */
+function calculateNameChartCompatibilityScore(nakshatraCompatible, rashiCompatible) {
+    let score = 0;
+    if (nakshatraCompatible) score += 50;
+    if (rashiCompatible) score += 50;
+    return score;
+}
+
+/**
+ * Generate name recommendations
+ */
+function generateNameRecommendations(nakshatraCompatible, rashiCompatible, nakshatraSounds) {
+    const recommendations = [];
+    
+    if (!nakshatraCompatible) {
+        recommendations.push(`Consider names starting with: ${nakshatraSounds.join(', ')}`);
+        recommendations.push('Use your birth star sounds for better harmony');
+    }
+    
+    if (!rashiCompatible) {
+        recommendations.push('Consider using gemstones to balance name energy');
+        recommendations.push('Chant your rashi mantra regularly');
+    }
+    
+    if (nakshatraCompatible && rashiCompatible) {
+        recommendations.push('Your name is in perfect harmony with your birth chart');
+        recommendations.push('Continue using this name for maximum benefit');
+    }
+    
+    return recommendations;
+}
+
+/**
+ * Analyze natural talents
+ */
+function analyzeNaturalTalents(planets, ascendant, nameAnalysis) {
+    const talents = [];
+    
+    // Analyze each planet's position and strength
+    Object.entries(planets).forEach(([planetName, planetData]) => {
+        if (planetData.strength > 70) {
+            const planetTalents = getPlanetaryTalents(planetName, planetData.sign, planetData.house);
+            talents.push(...planetTalents);
+        }
+    });
+    
+    // Add ascendant-based talents
+    const ascendantTalents = getAscendantTalents(ascendant.sign);
+    talents.push(...ascendantTalents);
+    
+    // Add name-based talents if name analysis available
+    if (nameAnalysis && nameAnalysis.overallScore > 70) {
+        talents.push("Strong name harmony enhances natural abilities and recognition");
+    }
+    
+    return [...new Set(talents)]; // Remove duplicates
+}
+
+/**
+ * Get planetary talents
+ */
+function getPlanetaryTalents(planetName, sign, house) {
+    const planetTalents = {
+        Sun: {
+            talents: ['Leadership', 'Government work', 'Authority roles', 'Public speaking', 'Administration'],
+            houses: {
+                1: 'Natural leadership and commanding presence',
+                10: 'Exceptional career leadership and government connections',
+                5: 'Creative leadership and teaching abilities'
+            }
+        },
+        Moon: {
+            talents: ['Psychology', 'Public relations', 'Hospitality', 'Healing', 'Intuition'],
+            houses: {
+                4: 'Exceptional emotional intelligence and nurturing abilities',
+                1: 'Strong intuitive abilities and public appeal',
+                9: 'Spiritual and philosophical insights'
+            }
+        },
+        Mars: {
+            talents: ['Sports', 'Military', 'Engineering', 'Surgery', 'Real estate'],
+            houses: {
+                3: 'Exceptional courage and competitive abilities',
+                6: 'Outstanding ability to overcome obstacles',
+                10: 'Leadership in action-oriented careers'
+            }
+        },
+        Mercury: {
+            talents: ['Communication', 'Writing', 'Business', 'Mathematics', 'Technology'],
+            houses: {
+                3: 'Exceptional communication and writing skills',
+                10: 'Outstanding business and analytical abilities',
+                5: 'Creative intelligence and teaching talents'
+            }
+        },
+        Jupiter: {
+            talents: ['Teaching', 'Law', 'Philosophy', 'Counseling', 'Spirituality'],
+            houses: {
+                9: 'Exceptional wisdom and spiritual teaching abilities',
+                1: 'Natural wisdom and counseling talents',
+                5: 'Outstanding teaching and creative guidance'
+            }
+        },
+        Venus: {
+            talents: ['Arts', 'Music', 'Fashion', 'Beauty', 'Diplomacy'],
+            houses: {
+                1: 'Natural artistic abilities and aesthetic sense',
+                5: 'Exceptional creative and artistic talents',
+                7: 'Outstanding diplomatic and relationship skills'
+            }
+        },
+        Saturn: {
+            talents: ['Organization', 'Discipline', 'Long-term planning', 'Service', 'Research'],
+            houses: {
+                10: 'Exceptional organizational and leadership abilities',
+                6: 'Outstanding service orientation and problem-solving',
+                8: 'Deep research and transformation abilities'
+            }
+        }
+    };
+    
+    const planetInfo = planetTalents[planetName];
+    if (!planetInfo) return [];
+    
+    const talents = [...planetInfo.talents];
+    if (planetInfo.houses[house]) {
+        talents.push(planetInfo.houses[house]);
+    }
+    
+    return talents;
+}
+
+/**
+ * Get ascendant talents
+ */
+function getAscendantTalents(ascendantSign) {
+    const ascendantTalents = {
+        'Aries': ['Leadership', 'Initiative', 'Courage', 'Pioneering'],
+        'Taurus': ['Stability', 'Artistic sense', 'Material wisdom', 'Patience'],
+        'Gemini': ['Communication', 'Versatility', 'Quick learning', 'Networking'],
+        'Cancer': ['Nurturing', 'Emotional intelligence', 'Intuition', 'Care'],
+        'Leo': ['Creativity', 'Leadership', 'Performance', 'Confidence'],
+        'Virgo': ['Analysis', 'Perfectionism', 'Service', 'Detail orientation'],
+        'Libra': ['Diplomacy', 'Balance', 'Artistic sense', 'Harmony'],
+        'Scorpio': ['Transformation', 'Research', 'Intensity', 'Mystery'],
+        'Sagittarius': ['Philosophy', 'Teaching', 'Adventure', 'Wisdom'],
+        'Capricorn': ['Organization', 'Discipline', 'Authority', 'Structure'],
+        'Aquarius': ['Innovation', 'Humanitarian work', 'Uniqueness', 'Technology'],
+        'Pisces': ['Spirituality', 'Compassion', 'Artistic abilities', 'Intuition']
+    };
+    
+    return ascendantTalents[ascendantSign] || ['Unique talents'];
 }
 
 // API Endpoint

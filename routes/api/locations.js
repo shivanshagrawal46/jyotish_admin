@@ -395,4 +395,30 @@ router.post('/nearest', (req, res) => {
     }
 });
 
-module.exports = router;
+/**
+ * Get location by ID (for internal use)
+ */
+function getLocationById(locationId) {
+    const city = INDIAN_CITIES.find(c => c.id === parseInt(locationId));
+    
+    if (!city) {
+        return null;
+    }
+    
+    return {
+        id: city.id,
+        name: city.name,
+        state: city.state,
+        displayName: `${city.name}, ${city.state}`,
+        coordinates: {
+            latitude: city.latitude,
+            longitude: city.longitude
+        },
+        timezone: city.timezone
+    };
+}
+
+module.exports = {
+    router,
+    getLocationById
+};

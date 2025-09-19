@@ -1530,6 +1530,301 @@ function getTenthLordPlanet(ascendantSign) {
     return lordPlanets[ascendantSign];
 }
 
+/**
+ * Analyze Mangal Dosha (Mars affliction)
+ */
+function analyzeMangalDosha(mars, planets, ascendant) {
+    const mangalDosha = {
+        present: false,
+        severity: 'None',
+        houses: [],
+        remedies: [],
+        cancellation: false
+    };
+    
+    // Check Mars position in houses 1, 2, 4, 7, 8, 12 from ascendant, Moon, Venus
+    const doshaHouses = [1, 2, 4, 7, 8, 12];
+    
+    // From Ascendant (Lagna)
+    if (doshaHouses.includes(mars.house)) {
+        mangalDosha.present = true;
+        mangalDosha.houses.push(`Lagna ${mars.house}th house`);
+    }
+    
+    // From Moon
+    const moonHouse = planets.Moon.house;
+    const marsFromMoon = ((mars.house - moonHouse + 12) % 12) || 12;
+    if (doshaHouses.includes(marsFromMoon)) {
+        mangalDosha.present = true;
+        mangalDosha.houses.push(`Moon ${marsFromMoon}th house`);
+    }
+    
+    // From Venus
+    const venusHouse = planets.Venus.house;
+    const marsFromVenus = ((mars.house - venusHouse + 12) % 12) || 12;
+    if (doshaHouses.includes(marsFromVenus)) {
+        mangalDosha.present = true;
+        mangalDosha.houses.push(`Venus ${marsFromVenus}th house`);
+    }
+    
+    // Determine severity
+    if (mangalDosha.houses.length >= 3) {
+        mangalDosha.severity = 'High';
+    } else if (mangalDosha.houses.length === 2) {
+        mangalDosha.severity = 'Medium';
+    } else if (mangalDosha.houses.length === 1) {
+        mangalDosha.severity = 'Low';
+    }
+    
+    // Check for cancellations
+    mangalDosha.cancellation = checkMangalDoshaCancellation(mars, planets, ascendant);
+    
+    // Generate remedies if present
+    if (mangalDosha.present && !mangalDosha.cancellation) {
+        mangalDosha.remedies = [
+            'Worship Lord Hanuman on Tuesdays',
+            'Chant Hanuman Chalisa daily',
+            'Donate red lentils and jaggery on Tuesdays',
+            'Fast on Tuesdays',
+            'Wear red coral gemstone after consultation',
+            'Perform Mangal Shanti Puja',
+            'Visit Hanuman temple regularly'
+        ];
+    }
+    
+    return mangalDosha;
+}
+
+/**
+ * Check for Mangal Dosha cancellation
+ */
+function checkMangalDoshaCancellation(mars, planets, ascendant) {
+    // Mars in own sign or exaltation
+    if (mars.sign === 'Aries' || mars.sign === 'Scorpio' || mars.sign === 'Capricorn') {
+        return true;
+    }
+    
+    // Mars with benefic planets
+    const benefics = ['Jupiter', 'Venus', 'Moon'];
+    const marsConjunctions = mars.conjunctions || [];
+    if (marsConjunctions.some(conj => benefics.includes(conj.planet))) {
+        return true;
+    }
+    
+    // Both partners having Mangal Dosha
+    // This would be checked during compatibility analysis
+    
+    return false;
+}
+
+/**
+ * Generate missing helper functions for career analysis
+ */
+function generateCareerTiming(bhagyank, mulank, age) {
+    return {
+        earlyCareer: `Ages 22-35: Foundation building with ${bhagyank} life path energy developing`,
+        peakCareer: `Ages 35-50: Peak achievement period with ${mulank} personality traits shining`,
+        laterCareer: `Ages 50+: Wisdom sharing and mentoring phase with accumulated experience`
+    };
+}
+
+function generateIncomePattern(bhagyank, mulank, nameNumber) {
+    const patterns = {
+        1: 'Leadership-based income with authority bonuses',
+        2: 'Steady partnership-based income with collaborative gains',
+        3: 'Creative and communication-based income with artistic rewards',
+        4: 'Systematic income growth with foundation-building approach',
+        5: 'Variable income with multiple streams and adventurous gains',
+        6: 'Service-based income with nurturing and healing rewards',
+        7: 'Wisdom-based income with research and analysis rewards',
+        8: 'Business and authority-based income with material success',
+        9: 'Humanitarian income with service-based rewards'
+    };
+    
+    return patterns[bhagyank] || 'Unique income pattern based on personal talents';
+}
+
+function generateWorkEnvironment(mulank, nameNumber) {
+    const environments = {
+        1: 'Leadership positions in dynamic, fast-paced environments',
+        2: 'Collaborative, harmonious workplaces with team focus',
+        3: 'Creative, expressive environments with artistic freedom',
+        4: 'Structured, organized workplaces with clear systems',
+        5: 'Flexible, varied environments with travel opportunities',
+        6: 'Caring, service-oriented environments helping others',
+        7: 'Quiet, research-focused environments for deep thinking',
+        8: 'Corporate, business environments with authority structures',
+        9: 'Humanitarian, service environments with global impact'
+    };
+    
+    return environments[mulank] || 'Adaptable to various work environments';
+}
+
+function generatePositiveCareerRecommendations(bhagyank, mulank, nameNumber) {
+    return [
+        `Embrace your ${bhagyank} life path by pursuing careers that align with your soul purpose`,
+        `Use your ${mulank} personality strengths to excel in your chosen field`,
+        `Leverage your ${nameNumber} name energy to attract career opportunities`,
+        'Network with people who share your values and vision',
+        'Continuously develop skills that enhance your natural talents',
+        'Trust your intuition when making important career decisions',
+        'Maintain positive relationships with colleagues and mentors',
+        'Stay open to unexpected opportunities that align with your purpose'
+    ];
+}
+
+/**
+ * Generate missing helper functions for relationship analysis
+ */
+function generateRelationshipStrengths(bhagyank, mulank, nameNumber) {
+    const strengths = [];
+    
+    const bhagyankStrengths = {
+        1: 'Natural leadership in relationships',
+        2: 'Exceptional cooperation and harmony',
+        3: 'Creative expression and joyful communication',
+        4: 'Stability and reliable partnership',
+        5: 'Adventure and excitement in relationships',
+        6: 'Nurturing and caring partnership',
+        7: 'Deep spiritual and intellectual connection',
+        8: 'Strong commitment and material security',
+        9: 'Wise and compassionate partnership'
+    };
+    
+    strengths.push(bhagyankStrengths[bhagyank] || 'Unique relationship approach');
+    
+    return strengths;
+}
+
+function generateAttractionFactors(mulank, nameNumber) {
+    const factors = [];
+    
+    const mulankFactors = {
+        1: 'Your confident and independent nature',
+        2: 'Your gentle and cooperative spirit',
+        3: 'Your creative and expressive personality',
+        4: 'Your reliable and stable character',
+        5: 'Your adventurous and dynamic energy',
+        6: 'Your caring and nurturing heart',
+        7: 'Your mysterious and wise aura',
+        8: 'Your successful and authoritative presence',
+        9: 'Your wise and humanitarian nature'
+    };
+    
+    factors.push(mulankFactors[mulank] || 'Your unique personality');
+    
+    return factors;
+}
+
+function generateRelationshipTiming(bhagyank, mulank, age) {
+    const bestAges = [];
+    
+    // Calculate favorable ages based on numbers
+    const baseAge = 25;
+    const bhagyankInfluence = bhagyank % 5;
+    const mulankInfluence = mulank % 3;
+    
+    bestAges.push(`${baseAge + bhagyankInfluence}-${baseAge + bhagyankInfluence + 5} years`);
+    
+    return {
+        bestAges: bestAges,
+        favorablePeriods: [`${bhagyank} and ${mulank} number years`, 'Venus favorable periods'],
+        meetingCircumstances: 'Through activities related to your life path and personality interests'
+    };
+}
+
+function generateMarriageHappiness(bhagyank, mulank, nameNumber) {
+    const happinessLevel = (bhagyank + mulank + nameNumber) % 4;
+    
+    const happiness = {
+        0: 'Exceptional happiness with deep spiritual and emotional connection',
+        1: 'Very high happiness with mutual growth and understanding',
+        2: 'Good happiness with balanced partnership and shared goals',
+        3: 'Moderate happiness with opportunities for growth and learning'
+    };
+    
+    return happiness[happinessLevel] || 'Blessed marriage with divine harmony';
+}
+
+function generateFamilyLife(bhagyank, mulank, nameNumber) {
+    return `Your family life will be blessed with ${getBhagyankStrength(bhagyank)} and ${getMulankStrength(mulank)}, creating a harmonious home environment filled with love, understanding, and mutual support.`;
+}
+
+function generatePositiveRelationshipAdvice(bhagyank, mulank, nameNumber) {
+    return [
+        `Express your ${bhagyank} life path energy in relationships for authentic connection`,
+        `Use your ${mulank} personality gifts to create harmony and understanding`,
+        `Let your ${nameNumber} name vibration attract compatible partners`,
+        'Communicate openly and honestly about your dreams and aspirations',
+        'Support your partner\'s growth while pursuing your own development',
+        'Create shared goals and vision for your relationship',
+        'Practice gratitude and appreciation for your partner\'s unique qualities',
+        'Trust that the universe is bringing you the perfect person at the right time'
+    ];
+}
+
+function getBhagyankStrength(number) {
+    const strengths = {
+        1: 'leadership and independence', 2: 'cooperation and harmony', 3: 'creativity and expression',
+        4: 'stability and foundation', 5: 'freedom and adventure', 6: 'nurturing and healing',
+        7: 'wisdom and spirituality', 8: 'achievement and success', 9: 'service and completion',
+        11: 'inspiration and intuition', 22: 'master building', 33: 'master teaching'
+    };
+    return strengths[number] || 'unique spiritual gifts';
+}
+
+function getMulankStrength(number) {
+    const strengths = {
+        1: 'pioneering courage', 2: 'diplomatic wisdom', 3: 'creative joy',
+        4: 'practical reliability', 5: 'dynamic versatility', 6: 'caring responsibility',
+        7: 'analytical depth', 8: 'material mastery', 9: 'humanitarian wisdom'
+    };
+    return strengths[number] || 'special personality gifts';
+}
+
+function generateNumerologyStrengths(bhagyank, mulank, nameNumber, loShuResult) {
+    const strengths = [];
+    
+    strengths.push(`Life Path ${bhagyank}: ${getBhagyankStrength(bhagyank)}`);
+    strengths.push(`Personality ${mulank}: ${getMulankStrength(mulank)}`);
+    strengths.push(`Name Energy ${nameNumber}: Attracts ${nameNumber}-related opportunities`);
+    
+    // Add Lo Shu Grid strengths
+    if (loShuResult.analysis.planes.mental > 0) {
+        strengths.push('Strong mental abilities and thinking power');
+    }
+    if (loShuResult.analysis.planes.emotional > 0) {
+        strengths.push('Excellent emotional intelligence and sensitivity');
+    }
+    if (loShuResult.analysis.planes.physical > 0) {
+        strengths.push('Great practical skills and physical coordination');
+    }
+    
+    return strengths;
+}
+
+function generateNumerologyFutureOpportunities(bhagyank, mulank, nameNumber, age) {
+    const opportunities = [];
+    
+    opportunities.push(`Your ${bhagyank} life path will open doors to leadership and service opportunities`);
+    opportunities.push(`Your ${mulank} personality will attract people who appreciate your unique gifts`);
+    opportunities.push(`Your ${nameNumber} name vibration will bring recognition and success`);
+    
+    if (age < 30) {
+        opportunities.push('Major life direction clarity coming in next 3-5 years');
+    } else if (age < 50) {
+        opportunities.push('Peak achievement period with maximum recognition and success');
+    } else {
+        opportunities.push('Wisdom-sharing opportunities that create lasting legacy');
+    }
+    
+    return opportunities;
+}
+
+function generatePersonalSuccessFormula(bhagyank, mulank, nameNumber) {
+    return `Your personal success formula: Combine your ${bhagyank} life path vision with your ${mulank} personality approach, amplified by your ${nameNumber} name energy. Focus on ${getBhagyankStrength(bhagyank)} while expressing ${getMulankStrength(mulank)} for maximum impact and fulfillment.`;
+}
+
 module.exports = {
     generateDeepCareerAnalysis,
     generateDeepMarriageAnalysis,

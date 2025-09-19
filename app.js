@@ -269,7 +269,7 @@ app.use('/api/order', orderApiRoutes);
 app.use('/api/calculators', calculatorApiRoutes);
 
 // Location API routes
-app.use('/api/locations', locationApiRoutes);
+app.use('/api/locations', locationApiRoutes.router);
 
 // Enhanced Jyotish API routes
 app.use('/api/jyotish', enhancedJyotishApiRoutes.router);

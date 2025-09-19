@@ -2591,15 +2591,15 @@ router.post('/jyotish/comprehensive-chart', async (req, res) => {
             });
         }
         
-        // Get location coordinates from location API
-        const locationResponse = await fetch(`${req.protocol}://${req.get('host')}/api/locations/city/${locationId}`);
-        const locationData = await locationResponse.json();
+        // Get location coordinates directly from location data
+        const { getLocationById } = require('./locations');
+        const locationData = getLocationById(locationId);
         
-        if (!locationData.success) {
-            return res.status(400).json({ error: 'Invalid location ID' });
+        if (!locationData) {
+            return res.status(400).json({ error: 'Invalid location ID. Use /api/locations/search to find valid location IDs.' });
         }
         
-        const coordinates = locationData.city.coordinates;
+        const coordinates = locationData.coordinates;
         
         // Use enhanced Jyotish calculation
         const { calculateEnhancedJyotishChart } = require('./enhanced-jyotish');
@@ -2610,7 +2610,7 @@ router.post('/jyotish/comprehensive-chart', async (req, res) => {
         res.json({
             success: true,
             ...chart,
-            location: locationData.city,
+            location: locationData,
             description: 'Enhanced Jyotish chart analysis with deep career and marriage predictions, planetary house analysis, and name compatibility'
         });
     } catch (error) {
