@@ -409,10 +409,11 @@ function calculateAccuratePlanetaryPositions(dateOfBirth, timeOfBirth, coordinat
         // Determine sign and degree
         const signNumber = Math.floor(siderealLongitude / 30) + 1;
         const degree = siderealLongitude % 30;
-        const sign = Object.keys(ZODIAC_SIGNS)[signNumber - 1];
+        const signs = Object.keys(ZODIAC_SIGNS);
+        const sign = signs[signNumber - 1] || signs[0];
         
         // Calculate Nakshatra
-        const nakshatraInfo = calculateNakshatra(siderealLongitude);
+        const nakshatraInfo = calculateNakshatraFromLongitude(siderealLongitude);
         
         // Determine retrograde status (simplified)
         const isRetrograde = determineRetrograde(planetName, julianDay);
@@ -591,13 +592,16 @@ function calculateHousePositions(planets, ascendant) {
     const signs = Object.keys(ZODIAC_SIGNS);
     const ascendantSignIndex = signs.indexOf(ascendant.sign);
     
-    Object.keys(planets).forEach(planetName => {
-        const planetSignIndex = signs.indexOf(planets[planetName].sign);
+    // Create a copy to avoid modifying the original
+    const planetsWithHouses = JSON.parse(JSON.stringify(planets));
+    
+    Object.keys(planetsWithHouses).forEach(planetName => {
+        const planetSignIndex = signs.indexOf(planetsWithHouses[planetName].sign);
         let house = (planetSignIndex - ascendantSignIndex + 12) % 12 + 1;
-        planets[planetName].house = house;
+        planetsWithHouses[planetName].house = house;
     });
     
-    return planets;
+    return planetsWithHouses;
 }
 
 /**
@@ -616,14 +620,17 @@ function calculatePlanetaryAspects(planets) {
         Ketu: [5, 7, 9]
     };
     
-    Object.keys(planets).forEach(planetName => {
-        const planet = planets[planetName];
+    // Create a copy to avoid modifying the original
+    const planetsWithAspects = JSON.parse(JSON.stringify(planets));
+    
+    Object.keys(planetsWithAspects).forEach(planetName => {
+        const planet = planetsWithAspects[planetName];
         const aspects = aspectRules[planetName] || [7];
         
         planet.aspects = aspects.map(aspectHouse => {
             const targetHouse = (planet.house + aspectHouse - 1) % 12 + 1;
-            const planetsInTargetHouse = Object.keys(planets).filter(p => 
-                planets[p].house === targetHouse && p !== planetName
+            const planetsInTargetHouse = Object.keys(planetsWithAspects).filter(p => 
+                planetsWithAspects[p].house === targetHouse && p !== planetName
             );
             
             return {
@@ -634,28 +641,31 @@ function calculatePlanetaryAspects(planets) {
         });
     });
     
-    return planets;
+    return planetsWithAspects;
 }
 
 /**
  * Calculate planetary conjunctions
  */
 function calculatePlanetaryConjunctions(planets) {
-    Object.keys(planets).forEach(planetName => {
-        const planet = planets[planetName];
-        const conjunctions = Object.keys(planets).filter(otherPlanet => 
+    // Create a copy to avoid modifying the original
+    const planetsWithConjunctions = JSON.parse(JSON.stringify(planets));
+    
+    Object.keys(planetsWithConjunctions).forEach(planetName => {
+        const planet = planetsWithConjunctions[planetName];
+        const conjunctions = Object.keys(planetsWithConjunctions).filter(otherPlanet => 
             otherPlanet !== planetName && 
-            planets[otherPlanet].house === planet.house
+            planetsWithConjunctions[otherPlanet].house === planet.house
         );
         
         planet.conjunctions = conjunctions.map(conjPlanet => ({
             planet: conjPlanet,
-            orb: Math.abs(parseFloat(planet.degree) - parseFloat(planets[conjPlanet].degree)),
+            orb: Math.abs(parseFloat(planet.degree) - parseFloat(planetsWithConjunctions[conjPlanet].degree)),
             effect: analyzeConjunctionEffect(planetName, conjPlanet)
         }));
     });
     
-    return planets;
+    return planetsWithConjunctions;
 }
 
 /**
@@ -919,7 +929,7 @@ async function calculateEnhancedJyotishChart(dateOfBirth, timeOfBirth, coordinat
         if (fullName) {
             // Use existing name analysis function
             const nakshatra = calculateNakshatraFromLongitude(finalPlanets.Moon.longitude);
-            const rashi = { name: finalPlanets.Moon.sign, number: ZODIAC_SIGNS[finalPlanets.Moon.sign].number };
+            const rashi = { name: finalPlanets.Moon.sign, number: ZODIAC_SIGNS[finalPlanets.Moon.sign]?.number || 1 };
             nameAnalysis = calculateNameCompatibilityWithChart(fullName, rashi, nakshatra);
         }
         
