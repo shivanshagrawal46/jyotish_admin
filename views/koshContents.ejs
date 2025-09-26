@@ -95,6 +95,11 @@
                     <% } %>
                   </ul>
                 </nav>
+                <form class="d-flex align-items-center gap-2 mt-2" method="get" action="">
+                    <label for="gotoPage" class="form-label mb-0 me-2">Go to page</label>
+                    <input id="gotoPage" name="page" type="number" min="1" max="<%= totalPages %>" class="form-control" style="width:120px" placeholder="1" required>
+                    <button type="submit" class="btn btn-outline-primary">Go</button>
+                </form>
                 <a href="/kosh-category/<%= subcategory.parentCategory %>/subcategories" class="btn btn-secondary mt-2">Back to Subcategories</a>
             </div>
         </main>

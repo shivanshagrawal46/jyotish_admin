@@ -173,7 +173,6 @@ app.use('/', require('./routes/index'));
 app.use('/users', require('./routes/users'));
 app.use('/kosh-category', require('./routes/koshCategory'));
 app.use('/kosh-subcategory', require('./routes/koshSubCategory'));
-app.use('/kosh-content', require('./routes/koshContent'));
 app.use('/mcq-category', require('./routes/mcqCategory'));
 app.use('/mcq-master', require('./routes/mcqMaster'));
 app.use('/mcq-content', mcqContentRouter);

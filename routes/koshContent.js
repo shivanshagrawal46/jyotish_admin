@@ -26,9 +26,11 @@ function requireAuth(req, res, next) {
 // List all content for a subcategory (with pagination)
 router.get('/kosh-subcategory/:subId/contents', requireAuth, async (req, res) => {
   const subcategory = await KoshSubCategory.findById(req.params.subId);
-  const page = parseInt(req.query.page) || 1;
+  const requestedPage = parseInt(req.query.page) || 1;
   const limit = 10;
   const total = await KoshContent.countDocuments({ subCategory: req.params.subId });
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const page = Math.min(Math.max(requestedPage, 1), totalPages);
   const contents = await KoshContent.find({ subCategory: req.params.subId })
     .sort({ sequenceNo: 1 })
     .skip((page - 1) * limit)
@@ -39,7 +41,7 @@ router.get('/kosh-subcategory/:subId/contents', requireAuth, async (req, res) =>
     subcategory,
     contents,
     currentPage: page,
-    totalPages: Math.ceil(total / limit),
+    totalPages,
     koshCategories,
     username: req.session.username
   });
@@ -182,8 +184,8 @@ router.post('/kosh-subcategory/:subId/import-excel', requireAuth, upload.single(
       });
     }
 
-    // Check for required headers
-    const requiredHeaders = ['sequenceNo', 'hindiWord', 'englishWord', 'meaning'];
+    // Check for required headers (only sequenceNo is required)
+    const requiredHeaders = ['sequenceNo'];
     const firstRow = rows[0];
     const missingHeaders = requiredHeaders.filter(header => 
       !(header in firstRow) && !(header.charAt(0).toUpperCase() + header.slice(1) in firstRow)
@@ -207,15 +209,9 @@ router.post('/kosh-subcategory/:subId/import-excel', requireAuth, upload.single(
       const row = rows[i];
       const rowNumber = i + 2; // Excel row number (accounting for header row)
 
-      // Check for missing required fields
-      const missingFields = [];
-      if (!row.sequenceNo && !row.SequenceNo) missingFields.push('sequenceNo');
-      if (!row.hindiWord && !row.HindiWord) missingFields.push('hindiWord');
-      if (!row.englishWord && !row.EnglishWord) missingFields.push('englishWord');
-      if (!row.meaning && !row.Meaning) missingFields.push('meaning');
-
-      if (missingFields.length > 0) {
-        errors.push(`Row ${rowNumber}: Missing required fields: ${missingFields.join(', ')}`);
+      // Check for missing required fields (only sequenceNo is required)
+      if (!row.sequenceNo && !row.SequenceNo) {
+        errors.push(`Row ${rowNumber}: Missing required field: sequenceNo`);
         continue;
       }
 
@@ -326,9 +322,20 @@ router.get('/kosh-subcategory/:subId/export-excel', requireAuth, async (req, res
     // Add the worksheet to workbook
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Kosh Content Template');
     
-    // Set response headers
+    // Set response headers with a safe ASCII filename
+    const rawName = (subcategory && subcategory.name ? String(subcategory.name) : 'subcategory');
+    const asciiName = rawName
+      .normalize('NFKD')
+      .replace(/[^\x20-\x7E]+/g, '') // remove non-ASCII
+      .replace(/[^a-zA-Z0-9-_ ]/g, '') // remove dangerous punctuation
+      .trim()
+      .replace(/\s+/g, '_');
+    const safeFileName = asciiName && asciiName.length > 0
+      ? `kosh_content_${asciiName}_template.xlsx`
+      : 'kosh_content_template.xlsx';
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="kosh_content_${subcategory.name}_template.xlsx"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFileName}"`);
     
     // Write the workbook to response
     const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
