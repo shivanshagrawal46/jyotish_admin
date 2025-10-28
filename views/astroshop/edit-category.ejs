@@ -1,0 +1,30 @@
+<% /* eslint-disable */ %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Category | Astro Shop</title>
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="sidebar">
+        <%- include('../partials/sidebar', { activePage: 'astro-shop', activeCategory: null, koshCategories: [], mcqCategories: [] }) %>
+    </nav>
+    <main class="main-content" style="margin-left:280px;padding:2rem;">
+        <h2 class="mb-4">Edit Category</h2>
+        <form action="/astro-shop/categories/edit/<%= category._id %>" method="POST">
+            <div class="mb-3" style="max-width:480px;">
+                <label class="form-label">Name</label>
+                <input type="text" name="name" class="form-control" value="<%= category.name %>" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a href="/astro-shop/categories" class="btn btn-secondary ms-2">Cancel</a>
+        </form>
+    </main>
+    <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
+

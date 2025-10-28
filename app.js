@@ -33,6 +33,8 @@ const rashifalApiRouter = require('./routes/api/rashifal');
 const numerologyApiRouter = require('./routes/api/numerology');
 const astroshopRouter = require('./routes/astroshop');
 const astroshopApiRouter = require('./routes/api/astroshop');
+const youtubeRouter = require('./routes/youtube');
+const youtubeApiRouter = require('./routes/api/youtube');
 const pujaRouter = require('./routes/puja');
 const pujaApiRouter = require('./routes/api/puja');
 const bookRouter = require('./routes/book');
@@ -100,8 +102,8 @@ app.use(
     }),
     cookie: { 
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
-      secure: true, // Only use secure cookies in production
-      httpOnly: true,
+      //secure: true, // Only use secure cookies in production
+      //httpOnly: true,
       sameSite: 'lax',
       path: '/'
     },
@@ -196,6 +198,8 @@ app.use('/api/mcq', mcqApiRouter);
 
 app.use('/astro-shop', astroshopRouter);
 app.use('/api/astro-shop', astroshopApiRouter);
+app.use('/youtube', youtubeRouter);
+app.use('/api/youtube', youtubeApiRouter);
 
 app.use('/puja', pujaRouter);
 app.use('/api/puja', pujaApiRouter);

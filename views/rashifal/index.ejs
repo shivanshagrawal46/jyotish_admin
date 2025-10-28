@@ -260,16 +260,15 @@
             <div class="tab-pane fade show active" id="daily" role="tabpanel" aria-labelledby="daily-tab">
                 <div class="rashifal-card">
                     <div class="rashifal-card-header">
-                        Daily Rashifal
+                        Daily Rashifal - Manage Dates
                     </div>
                     <div class="rashifal-actions">
-                        <a href="/rashifal/upload" class="pill-btn upload-excel-btn">
+                        <button class="pill-btn upload-excel-btn" onclick="showAddRashifalDateModal()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-                                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                                <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
                             </svg>
-                            Upload Excel
-                        </a>
+                            Create New Date
+                        </button>
                     </div>
                     <div class="rashifal-table-wrap">
                         <div class="table-responsive">
@@ -277,32 +276,17 @@
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>Date</th>
-                                        <th>Title (Hindi)</th>
-                                        <th>Title (English)</th>
-                                        <th>Details (Hindi)</th>
-                                        <th>Details (English)</th>
-                                        <th>Images</th>
+                                        <th>Date Label</th>
+                                        <th>Date ISO</th>
+                                        <th>Notes</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <% if (dailyRashifals && dailyRashifals.length > 0) { %>
-                                        <% dailyRashifals.forEach((rashifal, idx) => { %>
-                                            <tr>
-                                                <td><%= idx + 1 %></td>
-                                                <td><%= rashifal.date %></td>
-                                                <td><%= rashifal.title_hn %></td>
-                                                <td><%= rashifal.title_en %></td>
-                                                <td><%= rashifal.details_hn %></td>
-                                                <td><%= rashifal.details_en %></td>
-                                                <td><%= rashifal.images ? rashifal.images.length : 0 %></td>
-                                            </tr>
-                                        <% }); %>
-                                    <% } else { %>
-                                        <tr>
-                                            <td colspan="7" class="text-center">No daily rashifals found</td>
-                                        </tr>
-                                    <% } %>
+                                <tbody id="rashifalDailyDatesTable">
+                                    <tr>
+                                        <td colspan="6" class="text-center">Loading dates...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -438,11 +422,333 @@
         </div>
     </main>
 
+    <!-- Add Date Modal -->
+    <div class="modal fade" id="addRashifalDateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Daily Date</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addRashifalDateForm">
+                        <div class="mb-3">
+                            <label class="form-label">Date Label *</label>
+                            <input type="text" class="form-control" name="dateLabel" required placeholder="e.g., 2024-01-15, Jan 15, etc.">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Date ISO (Optional)</label>
+                            <input type="date" class="form-control" name="dateISO">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" name="notes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitAddRashifalDate()">Create Date</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Date Modal -->
+    <div class="modal fade" id="editRashifalDateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Date</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editRashifalDateForm">
+                        <input type="hidden" name="dateId">
+                        <div class="mb-3">
+                            <label class="form-label">Date Label *</label>
+                            <input type="text" class="form-control" name="dateLabel" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Date ISO (Optional)</label>
+                            <input type="date" class="form-control" name="dateISO">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" name="notes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitEditRashifalDate()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Date Content Modal -->
+    <div class="modal fade" id="viewRashifalDateContentModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">View Contents for Date: <span id="viewRashifalDateLabel"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <button class="btn btn-primary" onclick="showRashifalUploadExcelForDate()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                            </svg>
+                            Upload Excel (Replace Contents)
+                        </button>
+                        <input type="file" id="rashifalExcelFileInput" class="d-none" accept=".xlsx,.xls">
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Title (Hindi)</th>
+                                    <th>Title (English)</th>
+                                    <th>Details (Hindi)</th>
+                                    <th>Details (English)</th>
+                                    <th>Images</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rashifalDateContentTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
     <div id="rashifal-months-data" data-months='<%- JSON.stringify(months) %>' style="display:none;"></div>
     <script>
     const monthsDataDiv = document.getElementById('rashifal-months-data');
     window.rashifalMonths = JSON.parse(monthsDataDiv.getAttribute('data-months'));
+
+    // Daily Rashifal Date Management
+    let currentViewingRashifalDateId = null;
+
+    window.addEventListener('DOMContentLoaded', function() {
+        loadRashifalDailyDates();
+    });
+
+    async function loadRashifalDailyDates() {
+        try {
+            const res = await fetch('/api/rashifal/daily');
+            const data = await res.json();
+            if (data.success) {
+                renderRashifalDailyDatesTable(data.data);
+            } else {
+                document.getElementById('rashifalDailyDatesTable').innerHTML = '<tr><td colspan="6" class="text-center">Error loading dates</td></tr>';
+            }
+        } catch (error) {
+            document.getElementById('rashifalDailyDatesTable').innerHTML = '<tr><td colspan="6" class="text-center">Error loading dates</td></tr>';
+        }
+    }
+
+    function renderRashifalDailyDatesTable(dates) {
+        const tbody = document.getElementById('rashifalDailyDatesTable');
+        if (!dates || dates.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No dates created yet</td></tr>';
+            return;
+        }
+        tbody.innerHTML = dates.map((date) => `
+            <tr>
+                <td>${date.id}</td>
+                <td>${date.dateLabel || '-'}</td>
+                <td>${date.dateISO ? new Date(date.dateISO).toLocaleDateString() : '-'}</td>
+                <td>${date.notes || '-'}</td>
+                <td>${new Date(date.createdAt).toLocaleDateString()}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary me-2" onclick="viewRashifalDateContent('${date._id}', '${date.dateLabel}')">View Contents</button>
+                    <button class="btn btn-sm btn-warning me-2" onclick="editRashifalDate('${date._id}', '${date.dateLabel}', ${date.dateISO ? `'${date.dateISO}'` : 'null'}, ${date.notes ? `'${date.notes}'` : 'null'})">Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteRashifalDate('${date._id}', '${date.dateLabel}')">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function showAddRashifalDateModal() {
+        document.getElementById('addRashifalDateForm').reset();
+        const modal = new bootstrap.Modal(document.getElementById('addRashifalDateModal'));
+        modal.show();
+    }
+
+    async function submitAddRashifalDate() {
+        const form = document.getElementById('addRashifalDateForm');
+        const formData = new FormData(form);
+        const payload = {
+            dateLabel: formData.get('dateLabel'),
+            dateISO: formData.get('dateISO') || null,
+            notes: formData.get('notes') || null
+        };
+        try {
+            const res = await fetch('/api/rashifal/daily', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Date created successfully!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addRashifalDateModal'));
+                modal.hide();
+                loadRashifalDailyDates();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error creating date');
+        }
+    }
+
+    function editRashifalDate(id, dateLabel, dateISO, notes) {
+        const form = document.getElementById('editRashifalDateForm');
+        form.querySelector('[name="dateId"]').value = id;
+        form.querySelector('[name="dateLabel"]').value = dateLabel;
+        if (dateISO && dateISO !== 'null') {
+            const dateValue = new Date(dateISO).toISOString().split('T')[0];
+            form.querySelector('[name="dateISO"]').value = dateValue;
+        } else {
+            form.querySelector('[name="dateISO"]').value = '';
+        }
+        form.querySelector('[name="notes"]').value = notes && notes !== 'null' ? notes : '';
+        const modal = new bootstrap.Modal(document.getElementById('editRashifalDateModal'));
+        modal.show();
+    }
+
+    async function submitEditRashifalDate() {
+        const form = document.getElementById('editRashifalDateForm');
+        const dateId = form.querySelector('[name="dateId"]').value;
+        const payload = {
+            dateLabel: form.querySelector('[name="dateLabel"]').value,
+            dateISO: form.querySelector('[name="dateISO"]').value || null,
+            notes: form.querySelector('[name="notes"]').value || null
+        };
+        try {
+            const res = await fetch(`/api/rashifal/daily/${dateId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Date updated successfully!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editRashifalDateModal'));
+                modal.hide();
+                loadRashifalDailyDates();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error updating date');
+        }
+    }
+
+    async function deleteRashifalDate(id, dateLabel) {
+        if (!confirm(`Delete date "${dateLabel}"? This will also delete all its contents.`)) return;
+        try {
+            const res = await fetch(`/api/rashifal/daily/${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                alert('Date deleted successfully!');
+                loadRashifalDailyDates();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error deleting date');
+        }
+    }
+
+    async function viewRashifalDateContent(dateId, dateLabel) {
+        currentViewingRashifalDateId = dateId;
+        document.getElementById('viewRashifalDateLabel').textContent = dateLabel;
+        try {
+            const res = await fetch(`/api/rashifal/daily/${dateId}`);
+            const data = await res.json();
+            if (data.success) {
+                const tbody = document.getElementById('rashifalDateContentTableBody');
+                if (!data.data || data.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No content uploaded yet</td></tr>';
+                } else {
+                    tbody.innerHTML = data.data.map((content) => `
+                        <tr>
+                            <td>${content.id}</td>
+                            <td>${content.title_hn || '-'}</td>
+                            <td>${content.title_en || '-'}</td>
+                            <td>${content.details_hn || '-'}</td>
+                            <td>${content.details_en || '-'}</td>
+                            <td>${content.images ? content.images.length : 0}</td>
+                            <td>
+                                <button class=\"btn btn-sm btn-danger\" onclick=\"deleteRashifalDateContent('${dateId}', '${content.id}')\">Delete</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+                const modal = new bootstrap.Modal(document.getElementById('viewRashifalDateContentModal'));
+                modal.show();
+            } else {
+                alert('Error loading contents');
+            }
+        } catch (error) {
+            alert('Error loading contents');
+        }
+    }
+
+    function showRashifalUploadExcelForDate() {
+        document.getElementById('rashifalExcelFileInput').click();
+    }
+
+    document.getElementById('rashifalExcelFileInput').addEventListener('change', function() {
+        const file = this.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('excelFile', file);
+
+        fetch(`/rashifal/upload-daily/${currentViewingRashifalDateId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('Excel uploaded successfully!');
+                viewRashifalDateContent(currentViewingRashifalDateId, document.getElementById('viewRashifalDateLabel').textContent);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(() => alert('Error uploading Excel'));
+    });
+
+    async function deleteRashifalDateContent(dateId, contentNumericId) {
+        if (!confirm('Delete this content?')) return;
+        try {
+            const res = await fetch(`/api/rashifal/daily/${dateId}/${contentNumericId}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                alert('Content deleted!');
+                viewRashifalDateContent(dateId, document.getElementById('viewRashifalDateLabel').textContent);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error deleting content');
+        }
+    }
     </script>
     <script>
     function uploadRashifalMonthlyExcel(month, input) {

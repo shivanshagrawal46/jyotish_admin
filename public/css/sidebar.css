@@ -97,8 +97,8 @@
 }
 
 .nav-link.active {
-    background: var(--primary);
-    color: white;
+    background: var(--primary) !important;
+    color: white !important;
 }
 
 .nav-link svg {

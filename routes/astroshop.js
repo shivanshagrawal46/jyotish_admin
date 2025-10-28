@@ -81,6 +81,49 @@ router.post('/categories/add', async (req, res) => {
   }
 });
 
+// Edit Category form
+router.get('/categories/edit/:id', async (req, res) => {
+  try {
+    const category = await AstroShopCategory.findById(req.params.id);
+    if (!category) return res.status(404).send('Category not found');
+    res.render('astroshop/edit-category', { category });
+  } catch (err) {
+    res.status(500).send('Error loading category: ' + err.message);
+  }
+});
+
+// Handle Edit Category POST
+router.post('/categories/edit/:id', async (req, res) => {
+  try {
+    const { name } = req.body;
+    const updated = await AstroShopCategory.findByIdAndUpdate(
+      req.params.id,
+      { name, updated_at: Date.now() },
+      { new: true }
+    );
+    if (!updated) return res.status(404).send('Category not found');
+    res.redirect('/astro-shop/categories');
+  } catch (err) {
+    res.status(500).send('Error updating category: ' + err.message);
+  }
+});
+
+// Handle Delete Category POST
+router.post('/categories/delete/:id', async (req, res) => {
+  try {
+    // Prevent delete if products are attached to this category
+    const productCount = await Product.countDocuments({ category: req.params.id });
+    if (productCount > 0) {
+      return res.status(400).send('Cannot delete category with existing products. Move or delete products first.');
+    }
+    const deleted = await AstroShopCategory.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).send('Category not found');
+    res.redirect('/astro-shop/categories');
+  } catch (err) {
+    res.status(500).send('Error deleting category: ' + err.message);
+  }
+});
+
 // Add Product form
 router.get('/add', async (req, res) => {
   try {

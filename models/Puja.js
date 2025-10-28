@@ -7,7 +7,6 @@ const pujaSchema = new mongoose.Schema({
   },
   slug: {
     type: String,
-    required: true,
     unique: true,
   },
   tagline: {
@@ -15,15 +14,12 @@ const pujaSchema = new mongoose.Schema({
   },
   temple_name: {
     type: String,
-    required: true,
   },
   temple_location: {
     type: String,
-    required: true,
   },
   puja_date: {
     type: Date,
-    required: true,
   },
   puja_day: {
     type: String,

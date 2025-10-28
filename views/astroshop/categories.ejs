@@ -142,8 +142,10 @@
                                         <td><%= category.name %></td>
                                         <td><%= new Date(category.created_at).toLocaleDateString() %></td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-primary" disabled>Edit</button>
-                                            <button class="btn btn-sm btn-outline-danger" disabled>Delete</button>
+                                            <a href="/astro-shop/categories/edit/<%= category._id %>" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            <form action="/astro-shop/categories/delete/<%= category._id %>" method="POST" style="display:inline;" onsubmit="return confirm('Delete this category?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                            </form>
                                         </td>
                                     </tr>
                                 <% }); %>

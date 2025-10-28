@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const xlsx = require('xlsx');
-const RashifalDaily = require('../models/RashifalDaily');
 const RashifalYearly = require('../models/RashifalYearly');
 const RashifalMonthly = require('../models/RashifalMonthly');
+const RashifalDailyDate = require('../models/RashifalDailyDate');
+const RashifalDailyContent = require('../models/RashifalDailyContent');
 
 // Middleware to require authentication
 function requireAuth(req, res, next) {
@@ -43,7 +44,6 @@ const MONTHS = [
 // Rashifal main page
 router.get('/', requireAuth, async (req, res) => {
     try {
-        const dailyRashifals = await RashifalDaily.find().sort({ sequence: 1 });
         const yearlyRashifals = await RashifalYearly.find().sort({ sequence: 1 });
         // Fetch all monthly data for all months
         const monthlyRashifals = {};
@@ -53,7 +53,7 @@ router.get('/', requireAuth, async (req, res) => {
         res.render('rashifal/index', {
             username: req.session.username,
             activePage: 'rashifal',
-            dailyRashifals,
+            dailyRashifals: [],
             yearlyRashifals,
             monthlyRashifals,
             months: MONTHS
@@ -62,7 +62,6 @@ router.get('/', requireAuth, async (req, res) => {
         res.render('rashifal/index', {
             username: req.session.username,
             activePage: 'rashifal',
-            dailyRashifals: [],
             yearlyRashifals: [],
             monthlyRashifals: {},
             months: MONTHS,
@@ -80,10 +79,20 @@ router.get('/upload', requireAuth, (req, res) => {
 });
 
 // Handle Excel upload
+// Deprecated legacy daily upload (use /rashifal/upload-daily/:dateId instead)
 router.post('/upload-daily', requireAuth, upload.single('excelFile'), async (req, res) => {
+    return res.status(410).json({ success: false, error: 'Deprecated. Use /rashifal/upload-daily/:dateId' });
+});
+// Handle Excel upload for a specific rashifal daily date (replace contents for that date)
+router.post('/upload-daily/:dateId', requireAuth, upload.single('excelFile'), async (req, res) => {
     try {
+        const { dateId } = req.params;
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
+        }
+        const dateDoc = await RashifalDailyDate.findById(dateId);
+        if (!dateDoc) {
+            return res.status(404).json({ error: 'Date not found' });
         }
 
         const workbook = xlsx.readFile(req.file.path);
@@ -91,36 +100,29 @@ router.post('/upload-daily', requireAuth, upload.single('excelFile'), async (req
         const worksheet = workbook.Sheets[sheetName];
         const data = xlsx.utils.sheet_to_json(worksheet);
 
-        const rashifals = data.map((row, index) => ({
-            sequence: index + 1, // Maintain Excel order
+        const entries = data.map((row, index) => ({
+            dateRef: dateId,
+            sequence: row.sequence ? Number(row.sequence) : index + 1,
             title_hn: row.title_hn || '',
             title_en: row.title_en || '',
-            date: row.date || '',
             details_hn: row.details_hn || '',
             details_en: row.details_en || '',
-            images: row.images ? row.images.split(',').map(img => img.trim()) : []
+            images: row.images ? String(row.images).split(',').map(img => String(img).trim()) : []
         }));
 
-        // Remove all existing RashifalDaily entries before inserting new ones
-        await RashifalDaily.deleteMany({});
+        await RashifalDailyContent.deleteMany({ dateRef: dateId });
+        await RashifalDailyContent.insertMany(entries);
 
-        // Save to database
-        await RashifalDaily.insertMany(rashifals);
-
-        // Fetch updated data in Excel order (by sequence)
-        const dailyRashifals = await RashifalDaily.find().sort({ sequence: 1 });
-
+        const contents = await RashifalDailyContent.find({ dateRef: dateId }).sort({ sequence: 1 });
         res.json({
             success: true,
-            message: 'Excel data uploaded successfully',
-            data: dailyRashifals
+            message: 'Excel data uploaded successfully for the date',
+            date: dateDoc,
+            data: contents
         });
     } catch (error) {
-        console.error('Error uploading Excel:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Error processing Excel file'
-        });
+        console.error('Error uploading Excel for date:', error);
+        res.status(500).json({ success: false, error: 'Error processing Excel file for date' });
     }
 });
 

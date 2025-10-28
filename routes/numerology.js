@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const xlsx = require('xlsx');
-const NumerologyDaily = require('../models/NumerologyDaily');
 const NumerologyYearly = require('../models/NumerologyYearly');
 const NumerologyMonthly = require('../models/NumerologyMonthly');
+const NumerologyDailyDate = require('../models/NumerologyDailyDate');
+const NumerologyDailyContent = require('../models/NumerologyDailyContent');
 
 // Middleware to require authentication
 function requireAuth(req, res, next) {
@@ -43,7 +44,6 @@ const MONTHS = [
 // Numerology main page
 router.get('/', requireAuth, async (req, res) => {
     try {
-        const dailyNumerology = await NumerologyDaily.find().sort({ sequence: 1 });
         const yearlyNumerology = await NumerologyYearly.find().sort({ sequence: 1 });
         // Fetch all monthly data for all months
         const monthlyNumerology = {};
@@ -53,7 +53,7 @@ router.get('/', requireAuth, async (req, res) => {
         res.render('numerology/index', {
             username: req.session.username,
             activePage: 'numerology',
-            dailyNumerology,
+            dailyNumerology: [],
             yearlyNumerology,
             monthlyNumerology,
             months: MONTHS
@@ -62,7 +62,6 @@ router.get('/', requireAuth, async (req, res) => {
         res.render('numerology/index', {
             username: req.session.username,
             activePage: 'numerology',
-            dailyNumerology: [],
             yearlyNumerology: [],
             monthlyNumerology: {},
             months: MONTHS,
@@ -80,10 +79,21 @@ router.get('/upload', requireAuth, (req, res) => {
 });
 
 // Handle Excel upload
+// Deprecated legacy daily upload (use /numerology/upload-daily/:dateId instead)
 router.post('/upload-daily', requireAuth, upload.single('excelFile'), async (req, res) => {
+    return res.status(410).json({ success: false, error: 'Deprecated. Use /numerology/upload-daily/:dateId' });
+});
+
+// Handle Excel upload for a specific daily date (replace contents for that date)
+router.post('/upload-daily/:dateId', requireAuth, upload.single('excelFile'), async (req, res) => {
     try {
+        const { dateId } = req.params;
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
+        }
+        const dateDoc = await NumerologyDailyDate.findById(dateId);
+        if (!dateDoc) {
+            return res.status(404).json({ error: 'Date not found' });
         }
 
         const workbook = xlsx.readFile(req.file.path);
@@ -91,36 +101,31 @@ router.post('/upload-daily', requireAuth, upload.single('excelFile'), async (req
         const worksheet = workbook.Sheets[sheetName];
         const data = xlsx.utils.sheet_to_json(worksheet);
 
-        const numerologyEntries = data.map((row, index) => ({
-            sequence: index + 1, // Maintain Excel order
+        // Prepare entries mapped from Excel
+        const entries = data.map((row, index) => ({
+            dateRef: dateId,
+            sequence: row.sequence ? Number(row.sequence) : index + 1,
             title_hn: row.title_hn || '',
             title_en: row.title_en || '',
-            date: row.date || '',
             details_hn: row.details_hn || '',
             details_en: row.details_en || '',
-            images: row.images ? row.images.split(',').map(img => img.trim()) : []
+            images: row.images ? String(row.images).split(',').map(img => String(img).trim()) : []
         }));
 
-        // Remove all existing NumerologyDaily entries before inserting new ones
-        await NumerologyDaily.deleteMany({});
+        // Replace existing contents for this date
+        await NumerologyDailyContent.deleteMany({ dateRef: dateId });
+        await NumerologyDailyContent.insertMany(entries);
 
-        // Save to database
-        await NumerologyDaily.insertMany(numerologyEntries);
-
-        // Fetch updated data in Excel order (by sequence)
-        const dailyNumerology = await NumerologyDaily.find().sort({ sequence: 1 });
-
+        const contents = await NumerologyDailyContent.find({ dateRef: dateId }).sort({ sequence: 1 });
         res.json({
             success: true,
-            message: 'Excel data uploaded successfully',
-            data: dailyNumerology
+            message: 'Excel data uploaded successfully for the date',
+            date: dateDoc,
+            data: contents
         });
     } catch (error) {
-        console.error('Error uploading Excel:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Error processing Excel file'
-        });
+        console.error('Error uploading Excel for date:', error);
+        res.status(500).json({ success: false, error: 'Error processing Excel file for date' });
     }
 });
 

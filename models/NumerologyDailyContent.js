@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
-const numerologyDailySchema = new mongoose.Schema({
+const numerologyDailyContentSchema = new mongoose.Schema({
+    dateRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'NumerologyDailyDate',
+        required: true
+    },
     sequence: {
         type: Number,
         default: 0
@@ -10,10 +15,6 @@ const numerologyDailySchema = new mongoose.Schema({
         required: true
     },
     title_en: {
-        type: String,
-        required: true
-    },
-    date: {
         type: String,
         required: true
     },
@@ -32,7 +33,8 @@ const numerologyDailySchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Index for faster queries
-numerologyDailySchema.index({ sequence: 1 });
+numerologyDailyContentSchema.index({ dateRef: 1, sequence: 1 });
 
-module.exports = mongoose.model('NumerologyDaily', numerologyDailySchema); 
+module.exports = mongoose.model('NumerologyDailyContent', numerologyDailyContentSchema);
+
+

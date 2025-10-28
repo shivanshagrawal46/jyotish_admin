@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add YouTube | Sanskrit Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/css/sidebar.css" rel="stylesheet">
+  <style>
+    .main-content { margin-left: 280px; padding: 2rem; }
+    .topbar { background: #fff; padding: 1rem 2rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); margin-bottom: 2rem; display:flex; align-items:center; justify-content:space-between; }
+    .page-title { font-family:'Playfair Display', serif; font-size:1.5rem; color:#1A1B26; margin:0; }
+    .content-card { background:#fff; border-radius:16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); padding:2rem; max-width:720px; }
+  </style>
+</head>
+<body>
+  <nav class="sidebar">
+    <%- include('../partials/sidebar', { activePage: 'youtube', activeCategory: null, koshCategories: [], mcqCategories: [] }) %>
+  </nav>
+  <main class="main-content">
+    <div class="topbar">
+      <h1 class="page-title">YouTube Management</h1>
+      <div class="user-menu"><div class="user-avatar"><%= username ? username.charAt(0).toUpperCase() : 'A' %></div></div>
+    </div>
+    <div class="content-card">
+    <h5 class="mb-3">Add YouTube</h5>
+    <form action="/youtube/add" method="POST">
+      <div class="mb-3">
+        <label class="form-label">Title</label>
+        <input type="text" name="title" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Link</label>
+        <input type="url" name="link" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Category</label>
+        <input type="text" name="category" class="form-control">
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/youtube" class="btn btn-outline-secondary">Cancel</a>
+        <button class="btn btn-primary" type="submit">Save</button>
+      </div>
+    </form>
+    </div>
+  </main>
+  <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
+
