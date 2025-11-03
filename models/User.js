@@ -2,7 +2,12 @@ const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  // For traditional users, password is required; for Google users, it's optional
+  password: { type: String, required: function() { return !this.googleId; } },
+  email: { type: String, unique: true, sparse: true },
+  googleId: { type: String, unique: true, sparse: true },
+  name: { type: String, default: '' },
+  avatar: { type: String, default: '' },
   fcmToken: { 
     type: String, 
     default: null,
