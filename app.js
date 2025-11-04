@@ -66,7 +66,6 @@ const orderApiRoutes = require('./routes/api/order');
 const calculatorApiRoutes = require('./routes/api/calculators');
 const locationApiRoutes = require('./routes/api/locations');
 const enhancedJyotishApiRoutes = require('./routes/api/enhanced-jyotish');
-const authApiRouter = require('./routes/api/auth');
 
 const app = express();
 
@@ -196,7 +195,6 @@ app.use('/api/kosh-category', koshCategoryApi);
 app.use('/api/kosh-subcategory', koshSubCategoryApi);
 app.use('/api/kosh-content', koshContentApi);
 app.use('/api/mcq', mcqApiRouter);
-app.use('/api/auth', authApiRouter);
 
 app.use('/astro-shop', astroshopRouter);
 app.use('/api/astro-shop', astroshopApiRouter);
