@@ -66,6 +66,8 @@ const orderApiRoutes = require('./routes/api/order');
 const calculatorApiRoutes = require('./routes/api/calculators');
 const locationApiRoutes = require('./routes/api/locations');
 const enhancedJyotishApiRoutes = require('./routes/api/enhanced-jyotish');
+const savedKundliRoutes = require('./routes/savedKundli');
+const savedKundliApiRoutes = require('./routes/api/savedKundli');
 
 const app = express();
 
@@ -276,6 +278,10 @@ app.use('/api/locations', locationApiRoutes.router);
 
 // Enhanced Jyotish API routes
 app.use('/api/jyotish', enhancedJyotishApiRoutes.router);
+
+// Saved Kundli routes
+app.use('/saved-kundli', savedKundliRoutes);
+app.use('/api/saved-kundli', savedKundliApiRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

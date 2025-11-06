@@ -1,0 +1,177 @@
+<% /* eslint-disable */ %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Kundli Details | Jyotish Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/sidebar.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2D3250;
+            --secondary: #424769;
+            --accent: #676F9D;
+            --light: #F9F9F9;
+            --dark: #1A1B26;
+            --success: #4CAF50;
+            --error: #F44336;
+            --warning: #FF9800;
+            --info: #2196F3;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            min-height: 100vh;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        .topbar {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin: 0;
+        }
+        .details-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        .details-card-header {
+            background: var(--primary);
+            color: #fff;
+            padding: 1.5rem 2rem;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .details-content {
+            padding: 2rem;
+        }
+        .detail-row {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: var(--accent);
+        }
+        .detail-value {
+            color: var(--dark);
+        }
+        .gender-badge {
+            border-radius: 12px;
+            padding: 0.3rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <%- include('../partials/sidebar', { 
+            activePage: 'saved-kundli',
+            activeCategory: null,
+            koshCategories: koshCategories || [],
+            koshSubCategoriesMap: koshSubCategoriesMap || {}
+        }) %>
+    </nav>
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h1 class="page-title">Saved Kundli Details</h1>
+            <div>
+                <a href="/saved-kundli" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+
+        <!-- Details Card -->
+        <div class="details-card">
+            <div class="details-card-header">
+                Kundli Information
+            </div>
+            <div class="details-content">
+                <div class="detail-row">
+                    <div class="detail-label">Kundli ID:</div>
+                    <div class="detail-value"><code><%= savedKundli._id %></code></div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">User ID:</div>
+                    <div class="detail-value"><code><%= savedKundli.userId %></code></div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Name:</div>
+                    <div class="detail-value"><strong><%= savedKundli.name %></strong></div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Date of Birth:</div>
+                    <div class="detail-value"><%= new Date(savedKundli.dateOfBirth).toLocaleDateString() %></div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Time of Birth:</div>
+                    <div class="detail-value"><%= savedKundli.timeOfBirth %></div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Place:</div>
+                    <div class="detail-value"><%= savedKundli.place %></div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Gender:</div>
+                    <div class="detail-value">
+                        <span class="gender-badge <%= savedKundli.gender === 'male' ? 'bg-info' : savedKundli.gender === 'female' ? 'bg-warning' : 'bg-secondary' %> text-white">
+                            <%= savedKundli.gender.charAt(0).toUpperCase() + savedKundli.gender.slice(1) %>
+                        </span>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Created At:</div>
+                    <div class="detail-value">
+                        <%= new Date(savedKundli.createdAt).toLocaleString() %>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Last Updated:</div>
+                    <div class="detail-value">
+                        <%= new Date(savedKundli.updatedAt).toLocaleString() %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
+
+<script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+
