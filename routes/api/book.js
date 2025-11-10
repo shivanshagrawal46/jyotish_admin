@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const BookCategory = require('../../models/BookCategory');
 const BookName = require('../../models/BookName');
@@ -174,6 +175,57 @@ router.get('/category/:categoryId/:nameId/:chapterId', async (req, res) => {
                 totalItems: total,
                 itemsPerPage: limit
             }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching content',
+            error: error.message
+        });
+    }
+});
+
+// Get specific content by ID within a chapter
+router.get('/category/:categoryId/:nameId/:chapterId/:contentId', async (req, res) => {
+    try {
+        const category = await BookCategory.findOne({ id: req.params.categoryId });
+        const book = await BookName.findOne({ id: req.params.nameId });
+        const chapter = await BookChapter.findOne({ id: req.params.chapterId });
+
+        if (!category || !book || !chapter) {
+            return res.status(404).json({
+                success: false,
+                message: 'Category, book, or chapter not found'
+            });
+        }
+
+        const contentFilters = [{ id: req.params.contentId }];
+        const numericContentId = parseInt(req.params.contentId, 10);
+        if (!Number.isNaN(numericContentId)) {
+            contentFilters.push({ id: numericContentId });
+        }
+        if (mongoose.Types.ObjectId.isValid(req.params.contentId)) {
+            contentFilters.push({ _id: req.params.contentId });
+        }
+
+        const content = await BookContent.findOne({
+            category: category._id,
+            book: book._id,
+            chapter: chapter._id,
+            $or: contentFilters
+        })
+        .select('id title_hn title_en title_hinglish meaning details extra images video_links');
+
+        if (!content) {
+            return res.status(404).json({
+                success: false,
+                message: 'Content not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: content
         });
     } catch (error) {
         res.status(500).json({

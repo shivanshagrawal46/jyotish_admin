@@ -4,7 +4,7 @@ This document provides information about the Saved Kundli API endpoints for savi
 
 ## Base URL
 ```
-http://your-domain.com/api/saved-kundli
+http://jyotishvishwakosh.in/api/saved-kundli
 ```
 
 ## Endpoints
@@ -265,7 +265,7 @@ The admin panel provides:
 ### Save a Kundli (Frontend)
 ```javascript
 const saveKundli = async (kundliData) => {
-  const response = await fetch('http://your-domain.com/api/saved-kundli', {
+  const response = await fetch('http://jyotishvishwakosh.in/api/saved-kundli', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -288,7 +288,7 @@ const saveKundli = async (kundliData) => {
 ### Get All Kundlis for a User (Frontend)
 ```javascript
 const getUserKundlis = async (userId) => {
-  const response = await fetch(`http://your-domain.com/api/saved-kundli/user/${userId}`);
+  const response = await fetch(`http://jyotishvishwakosh.in/api/saved-kundli/user/${userId}`);
   const result = await response.json();
   return result.data;
 };
