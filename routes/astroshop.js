@@ -70,10 +70,17 @@ router.get('/categories/add', (req, res) => {
 });
 
 // Handle Add Category POST
-router.post('/categories/add', async (req, res) => {
+router.post('/categories/add', upload.single('image'), async (req, res) => {
   try {
     const { name } = req.body;
-    const category = new AstroShopCategory({ name });
+    const categoryData = { name };
+    
+    // Handle image upload
+    if (req.file) {
+      categoryData.image = '/uploads/astroshop/' + req.file.filename;
+    }
+    
+    const category = new AstroShopCategory(categoryData);
     await category.save();
     res.redirect('/astro-shop/categories');
   } catch (err) {
@@ -93,12 +100,29 @@ router.get('/categories/edit/:id', async (req, res) => {
 });
 
 // Handle Edit Category POST
-router.post('/categories/edit/:id', async (req, res) => {
+router.post('/categories/edit/:id', upload.single('image'), async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, existing_image } = req.body;
+    const updateData = { name, updated_at: Date.now() };
+    
+    // Handle image upload
+    if (req.file) {
+      // Delete old image if exists
+      if (existing_image) {
+        const oldImagePath = path.join(__dirname, '..', 'public', existing_image);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      }
+      updateData.image = '/uploads/astroshop/' + req.file.filename;
+    } else if (existing_image) {
+      // Keep existing image if no new image uploaded
+      updateData.image = existing_image;
+    }
+    
     const updated = await AstroShopCategory.findByIdAndUpdate(
       req.params.id,
-      { name, updated_at: Date.now() },
+      updateData,
       { new: true }
     );
     if (!updated) return res.status(404).send('Category not found');
@@ -116,8 +140,20 @@ router.post('/categories/delete/:id', async (req, res) => {
     if (productCount > 0) {
       return res.status(400).send('Cannot delete category with existing products. Move or delete products first.');
     }
+    
+    // Get category to check for image
+    const category = await AstroShopCategory.findById(req.params.id);
+    if (!category) return res.status(404).send('Category not found');
+    
+    // Delete image file if exists
+    if (category.image) {
+      const imagePath = path.join(__dirname, '..', 'public', category.image);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+    
     const deleted = await AstroShopCategory.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).send('Category not found');
     res.redirect('/astro-shop/categories');
   } catch (err) {
     res.status(500).send('Error deleting category: ' + err.message);

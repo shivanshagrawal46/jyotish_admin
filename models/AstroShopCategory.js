@@ -7,6 +7,9 @@ const astroShopCategorySchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
+  image: {
+    type: String
+  },
   created_at: {
     type: Date,
     default: Date.now
