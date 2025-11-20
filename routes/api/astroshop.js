@@ -128,9 +128,13 @@ router.get('/categories', async (req, res) => {
     }
 });
 
-// Get single category by ID
+// Get products by category ID (returns products in same format as /products)
 router.get('/categories/:id', async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        
+        // Check if category exists
         const category = await AstroShopCategory.findById(req.params.id);
         if (!category) {
             return res.status(404).json({
@@ -138,9 +142,23 @@ router.get('/categories/:id', async (req, res) => {
                 error: 'Category not found'
             });
         }
+        
+        const query = Product.find({ category: req.params.id })
+            .populate('category')
+            .sort({ created_at: -1 });
+
+        const paginatedResults = await paginateResults(query, page, limit);
+        
         res.json({
             success: true,
-            data: category
+            data: paginatedResults.results,
+            pagination: {
+                total: paginatedResults.total,
+                totalPages: paginatedResults.totalPages,
+                currentPage: paginatedResults.currentPage,
+                hasNextPage: paginatedResults.hasNextPage,
+                hasPrevPage: paginatedResults.hasPrevPage
+            }
         });
     } catch (err) {
         res.status(500).json({
