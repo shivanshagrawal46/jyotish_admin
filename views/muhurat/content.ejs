@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= category.categoryName %> | Muhurat Content</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/css/sidebar.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2D3250;
+      --secondary: #424769;
+      --accent: #676F9D;
+      --light: #F9F9F9;
+      --dark: #1A1B26;
+    }
+    .main-content { margin-left: 280px; padding: 2rem; }
+    .topbar { background: #fff; padding: 1rem 2rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); margin-bottom: 2rem; display:flex; align-items:center; justify-content:space-between; }
+    .page-title { font-family:'Playfair Display', serif; font-size:1.5rem; color:#1A1B26; margin:0; }
+    .content-card { background:#fff; border-radius:16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); padding:2rem; }
+    .pill-btn { background:#F3F4F8; color:#2D3250; border:none; border-radius:16px; padding:.6rem 1.2rem; font-weight:600; text-decoration:none; display:inline-block; margin-right:0.5rem; }
+    .pill-btn:hover { background:#2D3250; color:#fff; text-decoration:none; }
+    .excel-info { background:#f0f9ff; border-left:4px solid #0284c7; padding:1rem; margin-bottom:1.5rem; border-radius:8px; }
+    .excel-info h6 { color:#0369a1; margin-bottom:0.5rem; font-weight:600; }
+    .excel-info ul { margin-bottom:0; padding-left:1.5rem; }
+    .excel-info li { color:#0c4a6e; margin-bottom:0.25rem; }
+  </style>
+</head>
+<body>
+  <nav class="sidebar">
+    <%- include('../partials/sidebar', { activePage: 'muhurat', activeCategory: null, koshCategories: [], mcqCategories: [] }) %>
+  </nav>
+  <main class="main-content">
+    <div class="topbar">
+      <h1 class="page-title"><%= category.categoryName %> Content</h1>
+      <div class="user-menu">
+        <div class="user-avatar"><%= username ? username.charAt(0).toUpperCase() : 'A' %></div>
+      </div>
+    </div>
+    <div class="content-card">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <a href="/muhurat" class="btn btn-sm btn-outline-secondary mb-2">← Back to Categories</a>
+          <h5 class="mb-0 mt-2">Content Items</h5>
+        </div>
+        <div>
+          <a href="/muhurat/content/<%= category._id %>/add" class="pill-btn">+ Add Content</a>
+          <button class="pill-btn" onclick="document.getElementById('excelFile').click()">Upload Excel</button>
+          <input type="file" id="excelFile" class="d-none" accept=".xlsx,.xls" onchange="uploadExcel(this)">
+        </div>
+      </div>
+      
+      <div class="excel-info">
+        <h6>📋 Excel Upload Format</h6>
+        <p class="mb-2">Your Excel file should contain the following columns (all optional):</p>
+        <ul>
+          <li><strong>year</strong> - Year (e.g., 2025, 2026) - Optional</li>
+          <li><strong>date</strong> - Date string (e.g., "15 Jan", "January 15", "22 Nov 2025") - Optional</li>
+          <li><strong>detail</strong> - Full description or details - Optional</li>
+        </ul>
+      </div>
+      
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Year</th>
+              <th>Date</th>
+              <th>Detail</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (contents && contents.length > 0) { %>
+              <% contents.forEach(function(content, idx){ %>
+                <tr>
+                  <td><%= idx + 1 %></td>
+                  <td><%= content.year || '-' %></td>
+                  <td><%= content.date || '-' %></td>
+                  <td><%= content.detail ? (content.detail.substring(0, 50) + (content.detail.length > 50 ? '...' : '')) : '-' %></td>
+                  <td>
+                    <a href="/muhurat/content/<%= category._id %>/edit/<%= content._id %>" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <form action="/muhurat/content/<%= category._id %>/delete/<%= content._id %>" method="POST" style="display:inline" onsubmit="return confirm('Delete this content?');">
+                      <button class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr><td colspan="5" class="text-center">No content yet. Add content or upload an Excel file.</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+  
+  <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script>
+    async function uploadExcel(input) {
+      if (!input.files.length) return;
+      
+      const formData = new FormData();
+      formData.append('excelFile', input.files[0]);
+      
+      try {
+        const res = await fetch('/muhurat/content/<%= category._id %>/upload-excel', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          alert(`Successfully uploaded ${data.count} content items!`);
+          location.reload();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (error) {
+        alert('Error uploading file');
+      }
+      
+      input.value = '';
+    }
+  </script>
+</body>
+</html>
+

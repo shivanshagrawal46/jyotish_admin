@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Muhurat | Sanskrit Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/css/sidebar.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2D3250;
+      --secondary: #424769;
+      --accent: #676F9D;
+      --light: #F9F9F9;
+      --dark: #1A1B26;
+    }
+    .main-content { margin-left: 280px; padding: 2rem; }
+    .topbar { background: #fff; padding: 1rem 2rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); margin-bottom: 2rem; display:flex; align-items:center; justify-content:space-between; }
+    .page-title { font-family:'Playfair Display', serif; font-size:1.5rem; color:#1A1B26; margin:0; }
+    .content-card { background:#fff; border-radius:16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); padding:2rem; }
+    .pill-btn { background:#F3F4F8; color:#2D3250; border:none; border-radius:16px; padding:.6rem 1.2rem; font-weight:600; text-decoration:none; display:inline-block; }
+    .pill-btn:hover { background:#2D3250; color:#fff; text-decoration:none; }
+    .category-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:1.5rem; margin-bottom:1rem; transition: all 0.3s ease; }
+    .category-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .category-image { width:100%; height:150px; object-fit:cover; border-radius:8px; margin-bottom:1rem; }
+    .category-name { font-weight:600; font-size:1.1rem; margin-bottom:0.5rem; }
+    .action-buttons { display:flex; gap:0.5rem; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+  <nav class="sidebar">
+    <%- include('../partials/sidebar', { activePage: 'muhurat', activeCategory: null, koshCategories: [], mcqCategories: [] }) %>
+  </nav>
+  <main class="main-content">
+    <div class="topbar">
+      <h1 class="page-title">Muhurat Management</h1>
+      <div class="user-menu">
+        <div class="user-avatar"><%= username ? username.charAt(0).toUpperCase() : 'A' %></div>
+      </div>
+    </div>
+    <div class="content-card">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="mb-0">Categories</h5>
+        <a href="/muhurat/category/add" class="pill-btn">+ Add Category</a>
+      </div>
+      
+      <% if (categories && categories.length > 0) { %>
+        <div class="row">
+          <% categories.forEach(function(category){ %>
+            <div class="col-md-4">
+              <div class="category-card">
+                <% if (category.imageUrl) { %>
+                  <img src="<%= category.imageUrl %>" alt="<%= category.categoryName %>" class="category-image">
+                <% } %>
+                <div class="category-name"><%= category.categoryName %></div>
+                <div class="action-buttons mt-3">
+                  <a href="/muhurat/content/<%= category._id %>" class="btn btn-sm btn-primary">View Content</a>
+                  <a href="/muhurat/category/edit/<%= category._id %>" class="btn btn-sm btn-outline-primary">Edit</a>
+                  <form action="/muhurat/category/delete/<%= category._id %>" method="POST" style="display:inline" onsubmit="return confirm('Delete this category and all its content?');">
+                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="alert alert-info text-center">
+          No categories yet. Click "Add Category" to get started.
+        </div>
+      <% } %>
+    </div>
+  </main>
+  <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

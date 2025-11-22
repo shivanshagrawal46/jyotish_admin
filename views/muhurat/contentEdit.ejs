@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Content | Muhurat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/css/sidebar.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2D3250;
+      --secondary: #424769;
+      --accent: #676F9D;
+      --light: #F9F9F9;
+      --dark: #1A1B26;
+    }
+    .main-content { margin-left: 280px; padding: 2rem; }
+    .topbar { background: #fff; padding: 1rem 2rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); margin-bottom: 2rem; display:flex; align-items:center; justify-content:space-between; }
+    .page-title { font-family:'Playfair Display', serif; font-size:1.5rem; color:#1A1B26; margin:0; }
+    .content-card { background:#fff; border-radius:16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); padding:2rem; }
+  </style>
+</head>
+<body>
+  <nav class="sidebar">
+    <%- include('../partials/sidebar', { activePage: 'muhurat', activeCategory: null, koshCategories: [], mcqCategories: [] }) %>
+  </nav>
+  <main class="main-content">
+    <div class="topbar">
+      <h1 class="page-title">Edit Muhurat Content - <%= category.categoryName %></h1>
+      <div class="user-menu">
+        <div class="user-avatar"><%= username ? username.charAt(0).toUpperCase() : 'A' %></div>
+      </div>
+    </div>
+    <div class="content-card">
+      <form action="/muhurat/content/<%= category._id %>/edit/<%= content._id %>" method="POST">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Year (Optional)</label>
+            <input type="number" name="year" class="form-control" value="<%= content.year || '' %>" placeholder="e.g., 2025">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Date (Optional)</label>
+            <input type="text" name="date" class="form-control" value="<%= content.date || '' %>" placeholder="e.g., 22 Nov, January 15, etc.">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Detail (Optional)</label>
+          <textarea name="detail" class="form-control" rows="5" placeholder="Enter details..."><%= content.detail || '' %></textarea>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Update Content</button>
+          <a href="/muhurat/content/<%= category._id %>" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </main>
+  <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

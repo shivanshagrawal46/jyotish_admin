@@ -20,6 +20,18 @@ function withThumbnail(item) {
   };
 }
 
+// Get all unique categories
+router.get('/category', async (req, res) => {
+  try {
+    const categories = await YouTube.distinct('category');
+    // Filter out null, undefined, and empty strings
+    const validCategories = categories.filter(cat => cat && cat.trim() !== '');
+    res.json({ success: true, data: validCategories });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // List all videos
 router.get('/', async (req, res) => {
   try {

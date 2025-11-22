@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const numerologyMonthlySchema = new mongoose.Schema({
+    yearRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'NumerologyMonthlyYear',
+        required: true
+    },
     sequence: {
         type: Number,
         default: 0
@@ -33,7 +38,7 @@ const numerologyMonthlySchema = new mongoose.Schema({
 });
 
 // Index for faster queries
-numerologyMonthlySchema.index({ month: 1 });
+numerologyMonthlySchema.index({ yearRef: 1, month: 1 });
 numerologyMonthlySchema.index({ sequence: 1 });
 
 module.exports = mongoose.model('NumerologyMonthly', numerologyMonthlySchema); 

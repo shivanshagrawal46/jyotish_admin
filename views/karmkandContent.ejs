@@ -4,8 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Karmkand Contents</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        @font-face {
+            font-family: 'Siddhanta';
+            src: url('/fonts/siddhanta/siddhanta.woff2') format('woff2'),
+                 url('/fonts/siddhanta/siddhanta.woff') format('woff'),
+                 url('/fonts/siddhanta/siddhanta.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Siddhanta';
+            src: url('/fonts/siddhanta/siddhanta-bold.woff2') format('woff2'),
+                 url('/fonts/siddhanta/siddhanta-bold.woff') format('woff'),
+                 url('/fonts/siddhanta/siddhanta-bold.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
         body { background: #f8f9fa; }
         .sidebar { min-height: 100vh; background: #f4f6fb; border-right: 1px solid #e3e6ed; padding-top: 2rem; }
         .sidebar .nav-link { color: #2d3a4b; font-weight: 500; margin-bottom: 1rem; }
@@ -15,6 +32,11 @@
         .welcome { font-size: 1.2rem; color: #2d3a4b; font-weight: 600; }
         .table-responsive { max-height: 70vh; overflow-y: auto; }
         .img-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
+        .siddhanta-font {
+            font-family: 'Siddhanta', 'Noto Sans Devanagari', serif;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
     </style>
 </head>
 <body>
@@ -58,13 +80,13 @@
                         <% contents.forEach(function(content, idx) { %>
                         <tr>
                             <td><%= content.sequenceNo %></td>
-                            <td><%= content.hindiWord %></td>
+                            <td class="siddhanta-font"><%= content.hindiWord %></td>
                             <td><%= content.englishWord %></td>
-                            <td><%= content.hinglishWord %></td>
-                            <td><%= content.meaning %></td>
-                            <td><%= content.extra %></td>
-                            <td><%= content.structure %></td>
-                            <td><%= content.search %></td>
+                            <td class="siddhanta-font"><%= content.hinglishWord %></td>
+                            <td class="siddhanta-font"><%= content.meaning %></td>
+                            <td class="siddhanta-font"><%= content.extra %></td>
+                            <td class="siddhanta-font"><%= content.structure %></td>
+                            <td class="siddhanta-font"><%= content.search %></td>
                             <td><a href="<%= content.youtubeLink %>" target="_blank">YouTube</a></td>
                             <td>
                                 <% if (content.image) { %>

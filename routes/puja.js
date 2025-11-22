@@ -102,7 +102,8 @@ router.post('/add', upload.single('image'), async (req, res) => {
             countdown_time,
             is_last_day: is_last_day === 'on',
             is_active: is_active === 'on',
-            whatsapp_link
+            whatsapp_link,
+            price
         });
 
         await puja.save();
@@ -145,7 +146,8 @@ router.post('/edit/:id', upload.single('image'), async (req, res) => {
             countdown_time,
             is_last_day,
             is_active,
-            whatsapp_link
+            whatsapp_link,
+            price
         } = req.body;
 
         // Find existing puja
@@ -186,6 +188,7 @@ router.post('/edit/:id', upload.single('image'), async (req, res) => {
         puja.is_last_day = is_last_day === 'on';
         puja.is_active = is_active === 'on';
         puja.whatsapp_link = whatsapp_link;
+        puja.price = price;
         puja.updated_at = Date.now();
 
         await puja.save();

@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const rashifalYearlySchema = new mongoose.Schema({
+    yearRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'RashifalYearlyYear',
+        required: true
+    },
     sequence: {
         type: Number,
         default: 0
@@ -45,8 +50,9 @@ const rashifalYearlySchema = new mongoose.Schema({
     timestamps: true
 });
 
+rashifalYearlySchema.index({ yearRef: 1, sequence: 1 });
+rashifalYearlySchema.index({ yearRef: 1 });
 rashifalYearlySchema.index({ date: 1 });
-rashifalYearlySchema.index({ sequence: 1 });
 
 rashifalYearlySchema.pre('save', function(next) {
     this.updatedAt = Date.now();

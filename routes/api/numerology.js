@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const NumerologyMonthly = require('../../models/NumerologyMonthly');
+const NumerologyMonthlyYear = require('../../models/NumerologyMonthlyYear');
 const NumerologyYearly = require('../../models/NumerologyYearly');
+const NumerologyYearlyYear = require('../../models/NumerologyYearlyYear');
 const NumerologyDailyDate = require('../../models/NumerologyDailyDate');
 const NumerologyDailyContent = require('../../models/NumerologyDailyContent');
 
@@ -216,14 +218,88 @@ router.delete('/daily/:dateId/:contentId', async (req, res) => {
     }
 });
 
-// Get all months
+// Get all years (monthly numerology years)
 router.get('/months', async (req, res) => {
     try {
+        const years = await NumerologyMonthlyYear.find().sort({ year: -1 });
+        
+        // Map to include sequential IDs
+        const yearsWithIds = years.map((year, index) => ({
+            id: year.id || index + 1,
+            year: year.year,
+            description: year.description,
+            _id: year._id,
+            createdAt: year.createdAt,
+            updatedAt: year.updatedAt
+        }));
+        
         res.json({
             success: true,
-            data: MONTHS
+            data: yearsWithIds
         });
     } catch (error) {
+        console.error('Error fetching years:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error fetching years'
+        });
+    }
+});
+
+// Get all 12 months for a specific year ID
+router.get('/months/:yearId', async (req, res) => {
+    try {
+        const { yearId } = req.params;
+        
+        // Find year by ID (can be numeric id or MongoDB _id)
+        let yearDoc;
+        if (/^\d+$/.test(yearId)) {
+            // If numeric, find by id field
+            yearDoc = await NumerologyMonthlyYear.findOne({ id: parseInt(yearId) });
+        } else {
+            // Otherwise find by _id
+            yearDoc = await NumerologyMonthlyYear.findById(yearId);
+        }
+        
+        if (!yearDoc) {
+            return res.status(404).json({
+                success: false,
+                error: 'Year not found'
+            });
+        }
+        
+        // Return all 12 months with their data
+        const monthsData = [];
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        
+        for (let i = 0; i < monthNames.length; i++) {
+            const monthName = monthNames[i];
+            const contents = await NumerologyMonthly.find({ 
+                yearRef: yearDoc._id, 
+                month: monthName 
+            }).sort({ sequence: 1 });
+            
+            monthsData.push({
+                id: i + 1,
+                name: monthName,
+                contentCount: contents.length
+            });
+        }
+        
+        res.json({
+            success: true,
+            year: {
+                id: yearDoc.id,
+                year: yearDoc.year,
+                description: yearDoc.description
+            },
+            data: monthsData
+        });
+    } catch (error) {
+        console.error('Error fetching months for year:', error);
         res.status(500).json({
             success: false,
             error: 'Error fetching months'
@@ -231,33 +307,75 @@ router.get('/months', async (req, res) => {
     }
 });
 
-// Get numerology data for a specific month with sequential IDs
-router.get('/months/:monthId', async (req, res) => {
+// Get specific month data for a year (e.g., /months/1/January or /months/1/1)
+router.get('/months/:yearId/:month', async (req, res) => {
     try {
-        const monthId = parseInt(req.params.monthId);
-        const month = MONTHS.find(m => m.id === monthId);
+        const { yearId, month } = req.params;
         
-        if (!month) {
+        // Find year by ID
+        let yearDoc;
+        if (/^\d+$/.test(yearId)) {
+            yearDoc = await NumerologyMonthlyYear.findOne({ id: parseInt(yearId) });
+        } else {
+            yearDoc = await NumerologyMonthlyYear.findById(yearId);
+        }
+        
+        if (!yearDoc) {
             return res.status(404).json({
                 success: false,
-                error: 'Invalid month ID'
+                error: 'Year not found'
             });
         }
-
-        const monthlyNumerology = await NumerologyMonthly.find({ month: month.name }).sort({ createdAt: -1 });
         
-        // Add sequential IDs to the data
-        const numerologyWithIds = monthlyNumerology.map((numerology, index) => ({
+        // Determine month name
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        
+        let monthName;
+        if (/^\d+$/.test(month)) {
+            const monthIndex = parseInt(month);
+            if (monthIndex < 1 || monthIndex > 12) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Invalid month'
+                });
+            }
+            monthName = monthNames[monthIndex - 1];
+        } else {
+            monthName = month;
+            if (!monthNames.includes(monthName)) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Invalid month name'
+                });
+            }
+        }
+        
+        // Get contents for this month and year
+        const contents = await NumerologyMonthly.find({ 
+            yearRef: yearDoc._id, 
+            month: monthName 
+        }).sort({ sequence: 1 });
+        
+        // Add sequential IDs
+        const contentsWithIds = contents.map((content, index) => ({
             id: index + 1,
-            ...numerology.toObject()
+            ...content.toObject()
         }));
         
         res.json({
             success: true,
-            month: month.name,
-            data: numerologyWithIds
+            year: {
+                id: yearDoc.id,
+                year: yearDoc.year
+            },
+            month: monthName,
+            data: contentsWithIds
         });
     } catch (error) {
+        console.error('Error fetching monthly numerology:', error);
         res.status(500).json({
             success: false,
             error: 'Error fetching monthly numerology'
@@ -265,94 +383,156 @@ router.get('/months/:monthId', async (req, res) => {
     }
 });
 
-// Get specific monthly numerology by month ID and numerology ID
-router.get('/months/:monthId/:id', async (req, res) => {
+// Get specific content item from a month
+router.get('/months/:yearId/:month/:contentId', async (req, res) => {
     try {
-        const monthId = parseInt(req.params.monthId);
-        const numerologyId = parseInt(req.params.id);
-        const month = MONTHS.find(m => m.id === monthId);
+        const { yearId, month, contentId } = req.params;
         
-        if (!month) {
-            return res.status(404).json({
-                success: false,
-                error: 'Invalid month ID'
-            });
+        // Find year
+        let yearDoc;
+        if (/^\d+$/.test(yearId)) {
+            yearDoc = await NumerologyMonthlyYear.findOne({ id: parseInt(yearId) });
+        } else {
+            yearDoc = await NumerologyMonthlyYear.findById(yearId);
         }
-
-        const monthlyNumerology = await NumerologyMonthly.find({ month: month.name }).sort({ createdAt: -1 });
         
-        if (numerologyId < 1 || numerologyId > monthlyNumerology.length) {
+        if (!yearDoc) {
             return res.status(404).json({
                 success: false,
-                error: 'Numerology not found'
+                error: 'Year not found'
             });
         }
         
-        const numerology = monthlyNumerology[numerologyId - 1];
+        // Determine month name
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        
+        let monthName;
+        if (/^\d+$/.test(month)) {
+            const monthIndex = parseInt(month);
+            if (monthIndex < 1 || monthIndex > 12) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Invalid month'
+                });
+            }
+            monthName = monthNames[monthIndex - 1];
+        } else {
+            monthName = month;
+        }
+        
+        // Get all contents for this month
+        const contents = await NumerologyMonthly.find({ 
+            yearRef: yearDoc._id, 
+            month: monthName 
+        }).sort({ sequence: 1 });
+        
+        // Find specific content
+        let content;
+        if (/^\d+$/.test(contentId)) {
+            const idx = parseInt(contentId);
+            if (idx < 1 || idx > contents.length) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Content not found'
+                });
+            }
+            content = contents[idx - 1];
+        } else {
+            content = await NumerologyMonthly.findById(contentId);
+            if (!content || String(content.yearRef) !== String(yearDoc._id) || content.month !== monthName) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Content not found'
+                });
+            }
+        }
+        
         res.json({
             success: true,
-            month: month.name,
-            data: {
-                id: numerologyId,
-                ...numerology.toObject()
-            }
+            year: {
+                id: yearDoc.id,
+                year: yearDoc.year
+            },
+            month: monthName,
+            data: content.toObject()
         });
     } catch (error) {
+        console.error('Error fetching content:', error);
         res.status(500).json({
             success: false,
-            error: 'Error fetching monthly numerology'
+            error: 'Error fetching content'
         });
     }
 });
 
 // Get all yearly numerology with sequential IDs
+// Get all yearly years
 router.get('/yearly', async (req, res) => {
     try {
-        const yearlyNumerology = await NumerologyYearly.find().sort({ date: -1 });
-        
-        // Add sequential IDs to the data
-        const numerologyWithIds = yearlyNumerology.map((numerology, index) => ({
-            id: index + 1,
-            ...numerology.toObject()
-        }));
+        const years = await NumerologyYearlyYear.find()
+            .select('id year description -_id')
+            .sort({ year: -1 });
         
         res.json({
             success: true,
-            data: numerologyWithIds
+            data: years
         });
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: 'Error fetching yearly numerology'
+            error: 'Error fetching yearly years'
         });
     }
 });
 
-// Get specific yearly numerology by ID
-router.get('/yearly/:id', async (req, res) => {
+// Get all yearly content for a specific year
+router.get('/yearly/:yearId', async (req, res) => {
     try {
-        const id = parseInt(req.params.id);
-        const yearlyNumerology = await NumerologyYearly.find().sort({ date: -1 });
+        const { yearId } = req.params;
         
-        if (id < 1 || id > yearlyNumerology.length) {
+        // Find year by id or _id
+        let year;
+        if (yearId.match(/^[0-9a-fA-F]{24}$/)) {
+            // MongoDB ObjectId
+            year = await NumerologyYearlyYear.findById(yearId);
+        } else {
+            // Numeric id
+            year = await NumerologyYearlyYear.findOne({ id: parseInt(yearId) });
+        }
+        
+        if (!year) {
             return res.status(404).json({
                 success: false,
-                error: 'Numerology not found'
+                error: 'Year not found'
             });
         }
         
-        const numerology = yearlyNumerology[id - 1];
+        const yearlyContent = await NumerologyYearly.find({ yearRef: year._id })
+            .select('id sequence title_hn title_en date details_hn details_en images -_id')
+            .sort({ sequence: 1 });
+        
+        // Add sequential numeric IDs
+        const contentWithIds = yearlyContent.map((content, index) => ({
+            id: index + 1,
+            ...content.toObject()
+        }));
+        
         res.json({
             success: true,
-            data: {
-                id: id,
-                ...numerology.toObject()
-            }
+            year: {
+                id: year.id,
+                year: year.year,
+                description: year.description
+            },
+            data: contentWithIds
         });
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: 'Error fetching yearly numerology'
+            error: 'Error fetching yearly content'
         });
     }
 });

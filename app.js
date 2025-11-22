@@ -68,6 +68,8 @@ const locationApiRoutes = require('./routes/api/locations');
 const enhancedJyotishApiRoutes = require('./routes/api/enhanced-jyotish');
 const savedKundliRoutes = require('./routes/savedKundli');
 const savedKundliApiRoutes = require('./routes/api/savedKundli');
+const muhuratRouter = require('./routes/muhurat');
+const muhuratApiRouter = require('./routes/api/muhurat');
 
 const app = express();
 
@@ -104,8 +106,8 @@ app.use(
     }),
     cookie: { 
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
-      secure: true, // Only use secure cookies in production
-      httpOnly: true,
+      //secure: true, // Only use secure cookies in production
+      //httpOnly: true,
       sameSite: 'lax',
       path: '/'
     },
@@ -202,6 +204,9 @@ app.use('/astro-shop', astroshopRouter);
 app.use('/api/astro-shop', astroshopApiRouter);
 app.use('/youtube', youtubeRouter);
 app.use('/api/youtube', youtubeApiRouter);
+
+app.use('/muhurat', muhuratRouter);
+app.use('/api/muhurat', muhuratApiRouter);
 
 app.use('/puja', pujaRouter);
 app.use('/api/puja', pujaApiRouter);

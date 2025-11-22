@@ -198,6 +198,53 @@
         .action-icon-btn.edit:hover {
             background: #e3e6f0;
         }
+        
+        /* Year tabs with delete button styling */
+        #yearsTabs .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-right: 0.5rem;
+        }
+        
+        #yearsTabs .btn-close {
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        
+        #yearsTabs .nav-link:hover .btn-close {
+            opacity: 1;
+        }
+        
+        /* Month tabs compact styling */
+        #monthly .nav-pills .nav-link {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
+
+        .excel-info {
+            background: #f0f9ff;
+            border-left: 4px solid #0284c7;
+            padding: 1rem;
+            margin: 1rem 2rem 1.5rem 2rem;
+            border-radius: 8px;
+        }
+
+        .excel-info h6 {
+            color: #0369a1;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .excel-info ul {
+            margin-bottom: 0;
+            padding-left: 1.5rem;
+        }
+
+        .excel-info li {
+            color: #0c4a6e;
+            margin-bottom: 0.25rem;
+        }
     </style>
 </head>
 <body>
@@ -265,13 +312,31 @@
                             Daily Numerology - Manage Dates
                         </div>
                         <div class="numerology-actions">
-                            <button class="pill-btn upload-excel-btn" onclick="showAddDateModal()">
+                            <button class="pill-btn upload-excel-btn me-2" onclick="showAddDateModal()">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
                                     <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
                                 </svg>
                                 Create New Date
                             </button>
+                            <button class="pill-btn upload-excel-btn" onclick="document.getElementById('dailyDatesExcelFile').click()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                    <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                                </svg>
+                                Upload Dates Excel
+                            </button>
+                            <input type="file" id="dailyDatesExcelFile" class="d-none" accept=".xlsx,.xls" onchange="uploadDailyDatesExcel(this)">
                         </div>
+                        
+                        <div class="excel-info">
+                            <h6>📋 Excel Upload Format</h6>
+                            <p class="mb-2">Your Excel file should contain the following column:</p>
+                            <ul>
+                                <li><strong>dateLabel</strong> - Date label (e.g., "22 Nov 2024", "Today", "Tomorrow")</li>
+                                <li><em>Alternative column names accepted: <strong>date_label</strong> or <strong>date</strong></em></li>
+                            </ul>
+                        </div>
+                        
                         <div class="numerology-table-wrap">
                             <div class="table-responsive">
                                 <table class="table numerology-table">
@@ -303,69 +368,122 @@
                             Monthly Numerology
                         </div>
                         <div class="numerology-actions">
-                            <!-- Month navigation bar -->
-                            <ul class="nav nav-pills mb-3" id="numerologyMonthTabs" role="tablist" style="flex-wrap: wrap;">
-                                <% const months = [
-                                    'January', 'February', 'March', 'April', 'May', 'June',
-                                    'July', 'August', 'September', 'October', 'November', 'December'
-                                ]; %>
-                                <% months.forEach(function(month, idx) { %>
-                                    <li class="nav-item" role="presentation">
-                                        <button class="nav-link<%= idx === 0 ? ' active' : '' %>" id="numerology-month-<%= idx %>-tab" data-bs-toggle="pill" data-bs-target="#numerology-month-<%= idx %>" type="button" role="tab" aria-controls="numerology-month-<%= idx %>" aria-selected="<%= idx === 0 ? 'true' : 'false' %>">
-                                            <%= month %>
-                                        </button>
-                                    </li>
-                                <% }); %>
-                            </ul>
+                            <button class="pill-btn upload-excel-btn" onclick="showAddYearModal()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                                </svg>
+                                Create New Year
+                            </button>
                         </div>
                         <div class="numerology-table-wrap">
-                            <div class="tab-content" id="numerologyMonthTabContent">
-                                <% months.forEach(function(month, idx) { %>
-                                    <div class="tab-pane fade<%= idx === 0 ? ' show active' : '' %>" id="numerology-month-<%= idx %>" role="tabpanel" aria-labelledby="numerology-month-<%= idx %>-tab">
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <h5 class="mb-0"><%= month %> Numerology</h5>
-                                            <a href="#" class="pill-btn upload-excel-btn" onclick="document.getElementById('numerology-month-file-<%= idx %>').click(); return false;">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-                                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                                                    <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
-                                                </svg>
-                                                Upload Excel
-                                            </a>
-                                            <input type="file" id="numerology-month-file-<%= idx %>" class="d-none" accept=".xlsx,.xls" onchange="uploadNumerologyMonthlyExcel('<%= month %>', this)" />
+                            <% if (typeof monthlyYears !== 'undefined' && monthlyYears.length > 0) { %>
+                                <!-- Years Navigation -->
+                                <ul class="nav nav-pills mb-4" id="yearsTabs" role="tablist" style="flex-wrap: wrap; gap: 0.5rem;">
+                                    <% monthlyYears.forEach(function(year, yearIdx) { %>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link<%= yearIdx === 0 ? ' active' : '' %>" 
+                                                    id="year-<%= year._id %>-tab" 
+                                                    data-bs-toggle="pill" 
+                                                    data-bs-target="#year-<%= year._id %>" 
+                                                    data-year-id="<%= year._id %>"
+                                                    data-year-value="<%= year.year %>"
+                                                    type="button" 
+                                                    role="tab" 
+                                                    aria-controls="year-<%= year._id %>" 
+                                                    aria-selected="<%= yearIdx === 0 ? 'true' : 'false' %>"
+                                                    onclick="loadYearMonths('<%= year._id %>', '<%= year.year %>')">
+                                                <%= year.year %>
+                                                <button class="btn-close btn-close-white ms-2" style="font-size: 0.6rem;" onclick="event.stopPropagation(); deleteYear('<%= year._id %>', '<%= year.year %>');" title="Delete Year"></button>
+                                            </button>
+                                        </li>
+                                    <% }); %>
+                                </ul>
+
+                                <!-- Years Content -->
+                                <div class="tab-content" id="yearsTabContent">
+                                    <% monthlyYears.forEach(function(year, yearIdx) { %>
+                                        <div class="tab-pane fade<%= yearIdx === 0 ? ' show active' : '' %>" 
+                                             id="year-<%= year._id %>" 
+                                             role="tabpanel" 
+                                             aria-labelledby="year-<%= year._id %>-tab">
+                                            
+                                            <!-- Months Navigation -->
+                                            <ul class="nav nav-pills mb-3" id="months-tabs-<%= year._id %>" role="tablist" style="flex-wrap: wrap; gap: 0.3rem;">
+                                                <% 
+                                                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                                monthNames.forEach(function(month, monthIdx) { 
+                                                %>
+                                                    <li class="nav-item" role="presentation">
+                                                        <button class="nav-link<%= monthIdx === 0 ? ' active' : '' %>" 
+                                                                id="month-<%= year._id %>-<%= monthIdx %>-tab" 
+                                                                data-bs-toggle="pill" 
+                                                                data-bs-target="#month-<%= year._id %>-<%= monthIdx %>" 
+                                                                type="button" 
+                                                                role="tab" 
+                                                                aria-controls="month-<%= year._id %>-<%= monthIdx %>" 
+                                                                aria-selected="<%= monthIdx === 0 ? 'true' : 'false' %>">
+                                                            <%= month %>
+                                                        </button>
+                                                    </li>
+                                                <% }); %>
+                                            </ul>
+
+                                            <!-- Months Content -->
+                                            <div class="tab-content" id="months-content-<%= year._id %>">
+                                                <% monthNames.forEach(function(month, monthIdx) { %>
+                                                    <div class="tab-pane fade<%= monthIdx === 0 ? ' show active' : '' %>" 
+                                                         id="month-<%= year._id %>-<%= monthIdx %>" 
+                                                         role="tabpanel" 
+                                                         aria-labelledby="month-<%= year._id %>-<%= monthIdx %>-tab">
+                                                        
+                                                        <!-- Upload Excel Button -->
+                                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                                            <h5 class="mb-0"><%= month %> <%= year.year %></h5>
+                                                            <button class="pill-btn" onclick="document.getElementById('excel-file-<%= year._id %>-<%= monthIdx %>').click()">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                                                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                                                    <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                                                                </svg>
+                                                                Upload Excel
+                                                            </button>
+                                                            <input type="file" 
+                                                                   id="excel-file-<%= year._id %>-<%= monthIdx %>" 
+                                                                   class="d-none" 
+                                                                   accept=".xlsx,.xls" 
+                                                                   onchange="handleExcelUpload('<%= year._id %>', '<%= month %>', <%= monthIdx %>, this)">
+                                                        </div>
+
+                                                        <!-- Data Table -->
+                                                        <div class="table-responsive">
+                                                            <table class="table numerology-table">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>#</th>
+                                                                        <th>Title (Hindi)</th>
+                                                                        <th>Title (English)</th>
+                                                                        <th>Details (Hindi)</th>
+                                                                        <th>Details (English)</th>
+                                                                        <th>Actions</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody id="table-<%= year._id %>-<%= monthIdx %>">
+                                                                    <tr>
+                                                                        <td colspan="6" class="text-center">Loading...</td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                <% }); %>
+                                            </div>
                                         </div>
-                                        <div class="table-responsive">
-                                            <table class="table numerology-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>Title (Hindi)</th>
-                                                        <th>Title (English)</th>
-                                                        <th>Details (Hindi)</th>
-                                                        <th>Details (English)</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="numerology-month-tbody-<%= idx %>">
-                                                    <% if (monthlyNumerology && monthlyNumerology[month] && monthlyNumerology[month].length > 0) { %>
-                                                        <% monthlyNumerology[month].forEach(function(entry, i) { %>
-                                                            <tr>
-                                                                <td><%= i + 1 %></td>
-                                                                <td><%= entry.title_hn %></td>
-                                                                <td><%= entry.title_en %></td>
-                                                                <td><%= entry.details_hn %></td>
-                                                                <td><%= entry.details_en %></td>
-                                                            </tr>
-                                                        <% }); %>
-                                                    <% } else { %>
-                                                        <tr>
-                                                            <td colspan="5" class="text-center">No data for <%= month %></td>
-                                                        </tr>
-                                                    <% } %>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                <% }); %>
-                            </div>
+                                    <% }); %>
+                                </div>
+                            <% } else { %>
+                                <div class="alert alert-info text-center">
+                                    No years created yet. Click "Create New Year" to get started.
+                                </div>
+                            <% } %>
                         </div>
                     </div>
                 </div>
@@ -377,52 +495,111 @@
                             Yearly Numerology
                         </div>
                         <div class="numerology-actions">
-                            <a href="/numerology/upload-yearly" class="pill-btn upload-excel-btn">
+                            <button class="pill-btn upload-excel-btn" onclick="showAddYearlyYearModal()">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
-                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                                    <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
                                 </svg>
-                                Upload Excel
-                            </a>
+                                Create New Year
+                            </button>
                         </div>
                         <div class="numerology-table-wrap">
-                            <div class="table-responsive">
-                                <table class="table numerology-table">
-                                    <thead>
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Date</th>
-                                            <th>Title (Hindi)</th>
-                                            <th>Title (English)</th>
-                                            <th>Details (Hindi)</th>
-                                            <th>Details (English)</th>
-                                            <th>Images</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <% if (typeof yearlyNumerology !== 'undefined' && yearlyNumerology.length > 0) { %>
-                                            <% yearlyNumerology.forEach((entry, idx) => { %>
-                                                <tr>
-                                                    <td><%= idx + 1 %></td>
-                                                    <td><%= entry.date %></td>
-                                                    <td><%= entry.title_hn %></td>
-                                                    <td><%= entry.title_en %></td>
-                                                    <td><%= entry.details_hn %></td>
-                                                    <td><%= entry.details_en %></td>
-                                                    <td><%= entry.images ? entry.images.length : 0 %></td>
-                                                </tr>
-                                            <% }); %>
-                                        <% } else { %>
-                                            <tr>
-                                                <td colspan="7" class="text-center">No yearly numerology found</td>
-                                            </tr>
-                                        <% } %>
-                                    </tbody>
-                                </table>
-                            </div>
+                            <% if (typeof yearlyYears !== 'undefined' && yearlyYears.length > 0) { %>
+                                <!-- Years Navigation -->
+                                <ul class="nav nav-pills mb-4" id="yearlyYearsTabs" role="tablist" style="flex-wrap: wrap; gap: 0.5rem;">
+                                    <% yearlyYears.forEach(function(year, yearIdx) { %>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link<%= yearIdx === 0 ? ' active' : '' %>" 
+                                                    id="yearly-year-<%= year._id %>-tab" 
+                                                    data-bs-toggle="pill" 
+                                                    data-bs-target="#yearly-year-<%= year._id %>" 
+                                                    data-year-id="<%= year._id %>"
+                                                    data-year-value="<%= year.year %>"
+                                                    type="button" 
+                                                    role="tab" 
+                                                    aria-controls="yearly-year-<%= year._id %>" 
+                                                    aria-selected="<%= yearIdx === 0 ? 'true' : 'false' %>"
+                                                    onclick="loadYearlyYearContent('<%= year._id %>', '<%= year.year %>')">
+                                                <%= year.year %>
+                                                <button class="btn-close btn-close-white ms-2" style="font-size: 0.6rem;" onclick="event.stopPropagation(); deleteYearlyYear('<%= year._id %>', '<%= year.year %>');" title="Delete Year"></button>
+                                            </button>
+                                        </li>
+                                    <% }); %>
+                                </ul>
+
+                                <!-- Years Content -->
+                                <div class="tab-content" id="yearlyYearsTabContent">
+                                    <% yearlyYears.forEach(function(year, yearIdx) { %>
+                                        <div class="tab-pane fade<%= yearIdx === 0 ? ' show active' : '' %>" 
+                                             id="yearly-year-<%= year._id %>" 
+                                             role="tabpanel" 
+                                             aria-labelledby="yearly-year-<%= year._id %>-tab">
+                                            
+                                            <!-- Upload Excel Button -->
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h5 class="mb-0">Year <%= year.year %></h5>
+                                                <button class="pill-btn" onclick="document.getElementById('yearly-excel-file-<%= year._id %>').click()">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                                                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                                        <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                                                    </svg>
+                                                    Upload Excel
+                                                </button>
+                                                <input type="file" 
+                                                       id="yearly-excel-file-<%= year._id %>" 
+                                                       class="d-none" 
+                                                       accept=".xlsx,.xls" 
+                                                       onchange="handleYearlyExcelUpload('<%= year._id %>', this)">
+                                            </div>
+
+                                            <!-- Excel Upload Format Info -->
+                                            <div class="excel-info mb-3">
+                                                <h6>📋 Excel Upload Format</h6>
+                                                <p class="mb-2">Your Excel file should contain the following columns:</p>
+                                                <ul>
+                                                    <li><strong>title_hn</strong> - Title in Hindi</li>
+                                                    <li><strong>title_en</strong> - Title in English</li>
+                                                    <li><strong>date</strong> - Date string</li>
+                                                    <li><strong>details_hn</strong> - Details in Hindi</li>
+                                                    <li><strong>details_en</strong> - Details in English</li>
+                                                    <li><strong>images</strong> - Comma-separated image URLs (optional)</li>
+                                                    <li><strong>sequence</strong> - Sequence number (optional)</li>
+                                                </ul>
+                                            </div>
+
+                                            <!-- Data Table -->
+                                            <div class="table-responsive">
+                                                <table class="table numerology-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>Date</th>
+                                                            <th>Title (Hindi)</th>
+                                                            <th>Title (English)</th>
+                                                            <th>Details (Hindi)</th>
+                                                            <th>Details (English)</th>
+                                                            <th>Images</th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="yearly-table-<%= year._id %>">
+                                                        <tr>
+                                                            <td colspan="8" class="text-center">Loading...</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    <% }); %>
+                                </div>
+                            <% } else { %>
+                                <div class="alert alert-info text-center">
+                                    No years created yet. Click "Create New Year" to get started.
+                                </div>
+                            <% } %>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </main>
@@ -439,15 +616,7 @@
                     <form id="addDateForm">
                         <div class="mb-3">
                             <label class="form-label">Date Label *</label>
-                            <input type="text" class="form-control" name="dateLabel" required placeholder="e.g., 2024-01-15, Jan 15, etc.">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Date ISO (Optional)</label>
-                            <input type="date" class="form-control" name="dateISO">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Notes (Optional)</label>
-                            <textarea class="form-control" name="notes" rows="3"></textarea>
+                            <input type="text" class="form-control" name="dateLabel" required placeholder="e.g., 22 Nov 2024, Today, etc.">
                         </div>
                     </form>
                 </div>
@@ -473,14 +642,6 @@
                         <div class="mb-3">
                             <label class="form-label">Date Label *</label>
                             <input type="text" class="form-control" name="dateLabel" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Date ISO (Optional)</label>
-                            <input type="date" class="form-control" name="dateISO">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Notes (Optional)</label>
-                            <textarea class="form-control" name="notes" rows="3"></textarea>
                         </div>
                     </form>
                 </div>
@@ -531,6 +692,57 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Numerology Date Content Modal -->
+    <div class="modal fade" id="editDateContentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Content</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editDateContentForm">
+                        <input type="hidden" id="editDateId">
+                        <input type="hidden" id="editContentId">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Title (Hindi) *</label>
+                                <input type="text" class="form-control" id="editTitleHn" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Title (English) *</label>
+                                <input type="text" class="form-control" id="editTitleEn" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Details (Hindi) *</label>
+                                <textarea class="form-control" id="editDetailsHn" rows="5" required></textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Details (English) *</label>
+                                <textarea class="form-control" id="editDetailsEn" rows="5" required></textarea>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Images (Comma-separated URLs)</label>
+                            <input type="text" class="form-control" id="editImages" placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg">
+                            <small class="form-text text-muted">Enter image URLs separated by commas</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sequence</label>
+                            <input type="number" class="form-control" id="editSequence" value="0">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitEditDateContent()">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -597,9 +809,7 @@
         const form = document.getElementById('addDateForm');
         const formData = new FormData(form);
         const payload = {
-            dateLabel: formData.get('dateLabel'),
-            dateISO: formData.get('dateISO') || null,
-            notes: formData.get('notes') || null
+            dateLabel: formData.get('dateLabel')
         };
         try {
             const res = await fetch('/api/numerology/daily', {
@@ -621,17 +831,36 @@
         }
     }
     
+    async function uploadDailyDatesExcel(input) {
+        if (!input.files.length) return;
+        
+        const formData = new FormData();
+        formData.append('excelFile', input.files[0]);
+        
+        try {
+            const res = await fetch('/numerology/upload-daily-dates', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`Successfully created ${data.count} date(s)!`);
+                loadDailyDates();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error uploading Excel file');
+        }
+        
+        // Clear file input
+        input.value = '';
+    }
+    
     function editDate(id, dateLabel, dateISO, notes) {
         const form = document.getElementById('editDateForm');
         form.querySelector('[name="dateId"]').value = id;
         form.querySelector('[name="dateLabel"]').value = dateLabel;
-        if (dateISO && dateISO !== 'null') {
-            const dateValue = new Date(dateISO).toISOString().split('T')[0];
-            form.querySelector('[name="dateISO"]').value = dateValue;
-        } else {
-            form.querySelector('[name="dateISO"]').value = '';
-        }
-        form.querySelector('[name="notes"]').value = notes && notes !== 'null' ? notes : '';
         const modal = new bootstrap.Modal(document.getElementById('editDateModal'));
         modal.show();
     }
@@ -640,9 +869,7 @@
         const form = document.getElementById('editDateForm');
         const dateId = form.querySelector('[name="dateId"]').value;
         const payload = {
-            dateLabel: form.querySelector('[name="dateLabel"]').value,
-            dateISO: form.querySelector('[name="dateISO"]').value || null,
-            notes: form.querySelector('[name="notes"]').value || null
+            dateLabel: form.querySelector('[name="dateLabel"]').value
         };
         try {
             const res = await fetch(`/api/numerology/daily/${dateId}`, {
@@ -691,15 +918,18 @@
                 if (!data.data || data.data.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="7" class="text-center">No content uploaded yet</td></tr>';
                 } else {
-                    tbody.innerHTML = data.data.map((content) => `
+                    // Store content data for editing
+                    window.numerologyContentData = data.data;
+                    tbody.innerHTML = data.data.map((content, idx) => `
                         <tr>
                             <td>${content.id}</td>
                             <td>${content.title_hn || '-'}</td>
                             <td>${content.title_en || '-'}</td>
-                            <td>${content.details_hn || '-'}</td>
-                            <td>${content.details_en || '-'}</td>
+                            <td>${(content.details_hn || '').substring(0, 50)}${(content.details_hn || '').length > 50 ? '...' : ''}</td>
+                            <td>${(content.details_en || '').substring(0, 50)}${(content.details_en || '').length > 50 ? '...' : ''}</td>
                             <td>${content.images ? content.images.length : 0}</td>
                             <td>
+                                <button class="btn btn-sm btn-primary me-2" onclick="editDateContent('${dateId}', ${idx})">Edit</button>
                                 <button class="btn btn-sm btn-danger" onclick="deleteDateContent('${dateId}', '${content.id}')">Delete</button>
                             </td>
                         </tr>
@@ -741,6 +971,63 @@
         .catch(() => alert('Error uploading Excel'));
     });
     
+    function editDateContent(dateId, contentIndex) {
+        const content = window.numerologyContentData[contentIndex];
+        if (!content) {
+            alert('Content not found');
+            return;
+        }
+        
+        document.getElementById('editDateId').value = dateId;
+        document.getElementById('editContentId').value = content.id;
+        document.getElementById('editTitleHn').value = content.title_hn || '';
+        document.getElementById('editTitleEn').value = content.title_en || '';
+        document.getElementById('editDetailsHn').value = content.details_hn || '';
+        document.getElementById('editDetailsEn').value = content.details_en || '';
+        document.getElementById('editImages').value = content.images ? content.images.join(', ') : '';
+        document.getElementById('editSequence').value = content.sequence || 0;
+        
+        const modal = new bootstrap.Modal(document.getElementById('editDateContentModal'));
+        modal.show();
+    }
+
+    async function submitEditDateContent() {
+        const dateId = document.getElementById('editDateId').value;
+        const contentId = document.getElementById('editContentId').value;
+        const images = document.getElementById('editImages').value
+            .split(',')
+            .map(img => img.trim())
+            .filter(img => img);
+        
+        const payload = {
+            title_hn: document.getElementById('editTitleHn').value,
+            title_en: document.getElementById('editTitleEn').value,
+            details_hn: document.getElementById('editDetailsHn').value,
+            details_en: document.getElementById('editDetailsEn').value,
+            images: images,
+            sequence: parseInt(document.getElementById('editSequence').value) || 0
+        };
+        
+        try {
+            const res = await fetch(`/api/numerology/daily/${dateId}/${contentId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Content updated successfully!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editDateContentModal'));
+                modal.hide();
+                viewDateContent(dateId, document.getElementById('viewDateLabel').textContent);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error updating content');
+        }
+    }
+
     async function deleteDateContent(dateId, contentId) {
         if (!confirm('Delete this content?')) return;
         try {
@@ -757,39 +1044,677 @@
         }
     }
     </script>
+    <!-- Add Year Modal (for monthly) -->
+    <div class="modal fade" id="addYearModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Year (Monthly)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addYearForm">
+                        <div class="mb-3">
+                            <label class="form-label">Year *</label>
+                            <input type="number" class="form-control" name="year" required placeholder="e.g., 2025" min="2000" max="2100">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description (Optional)</label>
+                            <textarea class="form-control" name="description" rows="3" placeholder="Optional description"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitAddYear()">Create Year</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Yearly Year Modal -->
+    <div class="modal fade" id="addYearlyYearModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Year (Yearly)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addYearlyYearForm">
+                        <div class="mb-3">
+                            <label class="form-label">Year *</label>
+                            <input type="number" class="form-control" name="year" required placeholder="e.g., 2025" min="2000" max="2100">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description (Optional)</label>
+                            <textarea class="form-control" name="description" rows="3" placeholder="Optional description"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitAddYearlyYear()">Create Year</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Yearly Content Modal -->
+    <div class="modal fade" id="editYearlyContentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Yearly Content</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editYearlyContentForm">
+                        <input type="hidden" name="contentId">
+                        <input type="hidden" name="yearId">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Title (Hindi) *</label>
+                                <input type="text" class="form-control" name="title_hn" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Title (English) *</label>
+                                <input type="text" class="form-control" name="title_en" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Date *</label>
+                            <input type="text" class="form-control" name="date" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Details (Hindi) *</label>
+                                <textarea class="form-control" name="details_hn" rows="4" required></textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Details (English) *</label>
+                                <textarea class="form-control" name="details_en" rows="4" required></textarea>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Images (comma-separated URLs)</label>
+                            <input type="text" class="form-control" name="images" placeholder="url1, url2, url3">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sequence</label>
+                            <input type="number" class="form-control" name="sequence" value="0">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitEditYearlyContent()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Content Modal -->
+    <div class="modal fade" id="editContentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Content</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editContentForm">
+                        <input type="hidden" name="contentId">
+                        <div class="mb-3">
+                            <label class="form-label">Title (Hindi) *</label>
+                            <input type="text" class="form-control" name="title_hn" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Title (English) *</label>
+                            <input type="text" class="form-control" name="title_en" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Details (Hindi) *</label>
+                            <textarea class="form-control" name="details_hn" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Details (English) *</label>
+                            <textarea class="form-control" name="details_en" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Images (comma-separated URLs)</label>
+                            <input type="text" class="form-control" name="images" placeholder="url1, url2, url3">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitEditContent()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-    function uploadNumerologyMonthlyExcel(month, input) {
-        if (!input.files.length) return;
-        const formData = new FormData();
-        formData.append('excelFile', input.files[0]);
-        fetch(`/numerology/upload-monthly/${month}`, {
-            method: 'POST',
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
+    // Global variables
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const loadedMonthData = {}; // Cache for loaded month data
+
+    // Load month data on page load and when tabs are switched
+    window.addEventListener('DOMContentLoaded', function() {
+        // Load data for the first visible year and month
+        const firstYearTab = document.querySelector('#yearsTabs .nav-link.active');
+        if (firstYearTab) {
+            const yearId = firstYearTab.getAttribute('data-year-id');
+            const yearValue = firstYearTab.getAttribute('data-year-value');
+            if (yearId) {
+                loadYearMonths(yearId, yearValue);
+            }
+        }
+    });
+
+    // Year Management Functions
+    function showAddYearModal() {
+        document.getElementById('addYearForm').reset();
+        const modal = new bootstrap.Modal(document.getElementById('addYearModal'));
+        modal.show();
+    }
+
+    async function submitAddYear() {
+        const form = document.getElementById('addYearForm');
+        const formData = new FormData(form);
+        const payload = {
+            year: parseInt(formData.get('year')),
+            description: formData.get('description') || ''
+        };
+        
+        try {
+            const res = await fetch('/numerology/monthly-year/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
             if (data.success) {
-                // Update the table for this month
-                const idx = window.numerologyMonths.indexOf(month);
-                const tbody = document.getElementById('numerology-month-tbody-' + idx);
-                if (tbody) {
-                    tbody.innerHTML = data.data.length ? data.data.map((entry, i) => `
-                        <tr>
-                            <td>${i + 1}</td>
-                            <td>${entry.title_hn}</td>
-                            <td>${entry.title_en}</td>
-                            <td>${entry.details_hn}</td>
-                            <td>${entry.details_en}</td>
-                        </tr>
-                    `).join('') : `<tr><td colspan=\"5\" class=\"text-center\">No data for ${month}</td></tr>`;
-                }
-                alert('Upload successful!');
+                alert('Year created successfully!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addYearModal'));
+                modal.hide();
+                location.reload();
             } else {
                 alert('Error: ' + data.error);
             }
-        })
-        .catch(() => alert('Upload failed'));
+        } catch (error) {
+            alert('Error creating year');
+        }
     }
+
+    async function deleteYear(yearId, yearValue) {
+        if (!confirm(`Delete year ${yearValue}? This will delete all months and content for this year.`)) return;
+        
+        try {
+            const res = await fetch(`/numerology/monthly-year/delete/${yearId}`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Year deleted successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error deleting year');
+        }
+    }
+
+    // Load all months for a year
+    async function loadYearMonths(yearId, yearValue) {
+        try {
+            const res = await fetch(`/numerology/monthly-year/${yearId}/months`);
+            const data = await res.json();
+            if (data.success) {
+                // Store the data
+                loadedMonthData[yearId] = data.months;
+                
+                // Load the first month's data
+                loadMonthData(yearId, monthNames[0], 0);
+            }
+        } catch (error) {
+            console.error('Error loading year months:', error);
+        }
+    }
+
+    // Load data for a specific month
+    async function loadMonthData(yearId, monthName, monthIdx) {
+        const tableId = `table-${yearId}-${monthIdx}`;
+        const tbody = document.getElementById(tableId);
+        
+        if (!tbody) return;
+        
+        // Check cache first
+        if (loadedMonthData[yearId] && loadedMonthData[yearId][monthName]) {
+            renderMonthTable(tbody, loadedMonthData[yearId][monthName], yearId, monthName, monthIdx);
+        } else {
+            // Show loading
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
+            
+            try {
+                const res = await fetch(`/numerology/monthly-year/${yearId}/months`);
+                const data = await res.json();
+                if (data.success) {
+                    loadedMonthData[yearId] = data.months;
+                    renderMonthTable(tbody, data.months[monthName] || [], yearId, monthName, monthIdx);
+                }
+            } catch (error) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading data</td></tr>';
+            }
+        }
+    }
+
+    // Render month data table
+    function renderMonthTable(tbody, contents, yearId, monthName, monthIdx) {
+        if (!contents || contents.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No data uploaded yet. Click "Upload Excel" to add content.</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = contents.map((entry, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td>${entry.title_hn || '-'}</td>
+                <td>${entry.title_en || '-'}</td>
+                <td>${entry.details_hn ? (entry.details_hn.length > 100 ? entry.details_hn.substring(0, 100) + '...' : entry.details_hn) : '-'}</td>
+                <td>${entry.details_en ? (entry.details_en.length > 100 ? entry.details_en.substring(0, 100) + '...' : entry.details_en) : '-'}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning me-1" onclick='editContent("${entry._id}", ${JSON.stringify(entry).replace(/'/g, "&#39;")}, "${yearId}", "${monthName}", ${monthIdx})'>Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteContent('${entry._id}', '${yearId}', '${monthName}', ${monthIdx})">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Handle Excel upload
+    async function handleExcelUpload(yearId, monthName, monthIdx, input) {
+        if (!input.files.length) return;
+        
+        const formData = new FormData();
+        formData.append('excelFile', input.files[0]);
+        
+        const tableId = `table-${yearId}-${monthIdx}`;
+        const tbody = document.getElementById(tableId);
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Uploading...</td></tr>';
+        
+        try {
+            const res = await fetch(`/numerology/upload-monthly/${yearId}/${monthName}`, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Excel uploaded successfully!');
+                // Clear cache and reload
+                delete loadedMonthData[yearId];
+                loadMonthData(yearId, monthName, monthIdx);
+            } else {
+                alert('Error: ' + data.error);
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Upload failed</td></tr>';
+            }
+        } catch (error) {
+            alert('Error uploading Excel');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Upload failed</td></tr>';
+        }
+        
+        // Clear file input
+        input.value = '';
+    }
+
+    // Edit content
+    function editContent(contentId, contentData, yearId, monthName, monthIdx) {
+        const form = document.getElementById('editContentForm');
+        form.querySelector('[name="contentId"]').value = contentId;
+        form.setAttribute('data-year-id', yearId);
+        form.setAttribute('data-month-name', monthName);
+        form.setAttribute('data-month-idx', monthIdx);
+        form.querySelector('[name="title_hn"]').value = contentData.title_hn || '';
+        form.querySelector('[name="title_en"]').value = contentData.title_en || '';
+        form.querySelector('[name="details_hn"]').value = contentData.details_hn || '';
+        form.querySelector('[name="details_en"]').value = contentData.details_en || '';
+        form.querySelector('[name="images"]').value = Array.isArray(contentData.images) ? contentData.images.join(', ') : '';
+        
+        const modal = new bootstrap.Modal(document.getElementById('editContentModal'));
+        modal.show();
+    }
+
+    async function submitEditContent() {
+        const form = document.getElementById('editContentForm');
+        const contentId = form.querySelector('[name="contentId"]').value;
+        const yearId = form.getAttribute('data-year-id');
+        const monthName = form.getAttribute('data-month-name');
+        const monthIdx = parseInt(form.getAttribute('data-month-idx'));
+        
+        const payload = {
+            title_hn: form.querySelector('[name="title_hn"]').value,
+            title_en: form.querySelector('[name="title_en"]').value,
+            details_hn: form.querySelector('[name="details_hn"]').value,
+            details_en: form.querySelector('[name="details_en"]').value,
+            images: form.querySelector('[name="images"]').value
+        };
+        
+        try {
+            const res = await fetch(`/numerology/monthly-content/${contentId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Content updated successfully!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editContentModal'));
+                modal.hide();
+                // Reload the month data
+                delete loadedMonthData[yearId];
+                loadMonthData(yearId, monthName, monthIdx);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error updating content');
+        }
+    }
+
+    // Delete content
+    async function deleteContent(contentId, yearId, monthName, monthIdx) {
+        if (!confirm('Delete this content?')) return;
+        
+        try {
+            const res = await fetch(`/numerology/monthly-content/${contentId}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Content deleted!');
+                // Reload the month data
+                delete loadedMonthData[yearId];
+                loadMonthData(yearId, monthName, monthIdx);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error deleting content');
+        }
+    }
+
+    // Add event listeners for month tab switches
+    document.addEventListener('shown.bs.tab', function (event) {
+        if (event.target.id && event.target.id.startsWith('month-')) {
+            // Extract yearId and monthIdx from the tab ID
+            const parts = event.target.id.split('-');
+            if (parts.length >= 3) {
+                const yearId = parts[1];
+                const monthIdx = parseInt(parts[2]);
+                const monthName = monthNames[monthIdx];
+                loadMonthData(yearId, monthName, monthIdx);
+            }
+        }
+        if (event.target.id && event.target.id.startsWith('yearly-year-')) {
+            // Extract yearId from the tab ID
+            const parts = event.target.id.split('-');
+            if (parts.length >= 3) {
+                const yearId = parts[2];
+                const yearValue = event.target.getAttribute('data-year-value');
+                loadYearlyYearContent(yearId, yearValue);
+            }
+        }
+    });
+
+    // ============= YEARLY YEAR MANAGEMENT =============
+    
+    const loadedYearlyData = {}; // Cache for loaded yearly data
+
+    function showAddYearlyYearModal() {
+        document.getElementById('addYearlyYearForm').reset();
+        const modal = new bootstrap.Modal(document.getElementById('addYearlyYearModal'));
+        modal.show();
+    }
+
+    async function submitAddYearlyYear() {
+        const form = document.getElementById('addYearlyYearForm');
+        const formData = new FormData(form);
+        const payload = {
+            year: parseInt(formData.get('year')),
+            description: formData.get('description') || ''
+        };
+        
+        try {
+            const res = await fetch('/numerology/yearly-year/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Year created successfully!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addYearlyYearModal'));
+                modal.hide();
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error creating year');
+        }
+    }
+
+    async function deleteYearlyYear(yearId, yearValue) {
+        if (!confirm(`Delete year ${yearValue}? This will delete all content for this year.`)) return;
+        
+        try {
+            const res = await fetch(`/numerology/yearly-year/delete/${yearId}`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Year deleted successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error deleting year');
+        }
+    }
+
+    async function loadYearlyYearContent(yearId, yearValue) {
+        const tableId = `yearly-table-${yearId}`;
+        const tbody = document.getElementById(tableId);
+        
+        if (!tbody) return;
+        
+        // Check cache first
+        if (loadedYearlyData[yearId]) {
+            renderYearlyTable(tbody, loadedYearlyData[yearId], yearId);
+            return;
+        }
+        
+        // Show loading
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
+        
+        try {
+            const res = await fetch(`/api/numerology/yearly/${yearId}`);
+            const data = await res.json();
+            if (data.success) {
+                loadedYearlyData[yearId] = data.data || [];
+                renderYearlyTable(tbody, loadedYearlyData[yearId], yearId);
+            } else {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading data</td></tr>';
+            }
+        } catch (error) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading data</td></tr>';
+        }
+    }
+
+    function renderYearlyTable(tbody, contents, yearId) {
+        if (!contents || contents.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No data uploaded yet. Click "Upload Excel" to add content.</td></tr>';
+            return;
+        }
+        
+        // Store content data for editing
+        window.yearlyContentData = contents;
+        tbody.innerHTML = contents.map((entry, idx) => `
+            <tr>
+                <td>${entry.id || idx + 1}</td>
+                <td>${entry.date || '-'}</td>
+                <td>${entry.title_hn || '-'}</td>
+                <td>${entry.title_en || '-'}</td>
+                <td>${(entry.details_hn || '').substring(0, 50)}${(entry.details_hn || '').length > 50 ? '...' : ''}</td>
+                <td>${(entry.details_en || '').substring(0, 50)}${(entry.details_en || '').length > 50 ? '...' : ''}</td>
+                <td>${entry.images ? entry.images.length : 0}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary me-2" onclick="editYearlyContent('${yearId}', ${idx})">Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteYearlyContent('${yearId}', '${entry.id || idx + 1}')">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function handleYearlyExcelUpload(yearId, input) {
+        if (!input.files.length) return;
+        
+        const formData = new FormData();
+        formData.append('excelFile', input.files[0]);
+        
+        const tableId = `yearly-table-${yearId}`;
+        const tbody = document.getElementById(tableId);
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Uploading...</td></tr>';
+        
+        try {
+            const res = await fetch(`/numerology/upload-yearly/${yearId}`, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Excel uploaded successfully!');
+                // Clear cache and reload
+                delete loadedYearlyData[yearId];
+                loadYearlyYearContent(yearId, '');
+            } else {
+                alert('Error: ' + data.error);
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Upload failed</td></tr>';
+            }
+        } catch (error) {
+            alert('Error uploading Excel');
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Upload failed</td></tr>';
+        }
+        
+        // Clear file input
+        input.value = '';
+    }
+
+    function editYearlyContent(yearId, contentIndex) {
+        const content = window.yearlyContentData[contentIndex];
+        if (!content) {
+            alert('Content not found');
+            return;
+        }
+        
+        const form = document.getElementById('editYearlyContentForm');
+        form.querySelector('[name="contentId"]').value = content._id || content.id;
+        form.querySelector('[name="yearId"]').value = yearId;
+        form.querySelector('[name="title_hn"]').value = content.title_hn || '';
+        form.querySelector('[name="title_en"]').value = content.title_en || '';
+        form.querySelector('[name="date"]').value = content.date || '';
+        form.querySelector('[name="details_hn"]').value = content.details_hn || '';
+        form.querySelector('[name="details_en"]').value = content.details_en || '';
+        form.querySelector('[name="images"]').value = Array.isArray(content.images) ? content.images.join(', ') : '';
+        form.querySelector('[name="sequence"]').value = content.sequence || 0;
+        
+        const modal = new bootstrap.Modal(document.getElementById('editYearlyContentModal'));
+        modal.show();
+    }
+
+    async function submitEditYearlyContent() {
+        const form = document.getElementById('editYearlyContentForm');
+        const contentId = form.querySelector('[name="contentId"]').value;
+        const yearId = form.querySelector('[name="yearId"]').value;
+        
+        const payload = {
+            title_hn: form.querySelector('[name="title_hn"]').value,
+            title_en: form.querySelector('[name="title_en"]').value,
+            date: form.querySelector('[name="date"]').value,
+            details_hn: form.querySelector('[name="details_hn"]').value,
+            details_en: form.querySelector('[name="details_en"]').value,
+            images: form.querySelector('[name="images"]').value
+                .split(',')
+                .map(img => img.trim())
+                .filter(img => img),
+            sequence: parseInt(form.querySelector('[name="sequence"]').value) || 0
+        };
+        
+        try {
+            const res = await fetch(`/numerology/yearly-content/${contentId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Content updated successfully!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editYearlyContentModal'));
+                modal.hide();
+                // Reload the yearly data
+                delete loadedYearlyData[yearId];
+                loadYearlyYearContent(yearId, '');
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error updating content');
+        }
+    }
+
+    async function deleteYearlyContent(yearId, contentNumericId) {
+        if (!confirm('Delete this content?')) return;
+        
+        try {
+            // First, get the actual content ID
+            if (loadedYearlyData[yearId]) {
+                const contentIndex = parseInt(contentNumericId) - 1;
+                const content = loadedYearlyData[yearId][contentIndex];
+                if (content && content._id) {
+                    const res = await fetch(`/numerology/yearly-content/${content._id}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert('Content deleted!');
+                        // Reload the yearly data
+                        delete loadedYearlyData[yearId];
+                        loadYearlyYearContent(yearId, '');
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                } else {
+                    alert('Content not found');
+                }
+            }
+        } catch (error) {
+            alert('Error deleting content');
+        }
+    }
+
+    // Load yearly content on page load for first year
+    window.addEventListener('DOMContentLoaded', function() {
+        const firstYearlyYearTab = document.querySelector('#yearlyYearsTabs .nav-link.active');
+        if (firstYearlyYearTab) {
+            const yearId = firstYearlyYearTab.getAttribute('data-year-id');
+            const yearValue = firstYearlyYearTab.getAttribute('data-year-value');
+            if (yearId) {
+                loadYearlyYearContent(yearId, yearValue);
+            }
+        }
+    });
     </script>
 </body>
 </html> 
