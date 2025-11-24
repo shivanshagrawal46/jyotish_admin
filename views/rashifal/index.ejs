@@ -316,12 +316,19 @@
                             </svg>
                             Create New Date
                         </button>
-                        <button class="pill-btn upload-excel-btn" onclick="document.getElementById('dailyRashifalDatesExcelFile').click()">
+                        <button class="pill-btn upload-excel-btn me-2" onclick="document.getElementById('dailyRashifalDatesExcelFile').click()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
                                 <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
                                 <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
                             </svg>
                             Upload Dates Excel
+                        </button>
+                        <button class="pill-btn btn-danger me-2" id="bulkDeleteRashifalBtn" onclick="bulkDeleteRashifalDates()" style="display:none; background:#dc3545; color:white;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                            </svg>
+                            Delete Selected (<span id="selectedRashifalCount">0</span>)
                         </button>
                         <input type="file" id="dailyRashifalDatesExcelFile" class="d-none" accept=".xlsx,.xls" onchange="uploadDailyRashifalDatesExcel(this)">
                     </div>
@@ -340,6 +347,9 @@
                             <table class="table rashifal-table">
                                 <thead>
                                     <tr>
+                                        <th>
+                                            <input type="checkbox" id="selectAllRashifalDates" onchange="toggleSelectAllRashifalDates()">
+                                        </th>
                                         <th>#</th>
                                         <th>Date Label</th>
                                         <th>Date ISO</th>
@@ -923,11 +933,14 @@
     function renderRashifalDailyDatesTable(dates) {
         const tbody = document.getElementById('rashifalDailyDatesTable');
         if (!dates || dates.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No dates created yet</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No dates created yet</td></tr>';
             return;
         }
         tbody.innerHTML = dates.map((date) => `
             <tr>
+                <td>
+                    <input type="checkbox" class="rashifal-date-checkbox" value="${date._id}" onchange="updateSelectedRashifalCount()">
+                </td>
                 <td>${date.id}</td>
                 <td>${date.dateLabel || '-'}</td>
                 <td>${date.dateISO ? new Date(date.dateISO).toLocaleDateString() : '-'}</td>
@@ -940,6 +953,58 @@
                 </td>
             </tr>
         `).join('');
+        updateSelectedRashifalCount();
+    }
+
+    function toggleSelectAllRashifalDates() {
+        const selectAll = document.getElementById('selectAllRashifalDates');
+        const checkboxes = document.querySelectorAll('.rashifal-date-checkbox');
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        updateSelectedRashifalCount();
+    }
+
+    function updateSelectedRashifalCount() {
+        const checkboxes = document.querySelectorAll('.rashifal-date-checkbox:checked');
+        const count = checkboxes.length;
+        document.getElementById('selectedRashifalCount').textContent = count;
+        document.getElementById('bulkDeleteRashifalBtn').style.display = count > 0 ? 'inline-block' : 'none';
+        
+        // Update select all checkbox state
+        const allCheckboxes = document.querySelectorAll('.rashifal-date-checkbox');
+        const selectAll = document.getElementById('selectAllRashifalDates');
+        if (allCheckboxes.length > 0) {
+            selectAll.checked = checkboxes.length === allCheckboxes.length;
+        }
+    }
+
+    async function bulkDeleteRashifalDates() {
+        const checkboxes = document.querySelectorAll('.rashifal-date-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert('Please select at least one date to delete');
+            return;
+        }
+
+        const dateIds = Array.from(checkboxes).map(cb => cb.value);
+        if (!confirm(`Delete ${dateIds.length} selected date(s)? This will also delete all their contents.`)) {
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/rashifal/daily', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dateIds })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                loadRashifalDailyDates();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error deleting dates');
+        }
     }
 
     function showAddRashifalDateModal() {

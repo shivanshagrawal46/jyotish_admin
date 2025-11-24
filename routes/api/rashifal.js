@@ -14,7 +14,7 @@ async function resolveDateByParam(dateIdParam) {
     if (/^\d+$/.test(String(dateIdParam))) {
         const index = parseInt(dateIdParam);
         if (index < 1) return null;
-        const dates = await RashifalDailyDate.find().sort({ createdAt: -1 });
+        const dates = await RashifalDailyDate.find().sort({ sequence: 1, createdAt: 1 });
         if (index > dates.length) return null;
         return dates[index - 1];
     }
@@ -45,7 +45,8 @@ const MONTHS = [
 // Get all daily rashifal dates with sequential IDs
 router.get('/daily', async (req, res) => {
     try {
-        const dates = await RashifalDailyDate.find().sort({ createdAt: -1 });
+        // Sort by sequence first (Excel upload order), then by createdAt for dates without sequence
+        const dates = await RashifalDailyDate.find().sort({ sequence: 1, createdAt: 1 });
         const datesWithIds = dates.map((d, index) => ({ id: index + 1, ...d.toObject() }));
         res.json({ success: true, data: datesWithIds });
     } catch (error) {
@@ -61,7 +62,12 @@ router.post('/daily', async (req, res) => {
     try {
         const { dateLabel, dateISO, notes } = req.body;
         if (!dateLabel) return res.status(400).json({ success: false, error: 'dateLabel is required' });
-        const created = await RashifalDailyDate.create({ dateLabel, dateISO, notes });
+        
+        // Get the maximum sequence number and add 1 for new date
+        const maxSequence = await RashifalDailyDate.findOne().sort({ sequence: -1 }).select('sequence');
+        const sequence = maxSequence && maxSequence.sequence ? maxSequence.sequence + 1 : 1;
+        
+        const created = await RashifalDailyDate.create({ dateLabel, dateISO, notes, sequence });
         res.json({ success: true, data: created });
     } catch (error) {
         res.status(500).json({
@@ -96,6 +102,38 @@ router.delete('/daily/:dateId', async (req, res) => {
         res.json({ success: true, message: 'Date and its contents deleted' });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Error deleting date' });
+    }
+});
+
+// Bulk delete daily dates
+router.delete('/daily', async (req, res) => {
+    try {
+        const { dateIds } = req.body;
+        if (!dateIds || !Array.isArray(dateIds) || dateIds.length === 0) {
+            return res.status(400).json({ success: false, error: 'Date IDs array is required' });
+        }
+
+        // Resolve all date IDs to actual ObjectIds
+        const dates = await RashifalDailyDate.find({ _id: { $in: dateIds } });
+        const dateObjectIds = dates.map(d => d._id);
+
+        if (dateObjectIds.length === 0) {
+            return res.status(404).json({ success: false, error: 'No valid dates found' });
+        }
+
+        // Delete all associated content first
+        await RashifalDailyContent.deleteMany({ dateRef: { $in: dateObjectIds } });
+        
+        // Delete the dates
+        const result = await RashifalDailyDate.deleteMany({ _id: { $in: dateObjectIds } });
+
+        res.json({ 
+            success: true, 
+            message: `${result.deletedCount} date(s) and their contents deleted successfully`,
+            deletedCount: result.deletedCount
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Error deleting dates: ' + error.message });
     }
 });
 

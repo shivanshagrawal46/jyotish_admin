@@ -10,6 +10,10 @@ const rashifalDailyDateSchema = new mongoose.Schema({
     },
     notes: {
         type: String
+    },
+    sequence: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true
@@ -17,6 +21,7 @@ const rashifalDailyDateSchema = new mongoose.Schema({
 
 rashifalDailyDateSchema.index({ createdAt: -1 });
 rashifalDailyDateSchema.index({ dateLabel: 1 });
+rashifalDailyDateSchema.index({ sequence: 1 });
 
 module.exports = mongoose.model('RashifalDailyDate', rashifalDailyDateSchema);
 

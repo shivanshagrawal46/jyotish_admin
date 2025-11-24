@@ -532,9 +532,10 @@ router.post('/upload-daily-dates', requireAuth, upload.single('excelFile'), asyn
         const worksheet = workbook.Sheets[sheetName];
         const data = xlsx.utils.sheet_to_json(worksheet);
         
-        // Create dates from Excel
-        const dates = data.map(row => ({
-            dateLabel: row.dateLabel || row.date_label || row.date || ''
+        // Create dates from Excel - maintain Excel order with sequence
+        const dates = data.map((row, index) => ({
+            dateLabel: row.dateLabel || row.date_label || row.date || '',
+            sequence: index + 1 // Maintain Excel row order
         })).filter(d => d.dateLabel);
         
         const created = await RashifalDailyDate.insertMany(dates);
