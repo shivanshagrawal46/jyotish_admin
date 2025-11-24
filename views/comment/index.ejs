@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comments | Sanskrit Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/css/sidebar.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2D3250;
+      --secondary: #424769;
+      --accent: #676F9D;
+      --light: #F9F9F9;
+      --dark: #1A1B26;
+    }
+    .main-content { margin-left: 280px; padding: 2rem; }
+    .topbar { background: #fff; padding: 1rem 2rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); margin-bottom: 2rem; display:flex; align-items:center; justify-content:space-between; }
+    .page-title { font-family:'Playfair Display', serif; font-size:1.5rem; color:#1A1B26; margin:0; }
+    .content-card { background:#fff; border-radius:16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); padding:2rem; }
+    .status-badge { padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600; }
+    .status-pending { background: #FEF3C7; color: #92400E; }
+    .status-approved { background: #D1FAE5; color: #065F46; }
+    .status-rejected { background: #FEE2E2; color: #991B1B; }
+    .filter-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .filter-tab { padding: 0.5rem 1rem; border-radius: 8px; background: #F3F4F8; color: #2D3250; text-decoration: none; font-weight: 500; transition: all 0.2s; }
+    .filter-tab:hover { background: #E5E7EB; color: #1A1B26; text-decoration: none; }
+    .filter-tab.active { background: #2D3250; color: #fff; }
+    .table-responsive { max-height: 70vh; overflow-y: auto; }
+    .comment-text { max-width: 300px; word-wrap: break-word; }
+    .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+  <nav class="sidebar">
+    <%- include('../partials/sidebar', { activePage: 'comments', activeCategory: null, koshCategories: [], mcqCategories: [] }) %>
+  </nav>
+  <main class="main-content">
+    <div class="topbar">
+      <h1 class="page-title">Comments Management</h1>
+      <div class="user-menu">
+        <div class="user-avatar"><%= username ? username.charAt(0).toUpperCase() : 'A' %></div>
+      </div>
+    </div>
+    <div class="content-card">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="mb-0">All Comments</h5>
+        <div class="text-muted">Total: <%= total %></div>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="filter-tabs">
+        <a href="/comments" class="filter-tab <%= currentStatus === 'all' ? 'active' : '' %>">All</a>
+        <a href="/comments?status=pending" class="filter-tab <%= currentStatus === 'pending' ? 'active' : '' %>">Pending</a>
+        <a href="/comments?status=approved" class="filter-tab <%= currentStatus === 'approved' ? 'active' : '' %>">Approved</a>
+        <a href="/comments?status=rejected" class="filter-tab <%= currentStatus === 'rejected' ? 'active' : '' %>">Rejected</a>
+      </div>
+
+      <% if (comments && comments.length > 0) { %>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>User ID</th>
+                <th>Name</th>
+                <th>Mobile</th>
+                <th>Comment</th>
+                <th>Status</th>
+                <th>Created At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% comments.forEach(function(comment) { %>
+                <tr>
+                  <td><%= comment.id %></td>
+                  <td><%= comment.userId %></td>
+                  <td><%= comment.name %></td>
+                  <td><%= comment.mobile %></td>
+                  <td class="comment-text"><%= comment.comment %></td>
+                  <td>
+                    <span class="status-badge status-<%= comment.status %>">
+                      <%= comment.status.charAt(0).toUpperCase() + comment.status.slice(1) %>
+                    </span>
+                  </td>
+                  <td><%= new Date(comment.createdAt).toLocaleString() %></td>
+                  <td>
+                    <div class="btn-group" role="group">
+                      <% if (comment.status !== 'approved') { %>
+                        <button class="btn btn-sm btn-success" onclick="updateStatus('<%= comment._id %>', 'approved')">Approve</button>
+                      <% } %>
+                      <% if (comment.status !== 'rejected') { %>
+                        <button class="btn btn-sm btn-warning" onclick="updateStatus('<%= comment._id %>', 'rejected')">Reject</button>
+                      <% } %>
+                      <% if (comment.status !== 'pending') { %>
+                        <button class="btn btn-sm btn-secondary" onclick="updateStatus('<%= comment._id %>', 'pending')">Reset</button>
+                      <% } %>
+                      <button class="btn btn-sm btn-danger" onclick="deleteComment('<%= comment._id %>')">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <% if (totalPages > 1) { %>
+          <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+              <% for(let i = 1; i <= totalPages; i++) { %>
+                <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                  <a class="page-link" href="/comments?page=<%= i %><%= currentStatus !== 'all' ? '&status=' + currentStatus : '' %>"><%= i %></a>
+                </li>
+              <% } %>
+            </ul>
+          </nav>
+        <% } %>
+      <% } else { %>
+        <div class="alert alert-info text-center">
+          No comments found.
+        </div>
+      <% } %>
+    </div>
+  </main>
+  <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function updateStatus(commentId, status) {
+      if (!confirm(`Are you sure you want to ${status} this comment?`)) {
+        return;
+      }
+
+      fetch(`/comments/${commentId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          location.reload();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating comment status');
+      });
+    }
+
+    function deleteComment(commentId) {
+      if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
+        return;
+      }
+
+      fetch(`/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          location.reload();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error deleting comment');
+      });
+    }
+  </script>
+</body>
+</html>
+

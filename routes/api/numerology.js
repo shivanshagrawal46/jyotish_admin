@@ -340,8 +340,8 @@ router.get('/months/:yearId/:month', async (req, res) => {
                 return res.status(404).json({
                     success: false,
                     error: 'Invalid month'
-                });
-            }
+            });
+        }
             monthName = monthNames[monthIndex - 1];
         } else {
             monthName = month;
@@ -416,8 +416,8 @@ router.get('/months/:yearId/:month/:contentId', async (req, res) => {
                 return res.status(404).json({
                     success: false,
                     error: 'Invalid month'
-                });
-            }
+            });
+        }
             monthName = monthNames[monthIndex - 1];
         } else {
             monthName = month;
@@ -443,10 +443,10 @@ router.get('/months/:yearId/:month/:contentId', async (req, res) => {
         } else {
             content = await NumerologyMonthly.findById(contentId);
             if (!content || String(content.yearRef) !== String(yearDoc._id) || content.month !== monthName) {
-                return res.status(404).json({
-                    success: false,
+            return res.status(404).json({
+                success: false,
                     error: 'Content not found'
-                });
+            });
             }
         }
         

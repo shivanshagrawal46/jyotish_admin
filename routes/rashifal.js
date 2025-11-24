@@ -201,7 +201,7 @@ router.post('/yearly-year/delete/:yearId', requireAuth, async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Error deleting year'
-        });
+    });
     }
 });
 

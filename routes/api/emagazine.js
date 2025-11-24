@@ -73,4 +73,78 @@ router.get('/writer', async (req, res) => {
     }
 });
 
+// GET all magazines for a specific subject (by subject id)
+router.get('/subject/:subjectId', async (req, res) => {
+    try {
+        // Find the subject by id field
+        const subject = await EMagazineSubject.findOne({ id: req.params.subjectId });
+        if (!subject) {
+            return res.status(404).json({ success: false, message: 'Subject not found' });
+        }
+        // Find magazines with this subject's _id
+        const magazines = await EMagazine.find({ subject: subject._id })
+            .populate('category', 'name')
+            .populate('subject', 'name')
+            .populate('writer', 'name');
+        // Map magazines to only include names for category, subject, writer
+        const result = magazines.map(mag => ({
+            _id: mag._id,
+            language: mag.language,
+            category: mag.category ? mag.category.name : '',
+            subject: mag.subject ? mag.subject.name : '',
+            writer: mag.writer ? mag.writer.name : '',
+            month: mag.month,
+            year: mag.year,
+            title: mag.title,
+            introduction: mag.introduction,
+            subPoints: mag.subPoints,
+            importance: mag.importance,
+            explain: mag.explain,
+            summary: mag.summary,
+            reference: mag.reference,
+            images: mag.images
+        }));
+        res.json({ success: true, magazines: result });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// GET all magazines for a specific writer (by writer id)
+router.get('/writer/:writerId', async (req, res) => {
+    try {
+        // Find the writer by id field
+        const writer = await EMagazineWriter.findOne({ id: req.params.writerId });
+        if (!writer) {
+            return res.status(404).json({ success: false, message: 'Writer not found' });
+        }
+        // Find magazines with this writer's _id
+        const magazines = await EMagazine.find({ writer: writer._id })
+            .populate('category', 'name')
+            .populate('subject', 'name')
+            .populate('writer', 'name');
+        // Map magazines to only include names for category, subject, writer
+        const result = magazines.map(mag => ({
+            _id: mag._id,
+            language: mag.language,
+            category: mag.category ? mag.category.name : '',
+            subject: mag.subject ? mag.subject.name : '',
+            writer: mag.writer ? mag.writer.name : '',
+            month: mag.month,
+            year: mag.year,
+            title: mag.title,
+            introduction: mag.introduction,
+            subPoints: mag.subPoints,
+            importance: mag.importance,
+            explain: mag.explain,
+            summary: mag.summary,
+            reference: mag.reference,
+            images: mag.images
+        }));
+        res.json({ success: true, magazines: result });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router; 

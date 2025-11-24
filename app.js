@@ -70,6 +70,10 @@ const savedKundliRoutes = require('./routes/savedKundli');
 const savedKundliApiRoutes = require('./routes/api/savedKundli');
 const muhuratRouter = require('./routes/muhurat');
 const muhuratApiRouter = require('./routes/api/muhurat');
+const commentRouter = require('./routes/comment');
+const commentApiRouter = require('./routes/api/comment');
+const divineQuoteRouter = require('./routes/divineQuote');
+const divineQuoteApiRouter = require('./routes/api/divineQuote');
 
 const app = express();
 
@@ -207,6 +211,12 @@ app.use('/api/youtube', youtubeApiRouter);
 
 app.use('/muhurat', muhuratRouter);
 app.use('/api/muhurat', muhuratApiRouter);
+
+app.use('/comments', commentRouter);
+app.use('/api/comment', commentApiRouter);
+
+app.use('/divine-quotes', divineQuoteRouter);
+app.use('/api/divinequotes', divineQuoteApiRouter);
 
 app.use('/puja', pujaRouter);
 app.use('/api/puja', pujaApiRouter);

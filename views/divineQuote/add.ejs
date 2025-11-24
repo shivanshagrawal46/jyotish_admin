@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Divine Quote | Sanskrit Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/css/sidebar.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2D3250;
+      --secondary: #424769;
+      --accent: #676F9D;
+      --light: #F9F9F9;
+      --dark: #1A1B26;
+    }
+    .main-content { margin-left: 280px; padding: 2rem; }
+    .topbar { background: #fff; padding: 1rem 2rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); margin-bottom: 2rem; display:flex; align-items:center; justify-content:space-between; }
+    .page-title { font-family:'Playfair Display', serif; font-size:1.5rem; color:#1A1B26; margin:0; }
+    .content-card { background:#fff; border-radius:16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); padding:2rem; }
+    .form-label { font-weight: 600; color: var(--dark); margin-bottom: 0.5rem; }
+    .form-control, .form-select { border-radius: 8px; border: 1px solid #e5e7eb; padding: 0.75rem; }
+    .form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(45, 50, 80, 0.1); }
+    .btn-primary { background: var(--primary); border: none; border-radius: 8px; padding: 0.75rem 1.5rem; font-weight: 600; }
+    .btn-primary:hover { background: var(--accent); }
+    .btn-secondary { background: #6B7280; border: none; border-radius: 8px; padding: 0.75rem 1.5rem; font-weight: 600; }
+    textarea.form-control { min-height: 120px; resize: vertical; }
+  </style>
+</head>
+<body>
+  <nav class="sidebar">
+    <%- include('../partials/sidebar', { activePage: 'divine-quotes', activeCategory: null, koshCategories: [], mcqCategories: [] }) %>
+  </nav>
+  <main class="main-content">
+    <div class="topbar">
+      <h1 class="page-title">Add Divine Quote</h1>
+      <div class="user-menu">
+        <div class="user-avatar"><%= username ? username.charAt(0).toUpperCase() : 'A' %></div>
+      </div>
+    </div>
+    <div class="content-card">
+      <% if (typeof error !== 'undefined' && error.length > 0) { %>
+        <% error.forEach(function(msg) { %>
+          <div class="alert alert-danger"><%= msg %></div>
+        <% }) %>
+      <% } %>
+
+      <% if (typeof success !== 'undefined' && success.length > 0) { %>
+        <% success.forEach(function(msg) { %>
+          <div class="alert alert-success"><%= msg %></div>
+        <% }) %>
+      <% } %>
+
+      <form method="POST" action="/divine-quotes/add">
+        <div class="mb-3">
+          <label for="quote" class="form-label">Quote <span class="text-danger">*</span></label>
+          <textarea class="form-control" id="quote" name="quote" rows="4" required placeholder="Enter the divine quote"></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label for="meaning" class="form-label">Meaning <span class="text-danger">*</span></label>
+          <textarea class="form-control" id="meaning" name="meaning" rows="4" required placeholder="Enter the meaning of the quote"></textarea>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Save Quote</button>
+          <a href="/divine-quotes" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </main>
+  <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
