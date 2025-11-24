@@ -19,14 +19,6 @@
     .topbar { background: #fff; padding: 1rem 2rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); margin-bottom: 2rem; display:flex; align-items:center; justify-content:space-between; }
     .page-title { font-family:'Playfair Display', serif; font-size:1.5rem; color:#1A1B26; margin:0; }
     .content-card { background:#fff; border-radius:16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06); padding:2rem; }
-    .status-badge { padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600; }
-    .status-pending { background: #FEF3C7; color: #92400E; }
-    .status-approved { background: #D1FAE5; color: #065F46; }
-    .status-rejected { background: #FEE2E2; color: #991B1B; }
-    .filter-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-    .filter-tab { padding: 0.5rem 1rem; border-radius: 8px; background: #F3F4F8; color: #2D3250; text-decoration: none; font-weight: 500; transition: all 0.2s; }
-    .filter-tab:hover { background: #E5E7EB; color: #1A1B26; text-decoration: none; }
-    .filter-tab.active { background: #2D3250; color: #fff; }
     .table-responsive { max-height: 70vh; overflow-y: auto; }
     .comment-text { max-width: 300px; word-wrap: break-word; }
     .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.875rem; }
@@ -49,13 +41,6 @@
         <div class="text-muted">Total: <%= total %></div>
       </div>
 
-      <!-- Filter Tabs -->
-      <div class="filter-tabs">
-        <a href="/comments" class="filter-tab <%= currentStatus === 'all' ? 'active' : '' %>">All</a>
-        <a href="/comments?status=pending" class="filter-tab <%= currentStatus === 'pending' ? 'active' : '' %>">Pending</a>
-        <a href="/comments?status=approved" class="filter-tab <%= currentStatus === 'approved' ? 'active' : '' %>">Approved</a>
-        <a href="/comments?status=rejected" class="filter-tab <%= currentStatus === 'rejected' ? 'active' : '' %>">Rejected</a>
-      </div>
 
       <% if (comments && comments.length > 0) { %>
         <div class="table-responsive">
@@ -67,7 +52,6 @@
                 <th>Name</th>
                 <th>Mobile</th>
                 <th>Comment</th>
-                <th>Status</th>
                 <th>Created At</th>
                 <th>Actions</th>
               </tr>
@@ -80,25 +64,9 @@
                   <td><%= comment.name %></td>
                   <td><%= comment.mobile %></td>
                   <td class="comment-text"><%= comment.comment %></td>
-                  <td>
-                    <span class="status-badge status-<%= comment.status %>">
-                      <%= comment.status.charAt(0).toUpperCase() + comment.status.slice(1) %>
-                    </span>
-                  </td>
                   <td><%= new Date(comment.createdAt).toLocaleString() %></td>
                   <td>
-                    <div class="btn-group" role="group">
-                      <% if (comment.status !== 'approved') { %>
-                        <button class="btn btn-sm btn-success" onclick="updateStatus('<%= comment._id %>', 'approved')">Approve</button>
-                      <% } %>
-                      <% if (comment.status !== 'rejected') { %>
-                        <button class="btn btn-sm btn-warning" onclick="updateStatus('<%= comment._id %>', 'rejected')">Reject</button>
-                      <% } %>
-                      <% if (comment.status !== 'pending') { %>
-                        <button class="btn btn-sm btn-secondary" onclick="updateStatus('<%= comment._id %>', 'pending')">Reset</button>
-                      <% } %>
-                      <button class="btn btn-sm btn-danger" onclick="deleteComment('<%= comment._id %>')">Delete</button>
-                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="deleteComment('<%= comment._id %>')">Delete</button>
                   </td>
                 </tr>
               <% }) %>
@@ -112,7 +80,7 @@
             <ul class="pagination justify-content-center">
               <% for(let i = 1; i <= totalPages; i++) { %>
                 <li class="page-item <%= i === currentPage ? 'active' : '' %>">
-                  <a class="page-link" href="/comments?page=<%= i %><%= currentStatus !== 'all' ? '&status=' + currentStatus : '' %>"><%= i %></a>
+                  <a class="page-link" href="/comments?page=<%= i %>"><%= i %></a>
                 </li>
               <% } %>
             </ul>
@@ -127,32 +95,6 @@
   </main>
   <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
   <script>
-    function updateStatus(commentId, status) {
-      if (!confirm(`Are you sure you want to ${status} this comment?`)) {
-        return;
-      }
-
-      fetch(`/comments/${commentId}/status`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          location.reload();
-        } else {
-          alert('Error: ' + data.message);
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('Error updating comment status');
-      });
-    }
-
     function deleteComment(commentId) {
       if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
         return;

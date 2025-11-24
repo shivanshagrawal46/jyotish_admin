@@ -15,13 +15,12 @@ router.post('/', async (req, res) => {
             });
         }
 
-        // Create new comment
+        // Create new comment (saved immediately, no approval needed)
         const newComment = await Comment.create({
             userId,
             name,
             mobile,
-            comment,
-            status: 'pending'
+            comment
         });
 
         res.status(201).json({
@@ -33,7 +32,6 @@ router.post('/', async (req, res) => {
                 name: newComment.name,
                 mobile: newComment.mobile,
                 comment: newComment.comment,
-                status: newComment.status,
                 createdAt: newComment.createdAt
             }
         });
@@ -45,13 +43,10 @@ router.post('/', async (req, res) => {
     }
 });
 
-// GET - Get all comments (for admin, can be filtered by status)
+// GET - Get all comments
 router.get('/', async (req, res) => {
     try {
-        const { status } = req.query;
-        const query = status ? { status } : {};
-        
-        const comments = await Comment.find(query)
+        const comments = await Comment.find({})
             .sort({ createdAt: -1 });
 
         res.json({
