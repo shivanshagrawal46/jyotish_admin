@@ -84,8 +84,13 @@ router.post('/add', upload.single('image'), async (req, res) => {
             return res.status(400).send('Title is required');
         }
 
-        // Generate slug from title
-        const slug = slugify(title, { lower: true, strict: true });
+        // Generate slug from title (supporting Hindi characters)
+        // Remove strict mode to allow Unicode characters
+        let slug = slugify(title, { lower: true, replacement: '-' });
+        // If slug is empty (all Hindi characters), use timestamp-based slug
+        if (!slug || slug.trim() === '' || slug.trim() === '-') {
+            slug = 'puja-' + Date.now();
+        }
 
         // Handle image upload
         let image_url = '';
@@ -185,8 +190,13 @@ router.post('/edit/:id', upload.single('image'), async (req, res) => {
             image_url = '/uploads/puja/' + req.file.filename;
         }
 
-        // Generate new slug if title changed
-        const slug = slugify(title, { lower: true, strict: true });
+        // Generate new slug if title changed (supporting Hindi characters)
+        // Remove strict mode to allow Unicode characters
+        let slug = slugify(title, { lower: true, replacement: '-' });
+        // If slug is empty (all Hindi characters), use timestamp-based slug
+        if (!slug || slug.trim() === '' || slug.trim() === '-') {
+            slug = 'puja-' + Date.now();
+        }
 
         // Validate only title is required
         if (!title || title.trim() === '') {

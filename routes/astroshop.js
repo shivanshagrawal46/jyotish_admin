@@ -215,8 +215,13 @@ router.post('/add', upload.array('images', 10), async (req, res) => {
       type: o.type || 'custom'
     }));
 
-    // Generate slug from title
-    const slug = slugify(title, { lower: true, strict: true });
+    // Generate slug from title (supporting Hindi characters)
+    // Remove strict mode to allow Unicode characters
+    let slug = slugify(title, { lower: true, replacement: '-' });
+    // If slug is empty (all Hindi characters), use timestamp-based slug
+    if (!slug || slug.trim() === '' || slug.trim() === '-') {
+      slug = 'product-' + Date.now();
+    }
 
     const product = new Product({
       title,
@@ -327,8 +332,13 @@ router.post('/edit/:id', upload.array('images', 10), async (req, res) => {
       type: o.type || 'custom'
     }));
 
-    // Generate new slug if title changed
-    const slug = slugify(title, { lower: true, strict: true });
+    // Generate new slug if title changed (supporting Hindi characters)
+    // Remove strict mode to allow Unicode characters
+    let slug = slugify(title, { lower: true, replacement: '-' });
+    // If slug is empty (all Hindi characters), use timestamp-based slug
+    if (!slug || slug.trim() === '' || slug.trim() === '-') {
+      slug = 'product-' + Date.now();
+    }
 
     // Update product
     product.title = title;

@@ -99,7 +99,16 @@ router.post('/upload-daily/:dateId', requireAuth, upload.single('excelFile'), as
         const workbook = xlsx.readFile(req.file.path);
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const data = xlsx.utils.sheet_to_json(worksheet);
+        // Read rows from Excel; defval: '' keeps empty cells as empty strings
+        const rawData = xlsx.utils.sheet_to_json(worksheet, { defval: '' });
+
+        // If no rows parsed, return a clear error
+        if (!rawData || rawData.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'No data rows found in Excel. Please ensure the first sheet has headers: title_hn, title_en, date, details_hn, details_en, images (optional).'
+            });
+        }
 
         const entries = data.map((row, index) => ({
             dateRef: dateId,
@@ -222,26 +231,48 @@ router.post('/upload-yearly/:yearId', requireAuth, upload.single('excelFile'), a
         const workbook = xlsx.readFile(req.file.path);
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const data = xlsx.utils.sheet_to_json(worksheet);
+        // Read rows from Excel; defval: '' keeps empty cells as empty strings
+        const rawData = xlsx.utils.sheet_to_json(worksheet, { defval: '' });
+
+        // If no rows parsed, return a clear error
+        if (!rawData || rawData.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'No data rows found in Excel. Please ensure the first sheet has headers: title_hn, title_en, date, details_hn, details_en, images (optional).'
+            });
+        }
         
-        // Remove all existing entries for this year
-        await RashifalYearly.deleteMany({ yearRef: yearId });
+        // Remove all existing entries for this year (by year _id)
+        await RashifalYearly.deleteMany({ yearRef: yearDoc._id });
         
-        // Insert new entries
-        const entries = data.map((row, index) => ({
-            yearRef: yearId,
-            sequence: index + 1, // Maintain Excel order
-            title_hn: row.title_hn || '',
-            title_en: row.title_en || '',
-            date: row.date || '',
-            details_hn: row.details_hn || '',
-            details_en: row.details_en || '',
-            images: row.images ? row.images.split(',').map(img => img.trim()) : []
-        }));
+        // Normalise headers to handle small variations (e.g. Title_hn, TITLE_HN)
+        const entries = rawData.map((row, index) => {
+            const title_hn = row.title_hn || row.Title_hn || row.TITLE_HN || '';
+            const title_en = row.title_en || row.Title_en || row.TITLE_EN || '';
+            const date = row.date || row.Date || row.DATE || '';
+            const details_hn = row.details_hn || row.Details_hn || row.DETAILS_HN || '';
+            const details_en = row.details_en || row.Details_en || row.DETAILS_EN || '';
+            const imagesCell = row.images || row.Images || row.IMAGES || '';
+
+            return {
+                // Always store a proper ObjectId reference to the year document
+                yearRef: yearDoc._id,
+                sequence: row.sequence ? Number(row.sequence) : index + 1, // Maintain Excel order or explicit sequence
+                title_hn,
+                title_en,
+                date,
+                details_hn,
+                details_en,
+                images: imagesCell
+                    ? String(imagesCell).split(',').map(img => String(img).trim()).filter(Boolean)
+                    : []
+            };
+        });
+
         await RashifalYearly.insertMany(entries);
         
         // Fetch updated data for this year
-        const yearlyContent = await RashifalYearly.find({ yearRef: yearId }).sort({ sequence: 1 });
+        const yearlyContent = await RashifalYearly.find({ yearRef: yearDoc._id }).sort({ sequence: 1 });
         res.json({
             success: true,
             message: 'Excel data uploaded successfully for the year',
@@ -253,6 +284,55 @@ router.post('/upload-yearly/:yearId', requireAuth, upload.single('excelFile'), a
             success: false,
             error: 'Error processing Excel file for year'
         });
+    }
+});
+
+// Export yearly content for a specific year as Excel (same format as upload)
+router.get('/export-yearly/:yearId', requireAuth, async (req, res) => {
+    try {
+        const { yearId } = req.params;
+
+        // Find the year document
+        const yearDoc = await RashifalYearlyYear.findById(yearId);
+        if (!yearDoc) {
+            return res.status(404).send('Year not found');
+        }
+
+        // Get all yearly entries for this year in sequence order
+        const yearlyContent = await RashifalYearly.find({ yearRef: yearDoc._id }).sort({ sequence: 1 });
+
+        // Build rows in the exact format expected for upload
+        const rows = yearlyContent.map(entry => ({
+            title_hn: entry.title_hn || '',
+            title_en: entry.title_en || '',
+            date: entry.date || '',
+            details_hn: entry.details_hn || '',
+            details_en: entry.details_en || '',
+            images: Array.isArray(entry.images) ? entry.images.join(', ') : '',
+            sequence: entry.sequence || ''
+        }));
+
+        // If no data, still give a template with headers only
+        const worksheet = xlsx.utils.json_to_sheet(rows.length > 0 ? rows : [{
+            title_hn: '',
+            title_en: '',
+            date: '',
+            details_hn: '',
+            details_en: '',
+            images: '',
+            sequence: ''
+        }]);
+        const workbook = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'YearlyRashifal');
+
+        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="rashifal_yearly_${yearDoc.year}.xlsx"`);
+        res.send(buffer);
+    } catch (error) {
+        console.error('Error exporting yearly Excel for rashifal:', error);
+        res.status(500).send('Error exporting Excel file for year');
     }
 });
 

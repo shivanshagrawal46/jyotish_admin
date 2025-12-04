@@ -76,10 +76,16 @@ const productSchema = new mongoose.Schema({
   }
 });
 
-// Auto-generate slug from title
+// Auto-generate slug from title (supporting Hindi characters)
 productSchema.pre('validate', function(next) {
   if (this.title && (!this.slug || this.isModified('title'))) {
-    this.slug = slugify(this.title, { lower: true, strict: true });
+    // Remove strict mode to allow Unicode characters
+    let slug = slugify(this.title, { lower: true, replacement: '-' });
+    // If slug is empty (all Hindi characters), use timestamp-based slug
+    if (!slug || slug.trim() === '' || slug.trim() === '-') {
+      slug = 'product-' + Date.now();
+    }
+    this.slug = slug;
   }
   next();
 });
