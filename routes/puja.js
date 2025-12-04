@@ -75,8 +75,14 @@ router.post('/add', upload.single('image'), async (req, res) => {
             countdown_time,
             is_last_day,
             is_active,
-            whatsapp_link
+            whatsapp_link,
+            price
         } = req.body;
+
+        // Validate only title is required
+        if (!title || title.trim() === '') {
+            return res.status(400).send('Title is required');
+        }
 
         // Generate slug from title
         const slug = slugify(title, { lower: true, strict: true });
@@ -87,23 +93,33 @@ router.post('/add', upload.single('image'), async (req, res) => {
             image_url = '/uploads/puja/' + req.file.filename;
         }
 
+        // Parse price if provided, otherwise use default (0)
+        const priceValue = price && price.toString().trim() !== '' ? parseFloat(price) : undefined;
+        
+        // Parse dates if provided
+        const pujaDateValue = puja_date && puja_date.toString().trim() !== '' ? new Date(puja_date) : undefined;
+        const countdownTimeValue = countdown_time && countdown_time.toString().trim() !== '' ? new Date(countdown_time) : undefined;
+        
+        // Parse total_slots if provided
+        const totalSlotsValue = total_slots && total_slots.toString().trim() !== '' ? parseInt(total_slots) : undefined;
+
         const puja = new Puja({
             title,
             slug,
-            tagline,
-            temple_name,
-            temple_location,
-            puja_date,
-            puja_day,
-            description,
-            image_url,
-            banner_text,
-            total_slots,
-            countdown_time,
+            tagline: tagline && tagline.trim() !== '' ? tagline : undefined,
+            temple_name: temple_name && temple_name.trim() !== '' ? temple_name : undefined,
+            temple_location: temple_location && temple_location.trim() !== '' ? temple_location : undefined,
+            puja_date: pujaDateValue,
+            puja_day: puja_day && puja_day.trim() !== '' ? puja_day : undefined,
+            description: description && description.trim() !== '' ? description : undefined,
+            image_url: image_url && image_url.trim() !== '' ? image_url : undefined,
+            banner_text: banner_text && banner_text.trim() !== '' ? banner_text : undefined,
+            total_slots: totalSlotsValue,
+            countdown_time: countdownTimeValue,
             is_last_day: is_last_day === 'on',
             is_active: is_active === 'on',
-            whatsapp_link,
-            price
+            whatsapp_link: whatsapp_link && whatsapp_link.trim() !== '' ? whatsapp_link : undefined,
+            price: priceValue
         });
 
         await puja.save();
@@ -172,23 +188,38 @@ router.post('/edit/:id', upload.single('image'), async (req, res) => {
         // Generate new slug if title changed
         const slug = slugify(title, { lower: true, strict: true });
 
+        // Validate only title is required
+        if (!title || title.trim() === '') {
+            return res.status(400).send('Title is required');
+        }
+
+        // Parse price if provided
+        const priceValue = price && price.toString().trim() !== '' ? parseFloat(price) : undefined;
+        
+        // Parse dates if provided
+        const pujaDateValue = puja_date && puja_date.toString().trim() !== '' ? new Date(puja_date) : undefined;
+        const countdownTimeValue = countdown_time && countdown_time.toString().trim() !== '' ? new Date(countdown_time) : undefined;
+        
+        // Parse total_slots if provided
+        const totalSlotsValue = total_slots && total_slots.toString().trim() !== '' ? parseInt(total_slots) : undefined;
+
         // Update puja
         puja.title = title;
         puja.slug = slug;
-        puja.tagline = tagline;
-        puja.temple_name = temple_name;
-        puja.temple_location = temple_location;
-        puja.puja_date = puja_date;
-        puja.puja_day = puja_day;
-        puja.description = description;
-        puja.image_url = image_url;
-        puja.banner_text = banner_text;
-        puja.total_slots = total_slots;
-        puja.countdown_time = countdown_time;
+        puja.tagline = tagline && tagline.trim() !== '' ? tagline : undefined;
+        puja.temple_name = temple_name && temple_name.trim() !== '' ? temple_name : undefined;
+        puja.temple_location = temple_location && temple_location.trim() !== '' ? temple_location : undefined;
+        puja.puja_date = pujaDateValue;
+        puja.puja_day = puja_day && puja_day.trim() !== '' ? puja_day : undefined;
+        puja.description = description && description.trim() !== '' ? description : undefined;
+        puja.image_url = image_url && image_url.trim() !== '' ? image_url : undefined;
+        puja.banner_text = banner_text && banner_text.trim() !== '' ? banner_text : undefined;
+        puja.total_slots = totalSlotsValue;
+        puja.countdown_time = countdownTimeValue;
         puja.is_last_day = is_last_day === 'on';
         puja.is_active = is_active === 'on';
-        puja.whatsapp_link = whatsapp_link;
-        puja.price = price;
+        puja.whatsapp_link = whatsapp_link && whatsapp_link.trim() !== '' ? whatsapp_link : undefined;
+        puja.price = priceValue;
         puja.updated_at = Date.now();
 
         await puja.save();

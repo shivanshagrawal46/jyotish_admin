@@ -147,4 +147,63 @@ router.get('/writer/:writerId', async (req, res) => {
     }
 });
 
+// GET all magazines (irrespective of category, writer, and subjects) with pagination
+router.get('/all', async (req, res) => {
+    try {
+        // Get pagination parameters
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10; // Fixed limit of 10 per page
+        const skip = (page - 1) * limit;
+
+        // Get total count of all magazines
+        const total = await EMagazine.countDocuments({});
+
+        // Find all magazines without any filters with pagination
+        const magazines = await EMagazine.find({})
+            .populate('category', 'name')
+            .populate('subject', 'name')
+            .populate('writer', 'name')
+            .sort({ createdAt: -1 }) // Sort by newest first
+            .skip(skip)
+            .limit(limit);
+        
+        // Map magazines to only include names for category, subject, writer
+        const result = magazines.map(mag => ({
+            _id: mag._id,
+            language: mag.language,
+            category: mag.category ? mag.category.name : '',
+            subject: mag.subject ? mag.subject.name : '',
+            writer: mag.writer ? mag.writer.name : '',
+            month: mag.month,
+            year: mag.year,
+            title: mag.title,
+            introduction: mag.introduction,
+            subPoints: mag.subPoints,
+            importance: mag.importance,
+            explain: mag.explain,
+            summary: mag.summary,
+            reference: mag.reference,
+            images: mag.images
+        }));
+
+        // Calculate total pages
+        const totalPages = Math.ceil(total / limit);
+
+        res.json({ 
+            success: true, 
+            magazines: result, 
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages,
+                totalMagazines: total,
+                limit: limit,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router; 
