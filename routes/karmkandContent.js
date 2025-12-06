@@ -75,6 +75,44 @@ router.get('/karmkand-subcategory/:subId/import-excel', requireAuth, async (req,
   });
 });
 
+// Export Excel for subcategory content
+router.get('/karmkand-subcategory/:subId/export-excel', requireAuth, async (req, res) => {
+  try {
+    const subcategory = await KarmkandSubCategory.findById(req.params.subId);
+    if (!subcategory) {
+      return res.status(404).send('Subcategory not found');
+    }
+
+    const contents = await KarmkandContent.find({ subCategory: req.params.subId }).sort({ sequenceNo: 1 });
+
+    const dataToExport = contents.map(entry => ({
+      sequenceNo: entry.sequenceNo,
+      hindiWord: entry.hindiWord || '',
+      englishWord: entry.englishWord || '',
+      hinglishWord: entry.hinglishWord || '',
+      meaning: entry.meaning || '',
+      extra: entry.extra || '',
+      structure: entry.structure || '',
+      search: entry.search || '',
+      youtubeLink: entry.youtubeLink || '',
+      image: entry.image || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Karmkand Content');
+
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="karmkand_${subcategory.name.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx"`);
+    res.send(buffer);
+  } catch (error) {
+    console.error('Error exporting karmkand Excel:', error);
+    res.status(500).send('Error exporting Excel file');
+  }
+});
+
 // Handle import Excel upload
 router.post('/karmkand-subcategory/:subId/import-excel', requireAuth, upload.single('excel'), async (req, res) => {
   const subcategory = await KarmkandSubCategory.findById(req.params.subId);

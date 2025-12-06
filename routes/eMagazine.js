@@ -389,6 +389,46 @@ router.post('/magazine/delete/:id', async (req, res) => {
     }
 });
 
+// Export Excel for magazines
+router.get('/magazine/export-excel', async (req, res) => {
+    try {
+        const magazines = await EMagazine.find()
+            .populate('category')
+            .populate('subject')
+            .populate('writer')
+            .sort({ createdAt: -1 });
+
+        const dataToExport = magazines.map(entry => ({
+            Language: entry.language || '',
+            Category: entry.category ? entry.category.name : '',
+            Subject: entry.subject ? entry.subject.name : '',
+            Writer: entry.writer ? entry.writer.name : '',
+            Month: entry.month || '',
+            Year: entry.year || '',
+            Title: entry.title || '',
+            Introduction: entry.introduction || '',
+            'Sub Points': entry.subPoints || '',
+            Importance: entry.importance || '',
+            Explain: entry.explain || '',
+            Summary: entry.summary || '',
+            Reference: entry.reference || ''
+        }));
+
+        const worksheet = xlsx.utils.json_to_sheet(dataToExport);
+        const workbook = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'Magazines');
+
+        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="emagazine_magazines.xlsx"');
+        res.send(buffer);
+    } catch (error) {
+        console.error('Error exporting magazines Excel:', error);
+        res.status(500).send('Error exporting Excel file');
+    }
+});
+
 // Handle Excel upload for magazines
 router.post('/magazine/upload-excel', upload.single('excelFile'), async (req, res) => {
     try {

@@ -229,6 +229,42 @@ router.get('/master/:masterId/import', async (req, res) => {
     }
 });
 
+// Export Excel for MCQ content
+router.get('/master/:masterId/export-excel', async (req, res) => {
+    try {
+        const master = await McqMaster.findById(req.params.masterId);
+        if (!master) {
+            return res.status(404).send('Master not found');
+        }
+
+        const contents = await McqContent.find({ master: req.params.masterId }).sort({ createdAt: -1 });
+
+        const dataToExport = contents.map(entry => ({
+            question: entry.question || '',
+            option1: entry.option1 || '',
+            option2: entry.option2 || '',
+            option3: entry.option3 || '',
+            option4: entry.option4 || '',
+            correctAnswers: Array.isArray(entry.correctAnswers) ? entry.correctAnswers.join(',') : '',
+            explanation: entry.explanation || '',
+            references: Array.isArray(entry.references) ? entry.references.join(',') : ''
+        }));
+
+        const worksheet = xlsx.utils.json_to_sheet(dataToExport);
+        const workbook = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'MCQ Content');
+
+        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="mcq_${master.name.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx"`);
+        res.send(buffer);
+    } catch (error) {
+        console.error('Error exporting MCQ Excel:', error);
+        res.status(500).send('Error exporting Excel file');
+    }
+});
+
 router.post('/master/:masterId/import', uploadExcel.single('excel'), async (req, res) => {
     try {
         if (!req.file) {

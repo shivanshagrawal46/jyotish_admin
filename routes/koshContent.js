@@ -152,6 +152,45 @@ router.get('/kosh-subcategory/:subId/import-excel', requireAuth, async (req, res
   res.render('importKoshContentExcel', { subcategory, error: null, success: null, username: req.session.username, koshCategories });
 });
 
+// Export Excel for subcategory content
+router.get('/kosh-subcategory/:subId/export-excel', requireAuth, async (req, res) => {
+  try {
+    const subcategory = await KoshSubCategory.findById(req.params.subId);
+    if (!subcategory) {
+      return res.status(404).send('Subcategory not found');
+    }
+
+    const KoshContent = require('../models/KoshContent');
+    const contents = await KoshContent.find({ subCategory: req.params.subId }).sort({ sequenceNo: 1 });
+
+    const dataToExport = contents.map(entry => ({
+      sequenceNo: entry.sequenceNo,
+      hindiWord: entry.hindiWord || '',
+      englishWord: entry.englishWord || '',
+      hinglishWord: entry.hinglishWord || '',
+      meaning: entry.meaning || '',
+      extra: entry.extra || '',
+      structure: entry.structure || '',
+      search: entry.search || '',
+      youtubeLink: entry.youtubeLink || '',
+      image: entry.image || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Kosh Content');
+
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="kosh_${subcategory.name.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx"`);
+    res.send(buffer);
+  } catch (error) {
+    console.error('Error exporting kosh Excel:', error);
+    res.status(500).send('Error exporting Excel file');
+  }
+});
+
 // Excel import (POST)
 router.post('/kosh-subcategory/:subId/import-excel', requireAuth, upload.single('excel'), async (req, res) => {
   const subcategory = await KoshSubCategory.findById(req.params.subId);

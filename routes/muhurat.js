@@ -224,6 +224,39 @@ router.post('/content/:categoryId/delete/:contentId', requireAuth, async (req, r
     }
 });
 
+// Export Excel for content
+router.get('/content/:categoryId/export-excel', requireAuth, async (req, res) => {
+    try {
+        const categoryId = req.params.categoryId;
+        const category = await MuhuratCategory.findById(categoryId);
+        
+        if (!category) {
+            return res.status(404).send('Category not found');
+        }
+
+        const contents = await MuhuratContent.find({ categoryId }).sort({ createdAt: 1 });
+
+        const dataToExport = contents.map(entry => ({
+            year: entry.year || '',
+            date: entry.date || '',
+            detail: entry.detail || ''
+        }));
+
+        const worksheet = xlsx.utils.json_to_sheet(dataToExport);
+        const workbook = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'Muhurat Content');
+
+        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="muhurat_${category.name.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx"`);
+        res.send(buffer);
+    } catch (error) {
+        console.error('Error exporting muhurat Excel:', error);
+        res.status(500).send('Error exporting Excel file');
+    }
+});
+
 // Upload Excel for content
 router.post('/content/:categoryId/upload-excel', requireAuth, upload.single('excelFile'), async (req, res) => {
     try {

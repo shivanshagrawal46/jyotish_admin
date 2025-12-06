@@ -262,6 +262,103 @@ router.post('/upload-yearly/:yearId', requireAuth, upload.single('excelFile'), a
     }
 });
 
+// Export daily dates as Excel
+router.get('/export-daily-dates', requireAuth, async (req, res) => {
+    try {
+        const dates = await NumerologyDailyDate.find().sort({ sequence: 1, createdAt: 1 });
+
+        const dataToExport = dates.map(entry => ({
+            dateLabel: entry.dateLabel,
+            dateISO: entry.dateISO ? new Date(entry.dateISO).toISOString().split('T')[0] : '',
+            notes: entry.notes || '',
+            sequence: entry.sequence
+        }));
+
+        const worksheet = xlsx.utils.json_to_sheet(dataToExport);
+        const workbook = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'Daily Dates');
+
+        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="numerology_daily_dates.xlsx"');
+        res.send(buffer);
+    } catch (error) {
+        console.error('Error exporting daily dates Excel:', error);
+        res.status(500).send('Error exporting Excel file');
+    }
+});
+
+// Export daily content for a specific date as Excel
+router.get('/export-daily/:dateId', requireAuth, async (req, res) => {
+    try {
+        const { dateId } = req.params;
+        const dateDoc = await NumerologyDailyDate.findById(dateId);
+        if (!dateDoc) {
+            return res.status(404).send('Date not found');
+        }
+
+        const contents = await NumerologyDailyContent.find({ dateRef: dateId }).sort({ sequence: 1 });
+
+        const dataToExport = contents.map(entry => ({
+            sequence: entry.sequence,
+            title_hn: entry.title_hn,
+            title_en: entry.title_en,
+            details_hn: entry.details_hn,
+            details_en: entry.details_en,
+            images: entry.images.join(', ')
+        }));
+
+        const worksheet = xlsx.utils.json_to_sheet(dataToExport);
+        const workbook = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'Daily Content');
+
+        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="numerology_daily_${dateDoc.dateLabel.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx"`);
+        res.send(buffer);
+    } catch (error) {
+        console.error('Error exporting daily content Excel:', error);
+        res.status(500).send('Error exporting Excel file');
+    }
+});
+
+// Export monthly content for a specific year and month as Excel
+router.get('/export-monthly/:yearId/:month', requireAuth, async (req, res) => {
+    try {
+        const { yearId, month } = req.params;
+        const yearDoc = await NumerologyMonthlyYear.findById(yearId);
+        if (!yearDoc) {
+            return res.status(404).send('Year not found');
+        }
+
+        const monthlyContent = await NumerologyMonthly.find({ yearRef: yearId, month }).sort({ sequence: 1 });
+
+        const dataToExport = monthlyContent.map(entry => ({
+            sequence: entry.sequence,
+            title_hn: entry.title_hn,
+            title_en: entry.title_en,
+            details_hn: entry.details_hn,
+            details_en: entry.details_en,
+            images: entry.images.join(', ')
+        }));
+
+        const worksheet = xlsx.utils.json_to_sheet(dataToExport);
+        const workbook = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'Monthly Content');
+
+        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="numerology_monthly_${yearDoc.year}_${month}.xlsx"`);
+        res.send(buffer);
+    } catch (error) {
+        console.error('Error exporting monthly Excel:', error);
+        res.status(500).send('Error exporting Excel file');
+    }
+});
+
 // Export yearly content for a specific year as Excel (same format as upload)
 router.get('/export-yearly/:yearId', requireAuth, async (req, res) => {
     try {
