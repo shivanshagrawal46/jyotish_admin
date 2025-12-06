@@ -47,6 +47,7 @@
         <div>
           <a href="/muhurat/content/<%= category._id %>/add" class="pill-btn">+ Add Content</a>
           <button class="pill-btn" onclick="document.getElementById('excelFile').click()">Upload Excel</button>
+          <a href="/muhurat/content/<%= category._id %>/export-excel" class="pill-btn" style="background:#16a34a;color:white;">Export Excel</a>
           <input type="file" id="excelFile" class="d-none" accept=".xlsx,.xls" onchange="uploadExcel(this)">
         </div>
       </div>

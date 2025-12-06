@@ -17,24 +17,19 @@ const bookContentSchema = new mongoose.Schema({
         required: true
     },
     title_hn: {
-        type: String,
-        required: true
+        type: String
     },
     title_en: {
-        type: String,
-        required: true
+        type: String
     },
     title_hinglish: {
-        type: String,
-        required: true
+        type: String
     },
     meaning: {
-        type: String,
-        required: true
+        type: String
     },
     details: {
-        type: String,
-        required: true
+        type: String
     },
     extra: {
         type: String
