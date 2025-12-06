@@ -134,6 +134,21 @@
         color: var(--primary);
       }
 
+      .btn-info {
+        background: rgba(23, 162, 184, 0.15);
+        color: #17a2b8;
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .btn-info:hover {
+        background: rgba(23, 162, 184, 0.25);
+        color: #138496;
+      }
+
       /* Table Styles */
       .table {
         border-collapse: separate;
@@ -300,8 +315,13 @@
               >
               <a
                 href="/mcq-content/master/<%= selectedMaster._id %>/import"
-                class="btn btn-secondary"
+                class="btn btn-secondary me-2"
                 >Upload Excel</a
+              >
+              <a
+                href="/mcq-content/master/<%= selectedMaster._id %>/export-excel"
+                class="btn btn-info"
+                >Export Excel</a
               >
             </div>
             <div class="text-muted" style="font-size: 1rem">
