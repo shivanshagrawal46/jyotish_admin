@@ -249,7 +249,7 @@ router.get('/content/:categoryId/export-excel', requireAuth, async (req, res) =>
         const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename="muhurat_${category.name.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx"`);
+        res.setHeader('Content-Disposition', `attachment; filename="muhurat_${category.categoryName.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx"`);
         res.send(buffer);
     } catch (error) {
         console.error('Error exporting muhurat Excel:', error);

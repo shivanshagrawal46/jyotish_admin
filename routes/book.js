@@ -799,8 +799,8 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
             });
         }
 
-        // Check for required headers
-        const requiredHeaders = ['Category', 'Book', 'Chapter', 'Title (Hindi)', 'Title (English)', 'Title (Hinglish)', 'Meaning', 'Details'];
+        // Check for required headers (only Category, Book, Chapter are required)
+        const requiredHeaders = ['Category', 'Book', 'Chapter'];
         const firstRow = data[0];
         const missingHeaders = requiredHeaders.filter(header => !(header in firstRow));
         
@@ -826,16 +826,11 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
             const row = data[i];
             const rowNumber = i + 2; // Excel row number (accounting for header row)
 
-            // Check for missing required fields
+            // Check for missing required fields (only Category, Book, Chapter are required)
             const missingFields = [];
             if (!row.Category) missingFields.push('Category');
             if (!row.Book) missingFields.push('Book');
             if (!row.Chapter) missingFields.push('Chapter');
-            if (!row['Title (Hindi)']) missingFields.push('Title (Hindi)');
-            if (!row['Title (English)']) missingFields.push('Title (English)');
-            if (!row['Title (Hinglish)']) missingFields.push('Title (Hinglish)');
-            if (!row.Meaning) missingFields.push('Meaning');
-            if (!row.Details) missingFields.push('Details');
 
             if (missingFields.length > 0) {
                 errors.push(`Row ${rowNumber}: Missing required fields: ${missingFields.join(', ')}`);
@@ -866,12 +861,12 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                 category: category._id,
                 book: book._id,
                 chapter: chapter._id,
-                title_hn: row['Title (Hindi)'],
-                title_en: row['Title (English)'],
-                title_hinglish: row['Title (Hinglish)'],
-                meaning: row.Meaning,
-                details: row.Details,
-                extra: row.Extra || '',
+                title_hn: row['Title (Hindi)'] || undefined,
+                title_en: row['Title (English)'] || undefined,
+                title_hinglish: row['Title (Hinglish)'] || undefined,
+                meaning: row.Meaning || undefined,
+                details: row.Details || undefined,
+                extra: row.Extra || undefined,
                 video_links: videoLinks
             });
             processedRows++;

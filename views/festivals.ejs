@@ -111,6 +111,37 @@
             background: rgba(76, 175, 80, 0.1);
             color: var(--success);
         }
+        .bulk-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        .btn-danger-bulk {
+            background: var(--error);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .btn-danger-bulk:hover {
+            background: #d32f2f;
+            transform: translateY(-1px);
+        }
+        .btn-danger-bulk:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .checkbox-cell {
+            width: 50px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -148,9 +179,34 @@
             <div class="alert alert-success"><%= success %></div>
         <% } %>
         <div class="content-card">
+            <% if (festivals.length > 0) { %>
+            <div class="bulk-actions">
+                <form id="bulkDeleteForm" method="POST" action="/festivals/bulk-delete" style="display: inline;">
+                    <button type="submit" id="deleteSelectedBtn" class="btn btn-danger-bulk" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18" style="vertical-align: middle; margin-right: 0.5rem;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete Selected (<span id="selectedCount">0</span>)
+                    </button>
+                </form>
+                <form method="POST" action="/festivals/delete-all" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete ALL festivals? This action cannot be undone!');">
+                    <button type="submit" class="btn btn-danger-bulk">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18" style="vertical-align: middle; margin-right: 0.5rem;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete All
+                    </button>
+                </form>
+            </div>
+            <% } %>
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>
+                        <th class="checkbox-cell">
+                            <% if (festivals.length > 0) { %>
+                            <input type="checkbox" id="selectAll" title="Select All">
+                            <% } %>
+                        </th>
                         <th>#</th>
                         <th>Date</th>
                         <th>Vrat</th>
@@ -162,10 +218,13 @@
                 </thead>
                 <tbody>
                     <% if (festivals.length === 0) { %>
-                        <tr><td colspan="7" class="text-center">No festivals added yet.</td></tr>
+                        <tr><td colspan="8" class="text-center">No festivals added yet.</td></tr>
                     <% } %>
                     <% festivals.forEach(function(festival, idx) { %>
                         <tr>
+                            <td class="checkbox-cell">
+                                <input type="checkbox" class="festival-checkbox" name="festivalIds" value="<%= festival._id %>">
+                            </td>
                             <td><%= idx + 1 %></td>
                             <td><%= festival.date ? festival.date.toISOString().slice(0,10) : '' %></td>
                             <td><%= festival.vrat %></td>
@@ -211,11 +270,11 @@
                         </div>
                         <div class="alert alert-info">
                             <small>
-                                <strong>Note:</strong> The Excel file should have the following columns:
+                                <strong>Note:</strong> The Excel file should have the following columns (all optional):
                                 <ul class="mb-0 mt-2">
-                                    <li>Date (YYYY-MM-DD)</li>
-                                    <li>Vrat</li>
-                                    <li>Festival Name</li>
+                                    <li>Date (dd-mm-yyyy or YYYY-MM-DD format)</li>
+                                    <li>Vrat (optional)</li>
+                                    <li>Festival Name (optional)</li>
                                     <li>Jyanti (optional)</li>
                                     <li>Vishesh (optional)</li>
                                 </ul>
@@ -232,5 +291,73 @@
     </div>
 
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Select All functionality
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const festivalCheckboxes = document.querySelectorAll('.festival-checkbox');
+        const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+        const selectedCountSpan = document.getElementById('selectedCount');
+        const bulkDeleteForm = document.getElementById('bulkDeleteForm');
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                festivalCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateDeleteButton();
+            });
+        }
+
+        // Update delete button state when individual checkboxes change
+        festivalCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = Array.from(festivalCheckboxes).every(cb => cb.checked);
+                }
+                updateDeleteButton();
+            });
+        });
+
+        function updateDeleteButton() {
+            const selected = Array.from(festivalCheckboxes).filter(cb => cb.checked);
+            const count = selected.length;
+            
+            if (selectedCountSpan) {
+                selectedCountSpan.textContent = count;
+            }
+            
+            if (deleteSelectedBtn) {
+                deleteSelectedBtn.disabled = count === 0;
+            }
+        }
+
+        // Handle bulk delete form submission
+        if (bulkDeleteForm) {
+            bulkDeleteForm.addEventListener('submit', function(e) {
+                const selected = Array.from(festivalCheckboxes).filter(cb => cb.checked);
+                if (selected.length === 0) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (!confirm(`Are you sure you want to delete ${selected.length} selected festival(s)?`)) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Add hidden inputs for selected IDs
+                selected.forEach(checkbox => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'festivalIds';
+                    input.value = checkbox.value;
+                    bulkDeleteForm.appendChild(input);
+                });
+            });
+        }
+
+        // Initialize button state
+        updateDeleteButton();
+    </script>
 </body>
 </html> 

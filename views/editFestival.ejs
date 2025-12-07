@@ -122,16 +122,16 @@
         <div class="content-card">
             <form action="/festivals/<%= festival._id %>/edit" method="POST">
                 <div class="mb-4">
-                    <label for="date" class="form-label">Date</label>
-                    <input type="date" class="form-control" id="date" name="date" value="<%= festival.date ? festival.date.toISOString().slice(0,10) : '' %>" required>
+                    <label for="date" class="form-label">Date <span class="text-muted">(Optional)</span></label>
+                    <input type="date" class="form-control" id="date" name="date" value="<%= festival.date ? festival.date.toISOString().slice(0,10) : '' %>">
                 </div>
                 <div class="mb-4">
-                    <label for="vrat" class="form-label">Vrat</label>
-                    <input type="text" class="form-control" id="vrat" name="vrat" value="<%= festival.vrat %>" required>
+                    <label for="vrat" class="form-label">Vrat <span class="text-muted">(Optional)</span></label>
+                    <input type="text" class="form-control" id="vrat" name="vrat" value="<%= festival.vrat %>">
                 </div>
                 <div class="mb-4">
-                    <label for="festival_name" class="form-label">Festival Name</label>
-                    <input type="text" class="form-control" id="festival_name" name="festival_name" value="<%= festival.festival_name %>" required>
+                    <label for="festival_name" class="form-label">Festival Name <span class="text-muted">(Optional)</span></label>
+                    <input type="text" class="form-control" id="festival_name" name="festival_name" value="<%= festival.festival_name %>">
                 </div>
                 <div class="mb-4">
                     <label for="jyanti" class="form-label">Jyanti</label>

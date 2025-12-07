@@ -24,7 +24,7 @@ function requireAuth(req, res, next) {
 
 // List all festivals
 router.get('/festivals', requireAuth, async (req, res) => {
-  const festivals = await Festival.find().sort({ date: -1 });
+  const festivals = await Festival.find().sort({ createdAt: 1 });
   res.render('festivals', {
     festivals,
     username: req.session.username,
@@ -108,11 +108,41 @@ router.post('/festivals/:id/delete', requireAuth, async (req, res) => {
   res.redirect('/festivals');
 });
 
+// Handle bulk delete festivals
+router.post('/festivals/bulk-delete', requireAuth, async (req, res) => {
+  try {
+    const festivalIds = Array.isArray(req.body.festivalIds) 
+      ? req.body.festivalIds 
+      : [req.body.festivalIds];
+    
+    if (festivalIds.length === 0) {
+      return res.redirect('/festivals');
+    }
+
+    await Festival.deleteMany({ _id: { $in: festivalIds } });
+    res.redirect('/festivals');
+  } catch (err) {
+    console.error('Error deleting festivals:', err);
+    res.redirect('/festivals');
+  }
+});
+
+// Handle delete all festivals
+router.post('/festivals/delete-all', requireAuth, async (req, res) => {
+  try {
+    await Festival.deleteMany({});
+    res.redirect('/festivals');
+  } catch (err) {
+    console.error('Error deleting all festivals:', err);
+    res.redirect('/festivals');
+  }
+});
+
 // Export Excel for festivals
 router.get('/festivals/export-excel', requireAuth, async (req, res) => {
     try {
         const Festival = require('../models/Festival');
-        const festivals = await Festival.find().sort({ date: -1 });
+        const festivals = await Festival.find().sort({ createdAt: 1 });
 
         const dataToExport = festivals.map(entry => ({
             Date: entry.date ? new Date(entry.date).toISOString().split('T')[0] : '',
@@ -159,22 +189,77 @@ router.post('/festivals/upload-excel', requireAuth, upload.single('excelFile'), 
 
         const festivals = [];
         for (const row of data) {
-            if (!row.Date || !row.Vrat || !row['Festival Name']) {
-                continue; // Skip rows with missing required fields
+            // Skip completely empty rows
+            if (!row.Date && !row.Vrat && !row['Festival Name'] && !row.Jyanti && !row.Vishesh) {
+                continue;
             }
 
-            // Validate date format
-            const date = new Date(row.Date);
-            if (isNaN(date.getTime())) {
-                continue; // Skip invalid dates
+            // Parse date - support multiple formats including dd-mm-yyyy
+            let date = null;
+            if (row.Date) {
+                let dateValue = row.Date;
+                let dateStr = '';
+                
+                // Handle different input types from Excel
+                if (typeof dateValue === 'number') {
+                    // Excel date serial number (days since 1900-01-01)
+                    // Excel incorrectly treats 1900 as a leap year
+                    if (dateValue > 0 && dateValue < 1000000) {
+                        const excelEpoch = new Date(1899, 11, 30); // Dec 30, 1899
+                        date = new Date(excelEpoch.getTime() + dateValue * 24 * 60 * 60 * 1000);
+                    } else {
+                        // Try as timestamp
+                        date = new Date(dateValue);
+                    }
+                } else if (dateValue instanceof Date) {
+                    // Already a Date object
+                    date = dateValue;
+                } else {
+                    // String format
+                    dateStr = String(dateValue).trim();
+                    
+                    // Try dd-mm-yyyy format first (e.g., 11-12-2025)
+                    const ddMMyyyyMatch = dateStr.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+                    if (ddMMyyyyMatch) {
+                        const [, day, month, year] = ddMMyyyyMatch;
+                        // Ensure day and month are valid
+                        const dayNum = parseInt(day);
+                        const monthNum = parseInt(month);
+                        const yearNum = parseInt(year);
+                        if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum >= 1900 && yearNum <= 2100) {
+                            date = new Date(yearNum, monthNum - 1, dayNum);
+                        }
+                    } else {
+                        // Try dd/mm/yyyy format
+                        const ddMMyyyySlashMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                        if (ddMMyyyySlashMatch) {
+                            const [, day, month, year] = ddMMyyyySlashMatch;
+                            const dayNum = parseInt(day);
+                            const monthNum = parseInt(month);
+                            const yearNum = parseInt(year);
+                            if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum >= 1900 && yearNum <= 2100) {
+                                date = new Date(yearNum, monthNum - 1, dayNum);
+                            }
+                        } else {
+                            // Try standard Date parsing for other formats (YYYY-MM-DD, etc.)
+                            date = new Date(dateStr);
+                        }
+                    }
+                }
+                
+                // Validate date - check if it's a valid date and within reasonable range
+                if (!date || isNaN(date.getTime()) || date.getFullYear() < 1900 || date.getFullYear() > 2100) {
+                    console.error(`Invalid date format: ${row.Date} (parsed as: ${date})`);
+                    continue; // Skip invalid dates
+                }
             }
 
             festivals.push({
-                date: date,
-                vrat: row.Vrat,
-                festival_name: row['Festival Name'],
-                jyanti: row.Jyanti || '',
-                vishesh: row.Vishesh || ''
+                date: date || undefined,
+                vrat: row.Vrat || undefined,
+                festival_name: row['Festival Name'] || undefined,
+                jyanti: row.Jyanti || undefined,
+                vishesh: row.Vishesh || undefined
             });
         }
 
