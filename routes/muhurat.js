@@ -236,11 +236,21 @@ router.get('/content/:categoryId/export-excel', requireAuth, async (req, res) =>
 
         const contents = await MuhuratContent.find({ categoryId }).sort({ createdAt: 1 });
 
-        const dataToExport = contents.map(entry => ({
-            year: entry.year || '',
-            date: entry.date || '',
-            detail: entry.detail || ''
-        }));
+        // Create template data with example row
+        const templateData = [{
+            year: 2025,
+            date: '15 Jan',
+            detail: 'Example muhurat detail - This is a sample entry'
+        }];
+
+        // If there's actual content, use it; otherwise use template
+        const dataToExport = contents.length > 0 
+            ? contents.map(entry => ({
+                year: entry.year || '',
+                date: entry.date || '',
+                detail: entry.detail || ''
+            }))
+            : templateData;
 
         const worksheet = xlsx.utils.json_to_sheet(dataToExport);
         const workbook = xlsx.utils.book_new();
