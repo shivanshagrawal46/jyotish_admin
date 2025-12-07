@@ -286,15 +286,60 @@ router.post('/content/:categoryId/upload-excel', requireAuth, upload.single('exc
         const worksheet = workbook.Sheets[sheetName];
         const data = xlsx.utils.sheet_to_json(worksheet);
 
-        // Expected columns: year, date, detail
-        const contents = data.map(row => ({
-            categoryId,
-            year: row.year ? parseInt(row.year) : undefined,
-            date: row.date || undefined,
-            detail: row.detail || undefined
-        }));
+        // Expected columns: year, date, detail (case-insensitive matching)
+        const contents = [];
+        for (const row of data) {
+            // Skip completely empty rows
+            if (!row.year && !row.date && !row.detail && 
+                !row.Year && !row.Date && !row.Detail) {
+                continue;
+            }
+
+            // Handle year - can be number or string
+            let yearValue = undefined;
+            if (row.year !== undefined && row.year !== null && row.year !== '') {
+                yearValue = typeof row.year === 'number' ? row.year : parseInt(String(row.year));
+                if (isNaN(yearValue)) yearValue = undefined;
+            } else if (row.Year !== undefined && row.Year !== null && row.Year !== '') {
+                yearValue = typeof row.Year === 'number' ? row.Year : parseInt(String(row.Year));
+                if (isNaN(yearValue)) yearValue = undefined;
+            }
+
+            // Handle date - can be string
+            const dateValue = row.date || row.Date || undefined;
+            
+            // Handle detail - can be string
+            const detailValue = row.detail || row.Detail || undefined;
+
+            // Only add if at least one field has a value
+            if (yearValue !== undefined || dateValue || detailValue) {
+                contents.push({
+                    categoryId,
+                    year: yearValue,
+                    date: dateValue ? String(dateValue) : undefined,
+                    detail: detailValue ? String(detailValue) : undefined
+                });
+            }
+        }
+
+        if (contents.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'No valid content data found in the Excel file. Please ensure the file has data in year, date, or detail columns.'
+            });
+        }
 
         await MuhuratContent.insertMany(contents);
+
+        // Clean up uploaded file
+        if (req.file && req.file.path) {
+            const fs = require('fs');
+            try {
+                fs.unlinkSync(req.file.path);
+            } catch (err) {
+                console.error('Error deleting uploaded file:', err);
+            }
+        }
 
         res.json({
             success: true,
@@ -303,9 +348,21 @@ router.post('/content/:categoryId/upload-excel', requireAuth, upload.single('exc
         });
     } catch (error) {
         console.error('Error uploading content:', error);
+        
+        // Clean up uploaded file on error
+        if (req.file && req.file.path) {
+            const fs = require('fs');
+            try {
+                fs.unlinkSync(req.file.path);
+            } catch (err) {
+                console.error('Error deleting uploaded file:', err);
+            }
+        }
+        
         res.status(500).json({
             success: false,
-            error: 'Error processing Excel file'
+            error: 'Error processing Excel file',
+            message: error.message || 'Please check the file format and try again.'
         });
     }
 });
