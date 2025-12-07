@@ -12,9 +12,9 @@ router.get('/festivals', async (req, res) => {
         // Get total count for pagination
         const total = await Festival.countDocuments();
 
-        // Get festivals with pagination
+        // Get festivals with pagination (sorted by upload sequence)
         const festivals = await Festival.find()
-            .sort({ date: -1 })
+            .sort({ createdAt: 1 })
             .skip(skip)
             .limit(limit);
 
