@@ -24,7 +24,7 @@ function requireAuth(req, res, next) {
 
 // List all festivals
 router.get('/festivals', requireAuth, async (req, res) => {
-  const festivals = await Festival.find().sort({ createdAt: 1 });
+  const festivals = await Festival.find().sort({ sequence: 1 });
   res.render('festivals', {
     festivals,
     username: req.session.username,
@@ -53,7 +53,10 @@ router.get('/festivals/add', requireAuth, (req, res) => {
 router.post('/festivals/add', requireAuth, async (req, res) => {
   try {
     const { date, vrat, festival_name, jyanti, vishesh } = req.body;
-    await Festival.create({ date, vrat, festival_name, jyanti, vishesh });
+    // Get the maximum sequence number and increment
+    const maxSequence = await Festival.findOne().sort({ sequence: -1 }).select('sequence');
+    const nextSequence = maxSequence && maxSequence.sequence ? maxSequence.sequence + 1 : 1;
+    await Festival.create({ date, vrat, festival_name, jyanti, vishesh, sequence: nextSequence });
     res.redirect('/festivals');
   } catch (err) {
     res.render('addFestival', {
@@ -142,7 +145,7 @@ router.post('/festivals/delete-all', requireAuth, async (req, res) => {
 router.get('/festivals/export-excel', requireAuth, async (req, res) => {
     try {
         const Festival = require('../models/Festival');
-        const festivals = await Festival.find().sort({ createdAt: 1 });
+        const festivals = await Festival.find().sort({ sequence: 1 });
 
         const dataToExport = festivals.map(entry => ({
             Date: entry.date ? new Date(entry.date).toISOString().split('T')[0] : '',
@@ -172,7 +175,7 @@ router.post('/festivals/upload-excel', requireAuth, upload.single('excelFile'), 
     try {
         if (!req.file) {
             return res.render('festivals', {
-                festivals: await Festival.find().sort({ date: -1 }),
+                festivals: await Festival.find().sort({ sequence: 1 }),
                 username: req.session.username,
                 error: 'Please upload an Excel file.',
                 success: null,
@@ -187,12 +190,19 @@ router.post('/festivals/upload-excel', requireAuth, upload.single('excelFile'), 
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const data = xlsx.utils.sheet_to_json(worksheet);
 
+        // Get the maximum sequence number to continue from
+        const maxSequence = await Festival.findOne().sort({ sequence: -1 }).select('sequence');
+        let currentSequence = maxSequence && maxSequence.sequence ? maxSequence.sequence : 0;
+
         const festivals = [];
         for (const row of data) {
             // Skip completely empty rows
             if (!row.Date && !row.Vrat && !row['Festival Name'] && !row.Jyanti && !row.Vishesh) {
                 continue;
             }
+            
+            // Increment sequence for each valid row
+            currentSequence++;
 
             // Parse date - support multiple formats including dd-mm-yyyy
             let date = null;
@@ -259,7 +269,8 @@ router.post('/festivals/upload-excel', requireAuth, upload.single('excelFile'), 
                 vrat: row.Vrat || undefined,
                 festival_name: row['Festival Name'] || undefined,
                 jyanti: row.Jyanti || undefined,
-                vishesh: row.Vishesh || undefined
+                vishesh: row.Vishesh || undefined,
+                sequence: currentSequence
             });
         }
 
@@ -268,7 +279,7 @@ router.post('/festivals/upload-excel', requireAuth, upload.single('excelFile'), 
             res.redirect('/festivals');
         } else {
             res.render('festivals', {
-                festivals: await Festival.find().sort({ date: -1 }),
+                festivals: await Festival.find().sort({ sequence: 1 }),
                 username: req.session.username,
                 error: 'No valid festival data found in the Excel file.',
                 success: null,

@@ -6,6 +6,7 @@ const festivalSchema = new mongoose.Schema({
   festival_name: { type: String },
   jyanti: { type: String },
   vishesh: { type: String },
+  sequence: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 });
 

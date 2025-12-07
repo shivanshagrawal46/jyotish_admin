@@ -14,7 +14,7 @@ router.get('/festivals', async (req, res) => {
 
         // Get festivals with pagination (sorted by upload sequence)
         const festivals = await Festival.find()
-            .sort({ createdAt: 1 })
+            .sort({ sequence: 1 })
             .skip(skip)
             .limit(limit);
 
