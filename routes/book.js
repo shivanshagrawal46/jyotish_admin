@@ -837,44 +837,6 @@ router.post('/chapter/upload-excel', upload.single('excelFile'), async (req, res
     }
 });
 
-// Export Excel for content
-router.get('/content/export-excel', async (req, res) => {
-    try {
-        const contents = await BookContent.find()
-            .populate('category')
-            .populate('book')
-            .populate('chapter')
-            .sort({ createdAt: -1 });
-
-        const dataToExport = contents.map(entry => ({
-            Category: entry.category ? entry.category.name : '',
-            Book: entry.book ? entry.book.name : '',
-            Chapter: entry.chapter ? entry.chapter.name : '',
-            'Title (Hindi)': entry.title_hn || '',
-            'Title (English)': entry.title_en || '',
-            'Title (Hinglish)': entry.title_hinglish || '',
-            Meaning: entry.meaning || '',
-            Details: entry.details || '',
-            Extra: entry.extra || '',
-            Images: Array.isArray(entry.images) ? entry.images.join(', ') : '',
-            'Video Links': Array.isArray(entry.video_links) ? entry.video_links.join(', ') : ''
-        }));
-
-        const worksheet = xlsx.utils.json_to_sheet(dataToExport);
-        const workbook = xlsx.utils.book_new();
-        xlsx.utils.book_append_sheet(workbook, worksheet, 'Content');
-
-        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', 'attachment; filename="book_content.xlsx"');
-        res.send(buffer);
-    } catch (error) {
-        console.error('Error exporting content Excel:', error);
-        res.status(500).send('Error exporting Excel file');
-    }
-});
-
 // Handle Excel upload for content
 router.post('/content/upload-excel', upload.single('excelFile'), async (req, res) => {
     try {
