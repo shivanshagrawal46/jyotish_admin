@@ -1088,63 +1088,35 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
     }
 });
 
-// Export Excel TEMPLATE for book content
+// Export Excel TEMPLATE for book content (ALWAYS simplified - no Category/Book/Chapter)
 router.get('/content/export-excel', async (req, res) => {
     try {
-        const chapterId = req.query.chapter;
-        const categoryId = req.query.category;
-        const bookId = req.query.book;
-        
         console.log('=== EXPORT EXCEL TEMPLATE ===');
-        console.log('Query params:', { categoryId, bookId, chapterId });
-        
-        const hasContext = chapterId && categoryId && bookId;
-        console.log('Has chapter context:', hasContext);
+        console.log('Creating simplified template for upload');
         
         // Create a new workbook
         const workbook = xlsx.utils.book_new();
         
-        let dataToExport;
-        
-        // If chapter context is provided, export SIMPLE template (no Category/Book/Chapter)
-        if (hasContext) {
-            console.log('Creating SIMPLE template (no Category/Book/Chapter columns)');
-            dataToExport = [{
-                'Title (Hindi)': 'यहाँ हिंदी शीर्षक लिखें',
-                'Title (English)': 'Enter English title here',
-                'Title (Hinglish)': 'Enter Hinglish title here',
-                'Meaning': 'यहाँ अर्थ लिखें / Enter meaning here',
-                'Details': 'यहाँ विवरण लिखें / Enter details here',
-                'Extra': 'अतिरिक्त जानकारी (वैकल्पिक)',
-                'Video Links': 'https://youtube.com/video1, https://youtube.com/video2'
-            }];
-        } else {
-            // Full template with Category/Book/Chapter
-            console.log('Creating FULL template (with Category/Book/Chapter columns)');
-            dataToExport = [{
-                'Category': 'Category Name',
-                'Book': 'Book Name',
-                'Chapter': 'Chapter Name',
-                'Title (Hindi)': 'यहाँ हिंदी शीर्षक लिखें',
-                'Title (English)': 'Enter English title here',
-                'Title (Hinglish)': 'Enter Hinglish title here',
-                'Meaning': 'यहाँ अर्थ लिखें / Enter meaning here',
-                'Details': 'यहाँ विवरण लिखें / Enter details here',
-                'Extra': 'अतिरिक्त जानकारी (वैकल्पिक)',
-                'Video Links': 'https://youtube.com/video1, https://youtube.com/video2'
-            }];
-        }
+        // ALWAYS export simplified template (since this is only called from chapter page)
+        const dataToExport = [{
+            'Title (Hindi)': 'यहाँ हिंदी शीर्षक लिखें',
+            'Title (English)': 'Enter English title here',
+            'Title (Hinglish)': 'Enter Hinglish title here',
+            'Meaning': 'यहाँ अर्थ लिखें / Enter meaning here',
+            'Details': 'यहाँ विवरण लिखें / Enter details here',
+            'Extra': 'अतिरिक्त जानकारी (वैकल्पिक)',
+            'Video Links': 'https://youtube.com/video1, https://youtube.com/video2'
+        }];
 
         // Create worksheet
         const worksheet = xlsx.utils.json_to_sheet(dataToExport);
         
         // Add the worksheet to workbook
-        xlsx.utils.book_append_sheet(workbook, worksheet, 'Book Content Template');
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'Content Upload');
         
         // Set response headers
-        const filename = hasContext ? 'book_content_upload_template.xlsx' : 'book_content_full_template.xlsx';
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Disposition', 'attachment; filename="book_content_upload_template.xlsx"');
         
         // Write the workbook to response
         const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
