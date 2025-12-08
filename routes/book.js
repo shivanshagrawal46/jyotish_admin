@@ -1088,98 +1088,51 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
     }
 });
 
-// Export Excel template for book content (can filter by chapter)
+// Export Excel TEMPLATE for book content
 router.get('/content/export-excel', async (req, res) => {
     try {
         const chapterId = req.query.chapter;
         const categoryId = req.query.category;
         const bookId = req.query.book;
         
-        console.log('Export Excel - Query params:', { categoryId, bookId, chapterId });
-        console.log('Has context:', !!(chapterId && categoryId && bookId));
+        console.log('=== EXPORT EXCEL TEMPLATE ===');
+        console.log('Query params:', { categoryId, bookId, chapterId });
         
-        // If chapter is provided, export content for that chapter only
-        let contents = [];
-        if (chapterId) {
-            contents = await BookContent.find({ chapter: chapterId })
-                .populate('category')
-                .populate('book')
-                .populate('chapter')
-                .sort({ createdAt: -1 });
-        } else {
-            contents = await BookContent.find()
-                .populate('category')
-                .populate('book')
-                .populate('chapter')
-                .sort({ createdAt: -1 });
-        }
+        const hasContext = chapterId && categoryId && bookId;
+        console.log('Has chapter context:', hasContext);
         
         // Create a new workbook
         const workbook = xlsx.utils.book_new();
         
-        // Use actual data if available, otherwise use template
-        // If chapter context is provided, use simplified format (no Category/Book/Chapter columns)
-        const hasContext = chapterId && categoryId && bookId;
         let dataToExport;
         
-        if (contents.length > 0) {
-            if (hasContext) {
-                // Simplified format for chapter context
-                dataToExport = contents.map(entry => ({
-                    'Title (Hindi)': entry.title_hn || '',
-                    'Title (English)': entry.title_en || '',
-                    'Title (Hinglish)': entry.title_hinglish || '',
-                    'Meaning': entry.meaning || '',
-                    'Details': entry.details || '',
-                    'Extra': entry.extra || '',
-                    'Video Links': Array.isArray(entry.video_links) ? entry.video_links.join(', ') : ''
-                }));
-            } else {
-                // Full format
-                dataToExport = contents.map(entry => ({
-                    Category: entry.category ? entry.category.name : '',
-                    Book: entry.book ? entry.book.name : '',
-                    Chapter: entry.chapter ? entry.chapter.name : '',
-                    'Title (Hindi)': entry.title_hn || '',
-                    'Title (English)': entry.title_en || '',
-                    'Title (Hinglish)': entry.title_hinglish || '',
-                    Meaning: entry.meaning || '',
-                    Details: entry.details || '',
-                    Extra: entry.extra || '',
-                    'Video Links': Array.isArray(entry.video_links) ? entry.video_links.join(', ') : ''
-                }));
-            }
+        // If chapter context is provided, export SIMPLE template (no Category/Book/Chapter)
+        if (hasContext) {
+            console.log('Creating SIMPLE template (no Category/Book/Chapter columns)');
+            dataToExport = [{
+                'Title (Hindi)': 'यहाँ हिंदी शीर्षक लिखें',
+                'Title (English)': 'Enter English title here',
+                'Title (Hinglish)': 'Enter Hinglish title here',
+                'Meaning': 'यहाँ अर्थ लिखें / Enter meaning here',
+                'Details': 'यहाँ विवरण लिखें / Enter details here',
+                'Extra': 'अतिरिक्त जानकारी (वैकल्पिक)',
+                'Video Links': 'https://youtube.com/video1, https://youtube.com/video2'
+            }];
         } else {
-            // Template data
-            if (hasContext) {
-                // Simplified template for chapter context
-                dataToExport = [{
-                    'Title (Hindi)': 'श्लोक १',
-                    'Title (English)': 'Shloka 1',
-                    'Title (Hinglish)': 'Shloka 1',
-                    'Meaning': 'This is the meaning of the shloka',
-                    'Details': 'Detailed explanation of the shloka content',
-                    'Extra': 'Additional information (optional)',
-                    'Video Links': 'https://youtube.com/video1,https://youtube.com/video2'
-                }];
-            } else {
-                const category = categoryId ? await BookCategory.findById(categoryId) : null;
-                const book = bookId ? await BookName.findById(bookId) : null;
-                const chapter = chapterId ? await BookChapter.findById(chapterId) : null;
-                
-                dataToExport = [{
-                    'Category': category ? category.name : 'Vedic',
-                    'Book': book ? book.name : 'Rigveda',
-                    'Chapter': chapter ? chapter.name : 'Chapter 1',
-                    'Title (Hindi)': 'श्लोक १',
-                    'Title (English)': 'Shloka 1',
-                    'Title (Hinglish)': 'Shloka 1',
-                    'Meaning': 'This is the meaning of the shloka',
-                    'Details': 'Detailed explanation of the shloka content',
-                    'Extra': 'Additional information (optional)',
-                    'Video Links': 'https://youtube.com/video1,https://youtube.com/video2'
-                }];
-            }
+            // Full template with Category/Book/Chapter
+            console.log('Creating FULL template (with Category/Book/Chapter columns)');
+            dataToExport = [{
+                'Category': 'Category Name',
+                'Book': 'Book Name',
+                'Chapter': 'Chapter Name',
+                'Title (Hindi)': 'यहाँ हिंदी शीर्षक लिखें',
+                'Title (English)': 'Enter English title here',
+                'Title (Hinglish)': 'Enter Hinglish title here',
+                'Meaning': 'यहाँ अर्थ लिखें / Enter meaning here',
+                'Details': 'यहाँ विवरण लिखें / Enter details here',
+                'Extra': 'अतिरिक्त जानकारी (वैकल्पिक)',
+                'Video Links': 'https://youtube.com/video1, https://youtube.com/video2'
+            }];
         }
 
         // Create worksheet
@@ -1189,7 +1142,7 @@ router.get('/content/export-excel', async (req, res) => {
         xlsx.utils.book_append_sheet(workbook, worksheet, 'Book Content Template');
         
         // Set response headers
-        const filename = chapterId ? `book_content_chapter_${chapterId}.xlsx` : 'book_content_template.xlsx';
+        const filename = hasContext ? 'book_content_upload_template.xlsx' : 'book_content_full_template.xlsx';
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         
