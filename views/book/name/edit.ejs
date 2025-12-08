@@ -92,20 +92,32 @@
 
     <!-- Main Content -->
     <main class="main-content">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb-nav" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: #424769; font-size: 0.9rem;">
+            <a href="/book" style="color: #2D3250; text-decoration: none;">Book Categories</a>
+            <span>/</span>
+            <% if (book.category) { %>
+                <a href="/book/category/<%= book.category._id || book.category %>" style="color: #2D3250; text-decoration: none;"><%= book.category.name || 'Category' %></a>
+                <span>/</span>
+            <% } %>
+            <span>Edit <%= book.name %></span>
+        </div>
+
         <!-- Topbar -->
         <div class="topbar">
             <h1 class="page-title">Edit Book</h1>
-            <a href="/book/name" class="btn btn-outline-secondary">
+            <a href="<%= returnPath || '/book' %>" class="btn btn-outline-secondary">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="me-2">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Back to Books
+                Back
             </a>
         </div>
 
         <!-- Edit Form -->
         <div class="form-card">
             <form action="/book/name/edit/<%= book._id %>" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="return" value="<%= returnPath || '/book' %>">
                 <div class="mb-4">
                     <label for="name" class="form-label">Book Name</label>
                     <input type="text" class="form-control" id="name" name="name" value="<%= book.name %>" required>

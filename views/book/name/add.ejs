@@ -94,6 +94,20 @@
 
     <!-- Main Content -->
     <main class="main-content">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb-nav" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: #424769; font-size: 0.9rem;">
+            <a href="/book" style="color: #2D3250; text-decoration: none;">Book Categories</a>
+            <span>/</span>
+            <% if (selectedCategoryId) { %>
+                <% const selectedCat = categories.find(c => c._id.toString() === selectedCategoryId); %>
+                <% if (selectedCat) { %>
+                    <a href="/book/category/<%= selectedCategoryId %>" style="color: #2D3250; text-decoration: none;"><%= selectedCat.name %></a>
+                    <span>/</span>
+                <% } %>
+            <% } %>
+            <span>Add Book</span>
+        </div>
+
         <!-- Topbar -->
         <div class="topbar">
             <h1 class="page-title">Add New Book</h1>
@@ -107,7 +121,7 @@
                     <select class="form-select" id="category" name="category" required>
                         <option value="">Select a category</option>
                         <% categories.forEach(function(category) { %>
-                            <option value="<%= category._id %>"><%= category.name %></option>
+                            <option value="<%= category._id %>" <%= selectedCategoryId && selectedCategoryId === category._id.toString() ? 'selected' : '' %>><%= category.name %></option>
                         <% }); %>
                     </select>
                 </div>
@@ -123,7 +137,7 @@
                 </div>
 
                 <div class="d-flex gap-3">
-                    <a href="/book/name" class="btn btn-outline-secondary">Cancel</a>
+                    <a href="<%= selectedCategoryId ? '/book/category/' + selectedCategoryId : '/book' %>" class="btn btn-outline-secondary" id="cancelBtn">Cancel</a>
                     <button type="submit" class="btn btn-primary">Save Book</button>
                 </div>
             </form>
@@ -131,5 +145,16 @@
     </main>
 
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Update cancel button URL when category changes
+        document.getElementById('category').addEventListener('change', function() {
+            const cancelBtn = document.getElementById('cancelBtn');
+            if (this.value) {
+                cancelBtn.href = '/book/category/' + this.value;
+            } else {
+                cancelBtn.href = '/book';
+            }
+        });
+    </script>
 </body>
 </html> 

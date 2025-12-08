@@ -94,6 +94,27 @@
 
     <!-- Main Content -->
     <main class="main-content">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb-nav" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: #424769; font-size: 0.9rem;">
+            <a href="/book" style="color: #2D3250; text-decoration: none;">Book Categories</a>
+            <span>/</span>
+            <% if (selectedCategoryId) { %>
+                <% const selectedCat = categories.find(c => c._id.toString() === selectedCategoryId); %>
+                <% if (selectedCat) { %>
+                    <a href="/book/category/<%= selectedCategoryId %>" style="color: #2D3250; text-decoration: none;"><%= selectedCat.name %></a>
+                    <span>/</span>
+                <% } %>
+            <% } %>
+            <% if (selectedBookId) { %>
+                <% const selectedBk = books.find(b => b._id.toString() === selectedBookId); %>
+                <% if (selectedBk && selectedCategoryId) { %>
+                    <a href="/book/category/<%= selectedCategoryId %>/book/<%= selectedBookId %>" style="color: #2D3250; text-decoration: none;"><%= selectedBk.name %></a>
+                    <span>/</span>
+                <% } %>
+            <% } %>
+            <span>Add Chapter</span>
+        </div>
+
         <!-- Topbar -->
         <div class="topbar">
             <h1 class="page-title">Add New Chapter</h1>
@@ -107,7 +128,7 @@
                     <select class="form-select" id="category" name="category" required>
                         <option value="">Select a category</option>
                         <% categories.forEach(function(category) { %>
-                            <option value="<%= category._id %>"><%= category.name %></option>
+                            <option value="<%= category._id %>" <%= selectedCategoryId && selectedCategoryId === category._id.toString() ? 'selected' : '' %>><%= category.name %></option>
                         <% }); %>
                     </select>
                 </div>
@@ -117,7 +138,7 @@
                     <select class="form-select" id="book" name="book" required>
                         <option value="">Select a book</option>
                         <% books.forEach(function(book) { %>
-                            <option value="<%= book._id %>" data-category="<%= book.category %>"><%= book.name %></option>
+                            <option value="<%= book._id %>" data-category="<%= book.category %>" data-name="<%= book.name %>" <%= selectedBookId && selectedBookId === book._id.toString() ? 'selected' : '' %>><%= book.name %></option>
                         <% }); %>
                     </select>
                 </div>
@@ -128,7 +149,7 @@
                 </div>
 
                 <div class="d-flex gap-3">
-                    <a href="/book/chapter" class="btn btn-outline-secondary">Cancel</a>
+                    <a href="<%= selectedCategoryId && selectedBookId ? '/book/category/' + selectedCategoryId + '/book/' + selectedBookId : (selectedCategoryId ? '/book/category/' + selectedCategoryId : '/book') %>" class="btn btn-outline-secondary" id="cancelBtn">Cancel</a>
                     <button type="submit" class="btn btn-primary">Save Chapter</button>
                 </div>
             </form>
@@ -138,10 +159,14 @@
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
         // Filter books based on selected category
-        document.getElementById('category').addEventListener('change', function() {
-            const categoryId = this.value;
-            const bookSelect = document.getElementById('book');
+        const categorySelect = document.getElementById('category');
+        const bookSelect = document.getElementById('book');
+        const cancelBtn = document.getElementById('cancelBtn');
+        
+        function filterBooks() {
+            const categoryId = categorySelect.value;
             const options = bookSelect.getElementsByTagName('option');
+            const selectedBookId = '<%= selectedBookId || "" %>';
 
             for (let option of options) {
                 if (option.value === '') continue; // Skip the default option
@@ -152,8 +177,41 @@
                 }
             }
 
-            // Reset book selection
-            bookSelect.value = '';
+            // Reset book selection only if category changed and book doesn't match
+            if (categoryId && selectedBookId) {
+                const selectedOption = Array.from(options).find(opt => opt.value === selectedBookId);
+                if (selectedOption && selectedOption.dataset.category !== categoryId) {
+                    bookSelect.value = '';
+                }
+            } else if (!categoryId || !selectedBookId) {
+                bookSelect.value = selectedBookId || '';
+            }
+            
+            updateCancelButton();
+        }
+        
+        function updateCancelButton() {
+            const categoryId = categorySelect.value;
+            const bookId = bookSelect.value;
+            
+            if (categoryId && bookId) {
+                cancelBtn.href = '/book/category/' + categoryId + '/book/' + bookId;
+            } else if (categoryId) {
+                cancelBtn.href = '/book/category/' + categoryId;
+            } else {
+                cancelBtn.href = '/book';
+            }
+        }
+        
+        // Initial filter on page load
+        filterBooks();
+        
+        categorySelect.addEventListener('change', function() {
+            filterBooks();
+        });
+        
+        bookSelect.addEventListener('change', function() {
+            updateCancelButton();
         });
     </script>
 </body>

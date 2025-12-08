@@ -25,9 +25,19 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Main book page with navigation
-router.get('/', (req, res) => {
-    res.render('book/index', { activePage: 'book' });
+// Main book page - shows all categories
+router.get('/', async (req, res) => {
+    try {
+        const categories = await BookCategory.find().sort({ createdAt: -1 });
+        res.render('book/index', { 
+            categories,
+            activePage: 'book',
+            username: req.session ? req.session.username : null
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
 });
 
 // Book Category Routes
@@ -69,7 +79,7 @@ router.post('/category/add', upload.single('cover_image'), async (req, res) => {
         });
 
         await category.save();
-        res.redirect('/book/category');
+        res.redirect('/book');
     } catch (err) {
         console.error(err);
         res.status(500).send('Error saving category: ' + err.message);
@@ -86,7 +96,8 @@ router.get('/category/edit/:id', async (req, res) => {
         res.render('book/category/edit', {
             category,
             activePage: 'book',
-            activeSection: 'category'
+            activeSection: 'category',
+            returnPath: req.query.return || '/book'
         });
     } catch (err) {
         console.error(err);
@@ -97,6 +108,7 @@ router.get('/category/edit/:id', async (req, res) => {
 router.post('/category/edit/:id', upload.single('cover_image'), async (req, res) => {
     try {
         const { name } = req.body;
+        const returnPath = req.body.return || '/book';
         const updateData = { name };
         
         if (req.file) {
@@ -113,7 +125,7 @@ router.post('/category/edit/:id', upload.single('cover_image'), async (req, res)
             return res.status(404).send('Category not found');
         }
 
-        res.redirect('/book/category');
+        res.redirect(returnPath);
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -135,7 +147,7 @@ router.post('/category/delete/:id', async (req, res) => {
         }
 
         await category.deleteOne();
-        res.redirect('/book/category');
+        res.redirect('/book');
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -166,8 +178,10 @@ router.get('/name', async (req, res) => {
 router.get('/name/add', async (req, res) => {
     try {
         const categories = await BookCategory.find().sort({ name: 1 });
+        const selectedCategoryId = req.query.category || null;
         res.render('book/name/add', {
             categories,
+            selectedCategoryId,
             activePage: 'book',
             activeSection: 'name'
         });
@@ -193,7 +207,12 @@ router.post('/name/add', upload.single('book_image'), async (req, res) => {
         });
 
         await book.save();
-        res.redirect('/book/name');
+        // Redirect back to category books page if category is provided
+        if (req.body.category) {
+            res.redirect(`/book/category/${req.body.category}`);
+        } else {
+            res.redirect('/book/name');
+        }
     } catch (err) {
         console.error(err);
         res.status(500).send('Error saving book: ' + err.message);
@@ -203,7 +222,7 @@ router.post('/name/add', upload.single('book_image'), async (req, res) => {
 // Edit Book
 router.get('/name/edit/:id', async (req, res) => {
     try {
-        const book = await BookName.findById(req.params.id);
+        const book = await BookName.findById(req.params.id).populate('category');
         const categories = await BookCategory.find().sort({ name: 1 });
         
         if (!book) {
@@ -214,7 +233,8 @@ router.get('/name/edit/:id', async (req, res) => {
             book,
             categories,
             activePage: 'book',
-            activeSection: 'name'
+            activeSection: 'name',
+            returnPath: req.query.return || '/book/name'
         });
     } catch (err) {
         console.error(err);
@@ -225,6 +245,7 @@ router.get('/name/edit/:id', async (req, res) => {
 router.post('/name/edit/:id', upload.single('book_image'), async (req, res) => {
     try {
         const { name, category } = req.body;
+        const returnPath = req.body.return || '/book/name';
         const updateData = { name, category };
         
         if (req.file) {
@@ -241,7 +262,7 @@ router.post('/name/edit/:id', upload.single('book_image'), async (req, res) => {
             return res.status(404).send('Book not found');
         }
 
-        res.redirect('/book/name');
+        res.redirect(returnPath);
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -252,6 +273,8 @@ router.post('/name/edit/:id', upload.single('book_image'), async (req, res) => {
 router.post('/name/delete/:id', async (req, res) => {
     try {
         const book = await BookName.findById(req.params.id);
+        const returnPath = req.body.return || '/book/name';
+        
         if (!book) {
             return res.status(404).send('Book not found');
         }
@@ -259,11 +282,11 @@ router.post('/name/delete/:id', async (req, res) => {
         // Check if book has any chapters
         const hasChapters = await BookChapter.exists({ book: req.params.id });
         if (hasChapters) {
-            return res.status(400).send('Cannot delete book with existing chapters');
+            return res.status(400).send('Cannot delete book with existing chapters. Please delete all chapters first.');
         }
 
         await book.deleteOne();
-        res.redirect('/book/name');
+        res.redirect(returnPath);
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -298,9 +321,13 @@ router.get('/chapter/add', async (req, res) => {
     try {
         const categories = await BookCategory.find().sort({ name: 1 });
         const books = await BookName.find().sort({ name: 1 });
+        const selectedCategoryId = req.query.category || null;
+        const selectedBookId = req.query.book || null;
         res.render('book/chapter/add', {
             categories,
             books,
+            selectedCategoryId,
+            selectedBookId,
             activePage: 'book',
             activeSection: 'chapter'
         });
@@ -321,7 +348,12 @@ router.post('/chapter/add', async (req, res) => {
         });
 
         await chapter.save();
-        res.redirect('/book/chapter');
+        // Redirect back to book chapters page if book is provided
+        if (req.body.book && req.body.category) {
+            res.redirect(`/book/category/${req.body.category}/book/${req.body.book}`);
+        } else {
+            res.redirect('/book/chapter');
+        }
     } catch (err) {
         console.error(err);
         res.status(500).send('Error saving chapter: ' + err.message);
@@ -331,7 +363,9 @@ router.post('/chapter/add', async (req, res) => {
 // Edit Chapter
 router.get('/chapter/edit/:id', async (req, res) => {
     try {
-        const chapter = await BookChapter.findById(req.params.id);
+        const chapter = await BookChapter.findById(req.params.id)
+            .populate('category')
+            .populate('book');
         const categories = await BookCategory.find().sort({ name: 1 });
         const books = await BookName.find().sort({ name: 1 });
         
@@ -344,7 +378,8 @@ router.get('/chapter/edit/:id', async (req, res) => {
             categories,
             books,
             activePage: 'book',
-            activeSection: 'chapter'
+            activeSection: 'chapter',
+            returnPath: req.query.return || '/book/chapter'
         });
     } catch (err) {
         console.error(err);
@@ -355,6 +390,7 @@ router.get('/chapter/edit/:id', async (req, res) => {
 router.post('/chapter/edit/:id', async (req, res) => {
     try {
         const { name, category, book } = req.body;
+        const returnPath = req.body.return || '/book/chapter';
         const chapter = await BookChapter.findByIdAndUpdate(
             req.params.id,
             { name, category, book },
@@ -365,7 +401,7 @@ router.post('/chapter/edit/:id', async (req, res) => {
             return res.status(404).send('Chapter not found');
         }
 
-        res.redirect('/book/chapter');
+        res.redirect(returnPath);
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -376,6 +412,8 @@ router.post('/chapter/edit/:id', async (req, res) => {
 router.post('/chapter/delete/:id', async (req, res) => {
     try {
         const chapter = await BookChapter.findById(req.params.id);
+        const returnPath = req.body.return || '/book/chapter';
+        
         if (!chapter) {
             return res.status(404).send('Chapter not found');
         }
@@ -383,11 +421,11 @@ router.post('/chapter/delete/:id', async (req, res) => {
         // Check if chapter has any content
         const hasContent = await BookContent.exists({ chapter: req.params.id });
         if (hasContent) {
-            return res.status(400).send('Cannot delete chapter with existing content');
+            return res.status(400).send('Cannot delete chapter with existing content. Please delete all content first.');
         }
 
         await chapter.deleteOne();
-        res.redirect('/book/chapter');
+        res.redirect(returnPath);
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -445,27 +483,65 @@ router.get('/content', async (req, res) => {
     }
 });
 
-// Add Content
+// Add Content - SIMPLIFIED VERSION
 router.get('/content/add', async (req, res) => {
+    console.log('=== ADD CONTENT ROUTE HIT ===');
+    console.log('Query:', req.query);
+    
     try {
-        const categories = await BookCategory.find().sort({ name: 1 });
-        const books = await BookName.find()
-            .populate('category', '_id name')
-            .sort({ name: 1 });
-        const chapters = await BookChapter.find()
-            .populate('book', '_id name')
-            .sort({ name: 1 });
+        const { category: categoryId, book: bookId, chapter: chapterId } = req.query;
+        
+        // ALWAYS use simplified form when context is provided
+        if (categoryId && bookId && chapterId) {
+            console.log('Context provided, fetching from DB...');
             
+            const [category, book, chapter] = await Promise.all([
+                BookCategory.findById(categoryId),
+                BookName.findById(bookId),
+                BookChapter.findById(chapterId)
+            ]);
+            
+            console.log('DB Results:', { 
+                category: category ? category.name : 'NOT FOUND',
+                book: book ? book.name : 'NOT FOUND', 
+                chapter: chapter ? chapter.name : 'NOT FOUND'
+            });
+            
+            if (category && book && chapter) {
+                console.log('>>> RENDERING add-simple.ejs <<<');
+                return res.render('book/content/add-simple', { 
+                    category,
+                    book,
+                    chapter,
+                    activePage: 'book',
+                    activeSection: 'content'
+                });
+            } else {
+                console.log('Some IDs not found in DB, falling back to full form');
+            }
+        } else {
+            console.log('No context provided, showing full form');
+        }
+        
+        // Fallback to full form if no context
+        const categories = await BookCategory.find().sort({ name: 1 });
+        const books = await BookName.find().populate('category', '_id name').sort({ name: 1 });
+        const chapters = await BookChapter.find().populate('book', '_id name').sort({ name: 1 });
+            
+        console.log('>>> RENDERING add.ejs (full form) <<<');
         res.render('book/content/add', { 
             categories, 
             books, 
             chapters,
+            selectedCategoryId: categoryId,
+            selectedBookId: bookId,
+            selectedChapterId: chapterId,
             activePage: 'book',
             activeSection: 'content'
         });
     } catch (error) {
-        console.error('Error fetching data for content form:', error);
-        res.status(500).send('Server error');
+        console.error('ERROR in add content route:', error);
+        res.status(500).send('Server error: ' + error.message);
     }
 });
 
@@ -498,6 +574,15 @@ router.post('/content/add', upload.array('images', 10), async (req, res) => {
         });
 
         await content.save();
+        // Get book and category to redirect back to chapter page
+        const savedChapter = await BookChapter.findById(chapter).populate('book');
+        if (savedChapter && savedChapter.book) {
+            const bookCategory = await BookName.findById(savedChapter.book._id).populate('category');
+            if (bookCategory && bookCategory.category) {
+                res.redirect(`/book/category/${bookCategory.category._id}/book/${bookCategory._id}/chapter/${chapter}`);
+                return;
+            }
+        }
         res.redirect('/book/content');
     } catch (error) {
         console.error('Error saving content:', error);
@@ -577,6 +662,18 @@ router.post('/content/edit/:id', upload.array('images', 10), async (req, res) =>
             return res.status(404).send('Content not found');
         }
 
+        // Redirect back to chapter page
+        const updatedContent = await BookContent.findById(req.params.id).populate('chapter');
+        if (updatedContent && updatedContent.chapter) {
+            const chapter = await BookChapter.findById(updatedContent.chapter._id).populate('book');
+            if (chapter && chapter.book) {
+                const bookCategory = await BookName.findById(chapter.book._id).populate('category');
+                if (bookCategory && bookCategory.category) {
+                    res.redirect(`/book/category/${bookCategory.category._id}/book/${bookCategory._id}/chapter/${updatedContent.chapter._id}`);
+                    return;
+                }
+            }
+        }
         res.redirect('/book/content');
     } catch (err) {
         console.error('Error updating content:', err);
@@ -614,7 +711,20 @@ router.post('/content/delete/:id', async (req, res) => {
             return res.status(404).send('Content not found');
         }
 
+        const chapterId = content.chapter;
         await content.deleteOne();
+        
+        // Redirect back to chapter page
+        if (chapterId) {
+            const chapter = await BookChapter.findById(chapterId).populate('book');
+            if (chapter && chapter.book) {
+                const bookCategory = await BookName.findById(chapter.book._id).populate('category');
+                if (bookCategory && bookCategory.category) {
+                    res.redirect(`/book/category/${bookCategory.category._id}/book/${bookCategory._id}/chapter/${chapterId}`);
+                    return;
+                }
+            }
+        }
         res.redirect('/book/content');
     } catch (err) {
         console.error(err);
@@ -768,7 +878,16 @@ router.get('/content/export-excel', async (req, res) => {
 // Handle Excel upload for content
 router.post('/content/upload-excel', upload.single('excelFile'), async (req, res) => {
     try {
+        const chapterId = req.body.chapter;
+        const categoryId = req.body.category;
+        const bookId = req.body.book;
+        const hasContext = chapterId && categoryId && bookId;
+        
         if (!req.file) {
+            // If chapter context is provided, redirect back to chapter page
+            if (hasContext) {
+                return res.redirect(`/book/category/${categoryId}/book/${bookId}/chapter/${chapterId}?error=Please upload an Excel file.`);
+            }
             return res.render('book/content/index', {
                 contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
                 categories: await BookCategory.find(),
@@ -787,6 +906,9 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
 
         if (data.length === 0) {
             fs.unlinkSync(req.file.path);
+            if (hasContext) {
+                return res.redirect(`/book/category/${categoryId}/book/${bookId}/chapter/${chapterId}?error=Excel file is empty or has no data rows.`);
+            }
             return res.render('book/content/index', {
                 contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
                 categories: await BookCategory.find(),
@@ -799,77 +921,100 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
             });
         }
 
-        // Check for required headers (only Category, Book, Chapter are required)
-        const requiredHeaders = ['Category', 'Book', 'Chapter'];
-        const firstRow = data[0];
-        const missingHeaders = requiredHeaders.filter(header => !(header in firstRow));
-        
-        if (missingHeaders.length > 0) {
-            fs.unlinkSync(req.file.path);
-            return res.render('book/content/index', {
-                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
-                categories: await BookCategory.find(),
-                books: await BookName.find(),
-                chapters: await BookChapter.find(),
-                activePage: 'book',
-                activeSection: 'content',
-                activeTab: 'content',
-                error: `Missing required column headers: ${missingHeaders.join(', ')}. Please ensure your Excel file has the correct headers.`
-            });
-        }
-
         const contents = [];
         const errors = [];
         let processedRows = 0;
 
-        for (let i = 0; i < data.length; i++) {
-            const row = data[i];
-            const rowNumber = i + 2; // Excel row number (accounting for header row)
+        // If context is provided, use it for all rows (simplified Excel format)
+        if (hasContext) {
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                
+                // Process video links if present
+                const videoLinks = row['Video Links'] ? 
+                    row['Video Links'].split(',').map(link => link.trim()).filter(link => link) : 
+                    [];
 
-            // Check for missing required fields (only Category, Book, Chapter are required)
-            const missingFields = [];
-            if (!row.Category) missingFields.push('Category');
-            if (!row.Book) missingFields.push('Book');
-            if (!row.Chapter) missingFields.push('Chapter');
-
-            if (missingFields.length > 0) {
-                errors.push(`Row ${rowNumber}: Missing required fields: ${missingFields.join(', ')}`);
-                continue;
+                contents.push({
+                    category: categoryId,
+                    book: bookId,
+                    chapter: chapterId,
+                    title_hn: row['Title (Hindi)'] || row['title_hn'] || undefined,
+                    title_en: row['Title (English)'] || row['title_en'] || undefined,
+                    title_hinglish: row['Title (Hinglish)'] || row['title_hinglish'] || undefined,
+                    meaning: row['Meaning'] || row['meaning'] || undefined,
+                    details: row['Details'] || row['details'] || undefined,
+                    extra: row['Extra'] || row['extra'] || undefined,
+                    video_links: videoLinks
+                });
+                processedRows++;
+            }
+        } else {
+            // Original logic for Excel without context (requires Category, Book, Chapter columns)
+            const requiredHeaders = ['Category', 'Book', 'Chapter'];
+            const firstRow = data[0];
+            const missingHeaders = requiredHeaders.filter(header => !(header in firstRow));
+            
+            if (missingHeaders.length > 0) {
+                fs.unlinkSync(req.file.path);
+                return res.render('book/content/index', {
+                    contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
+                    categories: await BookCategory.find(),
+                    books: await BookName.find(),
+                    chapters: await BookChapter.find(),
+                    activePage: 'book',
+                    activeSection: 'content',
+                    activeTab: 'content',
+                    error: `Missing required column headers: ${missingHeaders.join(', ')}. Please ensure your Excel file has the correct headers.`
+                });
             }
 
-            // Find category, book, and chapter by name
-            const category = await BookCategory.findOne({ name: row.Category });
-            const book = await BookName.findOne({ name: row.Book });
-            const chapter = await BookChapter.findOne({ name: row.Chapter });
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                const rowNumber = i + 2;
 
-            const notFound = [];
-            if (!category) notFound.push(`Category: "${row.Category}"`);
-            if (!book) notFound.push(`Book: "${row.Book}"`);
-            if (!chapter) notFound.push(`Chapter: "${row.Chapter}"`);
+                const missingFields = [];
+                if (!row.Category) missingFields.push('Category');
+                if (!row.Book) missingFields.push('Book');
+                if (!row.Chapter) missingFields.push('Chapter');
 
-            if (notFound.length > 0) {
-                errors.push(`Row ${rowNumber}: Not found in database: ${notFound.join(', ')}`);
-                continue;
+                if (missingFields.length > 0) {
+                    errors.push(`Row ${rowNumber}: Missing required fields: ${missingFields.join(', ')}`);
+                    continue;
+                }
+
+                const category = await BookCategory.findOne({ name: row.Category });
+                const book = await BookName.findOne({ name: row.Book });
+                const chapter = await BookChapter.findOne({ name: row.Chapter });
+
+                const notFound = [];
+                if (!category) notFound.push(`Category: "${row.Category}"`);
+                if (!book) notFound.push(`Book: "${row.Book}"`);
+                if (!chapter) notFound.push(`Chapter: "${row.Chapter}"`);
+
+                if (notFound.length > 0) {
+                    errors.push(`Row ${rowNumber}: Not found in database: ${notFound.join(', ')}`);
+                    continue;
+                }
+
+                const videoLinks = row['Video Links'] ? 
+                    row['Video Links'].split(',').map(link => link.trim()).filter(link => link) : 
+                    [];
+
+                contents.push({
+                    category: category._id,
+                    book: book._id,
+                    chapter: chapter._id,
+                    title_hn: row['Title (Hindi)'] || undefined,
+                    title_en: row['Title (English)'] || undefined,
+                    title_hinglish: row['Title (Hinglish)'] || undefined,
+                    meaning: row.Meaning || undefined,
+                    details: row.Details || undefined,
+                    extra: row.Extra || undefined,
+                    video_links: videoLinks
+                });
+                processedRows++;
             }
-
-            // Process video links if present
-            const videoLinks = row['Video Links'] ? 
-                row['Video Links'].split(',').map(link => link.trim()).filter(link => link) : 
-                [];
-
-            contents.push({
-                category: category._id,
-                book: book._id,
-                chapter: chapter._id,
-                title_hn: row['Title (Hindi)'] || undefined,
-                title_en: row['Title (English)'] || undefined,
-                title_hinglish: row['Title (Hinglish)'] || undefined,
-                meaning: row.Meaning || undefined,
-                details: row.Details || undefined,
-                extra: row.Extra || undefined,
-                video_links: videoLinks
-            });
-            processedRows++;
         }
 
         // Delete the uploaded file
@@ -879,6 +1024,12 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
             await BookContent.insertMany(contents);
             const successMessage = `Successfully imported ${contents.length} records.`;
             const errorMessage = errors.length > 0 ? ` However, ${errors.length} rows had errors: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? '...' : ''}` : '';
+            
+            // Redirect back to chapter page if chapter context is provided
+            if (chapterId && categoryId && bookId) {
+                const message = encodeURIComponent(successMessage + errorMessage);
+                return res.redirect(`/book/category/${categoryId}/book/${bookId}/chapter/${chapterId}?success=${message}`);
+            }
             
             return res.render('book/content/index', {
                 contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
@@ -891,6 +1042,12 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                 success: successMessage + errorMessage
             });
         } else {
+            // Redirect back to chapter page if chapter context is provided
+            if (chapterId && categoryId && bookId) {
+                const errorMsg = encodeURIComponent(`No valid content data found. Errors: ${errors.slice(0, 5).join('; ')}${errors.length > 5 ? '...' : ''}`);
+                return res.redirect(`/book/category/${categoryId}/book/${bookId}/chapter/${chapterId}?error=${errorMsg}`);
+            }
+            
             return res.render('book/content/index', {
                 contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
                 categories: await BookCategory.find(),
@@ -907,6 +1064,17 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
         if (req.file && fs.existsSync(req.file.path)) {
             fs.unlinkSync(req.file.path);
         }
+        
+        const chapterId = req.body.chapter;
+        const categoryId = req.body.category;
+        const bookId = req.body.book;
+        
+        // Redirect back to chapter page if chapter context is provided
+        if (chapterId && categoryId && bookId) {
+            const errorMsg = encodeURIComponent(`Error processing Excel file: ${err.message}. Please check the file format and try again.`);
+            return res.redirect(`/book/category/${categoryId}/book/${bookId}/chapter/${chapterId}?error=${errorMsg}`);
+        }
+        
         res.render('book/content/index', {
             contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
             categories: await BookCategory.find(),
@@ -920,49 +1088,110 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
     }
 });
 
-// Export Excel template for book content
+// Export Excel template for book content (can filter by chapter)
 router.get('/content/export-excel', async (req, res) => {
     try {
+        const chapterId = req.query.chapter;
+        const categoryId = req.query.category;
+        const bookId = req.query.book;
+        
+        console.log('Export Excel - Query params:', { categoryId, bookId, chapterId });
+        console.log('Has context:', !!(chapterId && categoryId && bookId));
+        
+        // If chapter is provided, export content for that chapter only
+        let contents = [];
+        if (chapterId) {
+            contents = await BookContent.find({ chapter: chapterId })
+                .populate('category')
+                .populate('book')
+                .populate('chapter')
+                .sort({ createdAt: -1 });
+        } else {
+            contents = await BookContent.find()
+                .populate('category')
+                .populate('book')
+                .populate('chapter')
+                .sort({ createdAt: -1 });
+        }
+        
         // Create a new workbook
         const workbook = xlsx.utils.book_new();
         
-        // Create sample data with proper headers
-        const sampleData = [
-            {
-                'Category': 'Vedic',
-                'Book': 'Rigveda',
-                'Chapter': 'Chapter 1',
-                'Title (Hindi)': 'श्लोक १',
-                'Title (English)': 'Shloka 1',
-                'Title (Hinglish)': 'Shloka 1',
-                'Meaning': 'This is the meaning of the shloka',
-                'Details': 'Detailed explanation of the shloka content',
-                'Extra': 'Additional information (optional)',
-                'Video Links': 'https://youtube.com/video1,https://youtube.com/video2'
-            },
-            {
-                'Category': 'Vedic',
-                'Book': 'Rigveda',
-                'Chapter': 'Chapter 1',
-                'Title (Hindi)': 'श्लोक २',
-                'Title (English)': 'Shloka 2',
-                'Title (Hinglish)': 'Shloka 2',
-                'Meaning': 'This is the meaning of the second shloka',
-                'Details': 'Detailed explanation of the second shloka content',
-                'Extra': 'Additional information (optional)',
-                'Video Links': 'https://youtube.com/video3'
+        // Use actual data if available, otherwise use template
+        // If chapter context is provided, use simplified format (no Category/Book/Chapter columns)
+        const hasContext = chapterId && categoryId && bookId;
+        let dataToExport;
+        
+        if (contents.length > 0) {
+            if (hasContext) {
+                // Simplified format for chapter context
+                dataToExport = contents.map(entry => ({
+                    'Title (Hindi)': entry.title_hn || '',
+                    'Title (English)': entry.title_en || '',
+                    'Title (Hinglish)': entry.title_hinglish || '',
+                    'Meaning': entry.meaning || '',
+                    'Details': entry.details || '',
+                    'Extra': entry.extra || '',
+                    'Video Links': Array.isArray(entry.video_links) ? entry.video_links.join(', ') : ''
+                }));
+            } else {
+                // Full format
+                dataToExport = contents.map(entry => ({
+                    Category: entry.category ? entry.category.name : '',
+                    Book: entry.book ? entry.book.name : '',
+                    Chapter: entry.chapter ? entry.chapter.name : '',
+                    'Title (Hindi)': entry.title_hn || '',
+                    'Title (English)': entry.title_en || '',
+                    'Title (Hinglish)': entry.title_hinglish || '',
+                    Meaning: entry.meaning || '',
+                    Details: entry.details || '',
+                    Extra: entry.extra || '',
+                    'Video Links': Array.isArray(entry.video_links) ? entry.video_links.join(', ') : ''
+                }));
             }
-        ];
+        } else {
+            // Template data
+            if (hasContext) {
+                // Simplified template for chapter context
+                dataToExport = [{
+                    'Title (Hindi)': 'श्लोक १',
+                    'Title (English)': 'Shloka 1',
+                    'Title (Hinglish)': 'Shloka 1',
+                    'Meaning': 'This is the meaning of the shloka',
+                    'Details': 'Detailed explanation of the shloka content',
+                    'Extra': 'Additional information (optional)',
+                    'Video Links': 'https://youtube.com/video1,https://youtube.com/video2'
+                }];
+            } else {
+                const category = categoryId ? await BookCategory.findById(categoryId) : null;
+                const book = bookId ? await BookName.findById(bookId) : null;
+                const chapter = chapterId ? await BookChapter.findById(chapterId) : null;
+                
+                dataToExport = [{
+                    'Category': category ? category.name : 'Vedic',
+                    'Book': book ? book.name : 'Rigveda',
+                    'Chapter': chapter ? chapter.name : 'Chapter 1',
+                    'Title (Hindi)': 'श्लोक १',
+                    'Title (English)': 'Shloka 1',
+                    'Title (Hinglish)': 'Shloka 1',
+                    'Meaning': 'This is the meaning of the shloka',
+                    'Details': 'Detailed explanation of the shloka content',
+                    'Extra': 'Additional information (optional)',
+                    'Video Links': 'https://youtube.com/video1,https://youtube.com/video2'
+                }];
+            }
+        }
 
         // Create worksheet
-        const worksheet = xlsx.utils.json_to_sheet(sampleData);
+        const worksheet = xlsx.utils.json_to_sheet(dataToExport);
         
         // Add the worksheet to workbook
         xlsx.utils.book_append_sheet(workbook, worksheet, 'Book Content Template');
         
         // Set response headers
+        const filename = chapterId ? `book_content_chapter_${chapterId}.xlsx` : 'book_content_template.xlsx';
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', 'attachment; filename="book_content_template.xlsx"');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         
         // Write the workbook to response
         const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
@@ -971,6 +1200,140 @@ router.get('/content/export-excel', async (req, res) => {
     } catch (err) {
         console.error('Error creating Excel template:', err);
         res.status(500).send('Error creating Excel template');
+    }
+});
+
+// ============= DEBUG ROUTE =============
+// Remove this after debugging
+router.get('/debug/books', async (req, res) => {
+    try {
+        const categories = await BookCategory.find();
+        const books = await BookName.find().populate('category');
+        const chapters = await BookChapter.find().populate('category').populate('book');
+        
+        res.json({
+            categoriesCount: categories.length,
+            categories: categories.map(c => ({ _id: c._id, name: c.name })),
+            booksCount: books.length,
+            books: books.map(b => ({ 
+                _id: b._id, 
+                name: b.name, 
+                category: b.category ? { _id: b.category._id, name: b.category.name } : b.category,
+                categoryRaw: b.category
+            })),
+            chaptersCount: chapters.length,
+            chapters: chapters.map(ch => ({
+                _id: ch._id,
+                name: ch.name,
+                book: ch.book ? ch.book._id : ch.book,
+                category: ch.category ? ch.category._id : ch.category
+            }))
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============= HIERARCHICAL ROUTES =============
+
+// Show books in a category
+router.get('/category/:categoryId', async (req, res) => {
+    try {
+        const categoryId = req.params.categoryId;
+        console.log('Loading books for category:', categoryId);
+        
+        const category = await BookCategory.findById(categoryId);
+        if (!category) {
+            console.log('Category not found:', categoryId);
+            return res.status(404).send('Category not found');
+        }
+        
+        // Use the category's _id directly for the query
+        const books = await BookName.find({ category: category._id })
+            .populate('category')
+            .sort({ createdAt: -1 });
+        
+        console.log('Found books:', books.length);
+        
+        res.render('book/category/books', {
+            category,
+            books,
+            activePage: 'book',
+            username: req.session ? req.session.username : null
+        });
+    } catch (err) {
+        console.error('Error loading books:', err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Show chapters in a book
+router.get('/category/:categoryId/book/:bookId', async (req, res) => {
+    try {
+        const category = await BookCategory.findById(req.params.categoryId);
+        const book = await BookName.findById(req.params.bookId).populate('category');
+        
+        if (!category || !book) {
+            return res.status(404).send('Category or Book not found');
+        }
+        
+        if (book.category._id.toString() !== category._id.toString()) {
+            return res.status(400).send('Book does not belong to this category');
+        }
+        
+        const chapters = await BookChapter.find({ book: req.params.bookId })
+            .populate('book')
+            .populate('category')
+            .sort({ createdAt: -1 });
+        
+        res.render('book/book/chapters', {
+            category,
+            book,
+            chapters,
+            activePage: 'book',
+            username: req.session ? req.session.username : null
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Show content for a chapter
+router.get('/category/:categoryId/book/:bookId/chapter/:chapterId', async (req, res) => {
+    try {
+        const category = await BookCategory.findById(req.params.categoryId);
+        const book = await BookName.findById(req.params.bookId).populate('category');
+        const chapter = await BookChapter.findById(req.params.chapterId)
+            .populate('book')
+            .populate('category');
+        
+        if (!category || !book || !chapter) {
+            return res.status(404).send('Category, Book or Chapter not found');
+        }
+        
+        if (book.category._id.toString() !== category._id.toString() ||
+            chapter.book._id.toString() !== book._id.toString()) {
+            return res.status(400).send('Invalid hierarchy');
+        }
+        
+        const contents = await BookContent.find({ chapter: req.params.chapterId })
+            .populate('category')
+            .populate('book')
+            .populate('chapter')
+            .sort({ createdAt: -1 });
+        
+        res.render('book/chapter/contents', {
+            category,
+            book,
+            chapter,
+            contents,
+            activePage: 'book',
+            username: req.session ? req.session.username : null
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
     }
 });
 

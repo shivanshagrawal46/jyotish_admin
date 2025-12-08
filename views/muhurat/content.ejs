@@ -111,16 +111,29 @@
           method: 'POST',
           body: formData
         });
-        const data = await res.json();
+        
+        let data;
+        try {
+          data = await res.json();
+        } catch (jsonError) {
+          const text = await res.text();
+          console.error('Response text:', text);
+          alert('Error: Invalid response from server. Please check the console for details.');
+          input.value = '';
+          return;
+        }
         
         if (data.success) {
           alert(`Successfully uploaded ${data.count} content items!`);
           location.reload();
         } else {
-          alert('Error: ' + data.error);
+          const errorMsg = data.error || data.message || 'Unknown error occurred';
+          alert('Error: ' + errorMsg);
+          console.error('Upload error:', data);
         }
       } catch (error) {
-        alert('Error uploading file');
+        console.error('Upload error:', error);
+        alert('Error uploading file: ' + error.message);
       }
       
       input.value = '';

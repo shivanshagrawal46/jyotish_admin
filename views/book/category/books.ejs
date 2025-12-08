@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Management | Sanskrit Admin</title>
+    <title><%= category.name %> - Books | Sanskrit Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/sidebar.css" rel="stylesheet">
@@ -40,6 +40,21 @@
             font-size: 1.5rem;
             color: var(--dark);
             margin: 0;
+        }
+        .breadcrumb-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: var(--secondary);
+            font-size: 0.9rem;
+        }
+        .breadcrumb-nav a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .breadcrumb-nav a:hover {
+            text-decoration: underline;
         }
         .user-menu {
             display: flex;
@@ -97,12 +112,12 @@
         .card-body {
             padding: 2rem;
         }
-        .category-grid {
+        .book-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 1.5rem;
         }
-        .category-item {
+        .book-item {
             background: white;
             border-radius: 12px;
             box-shadow: var(--shadow);
@@ -113,37 +128,37 @@
             color: inherit;
             display: block;
         }
-        .category-item:hover {
+        .book-item:hover {
             transform: translateY(-4px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             text-decoration: none;
             color: inherit;
         }
-        .category-image {
+        .book-image {
             width: 100%;
             height: 180px;
             object-fit: cover;
             background: #f0f0f0;
         }
-        .category-info {
+        .book-info {
             padding: 1.25rem;
         }
-        .category-name {
+        .book-name {
             font-weight: 600;
             color: var(--dark);
             margin-bottom: 0.5rem;
             font-size: 1.1rem;
         }
-        .category-meta {
+        .book-meta {
             color: var(--secondary);
             font-size: 0.9rem;
         }
-        .category-actions {
+        .book-actions {
             display: flex;
             gap: 0.5rem;
             padding: 0 1.25rem 1.25rem;
         }
-        .category-actions .btn-sm {
+        .book-actions .btn-sm {
             padding: 0.35rem 0.75rem;
             font-size: 0.8rem;
             border-radius: 6px;
@@ -184,7 +199,7 @@
 <body>
     <!-- Sidebar -->
     <nav class="sidebar">
-        <%- include('../partials/sidebar', { 
+        <%- include('../../partials/sidebar', { 
             activePage: 'book',
             activeCategory: null,
             koshCategories: [],
@@ -194,15 +209,25 @@
 
     <!-- Main Content -->
     <main class="main-content">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb-nav">
+            <a href="/book">Book Categories</a>
+            <span>/</span>
+            <span><%= category.name %></span>
+        </div>
+
         <!-- Topbar -->
         <div class="topbar">
-            <h1 class="page-title">Book Categories</h1>
+            <div>
+                <h1 class="page-title"><%= category.name %></h1>
+                <div class="text-muted">Books in this category</div>
+            </div>
             <div class="d-flex align-items-center gap-3">
-                <a href="/book/category/add" class="btn btn-primary">
+                <a href="/book/name/add?category=<%= category._id %>" class="btn btn-primary">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
-                    Add Category
+                    Add Book
                 </a>
                 <div class="user-menu">
                     <div class="user-avatar">
@@ -212,38 +237,37 @@
             </div>
         </div>
 
-        <!-- Categories Grid -->
+        <!-- Books Grid -->
         <div class="content-card">
             <div class="card-body">
-                <% if (categories && categories.length > 0) { %>
-                    <div class="category-grid">
-                        <% categories.forEach(function(category) { %>
-                            <div class="category-item" style="cursor: default;">
-                                <a href="/book/category/<%= category._id %>" style="text-decoration: none; color: inherit;">
-                                    <% if (category.cover_image) { %>
-                                        <img src="<%= category.cover_image %>" alt="<%= category.name %>" class="category-image">
+                <% if (books && books.length > 0) { %>
+                    <div class="book-grid">
+                        <% books.forEach(function(book) { %>
+                            <div class="book-item" style="cursor: default;">
+                                <a href="/book/category/<%= category._id %>/book/<%= book._id %>" style="text-decoration: none; color: inherit;">
+                                    <% if (book.book_image) { %>
+                                        <img src="<%= book.book_image %>" alt="<%= book.name %>" class="book-image">
                                     <% } else { %>
-                                        <div class="category-image d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);">
+                                        <div class="book-image d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="white" viewBox="0 0 24 24">
-                                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                                <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
                                             </svg>
                                         </div>
                                     <% } %>
-                                    <div class="category-info">
-                                        <div class="category-name"><%= category.name %></div>
-                                        <div class="category-meta">
-                                            Click to view books
-                                        </div>
+                                    <div class="book-info">
+                                        <div class="book-name"><%= book.name %></div>
+                                        <div class="book-meta">Click to view chapters</div>
                                     </div>
                                 </a>
-                                <div class="category-actions">
-                                    <a href="/book/category/edit/<%= category._id %>" class="btn btn-sm btn-edit">
+                                <div class="book-actions">
+                                    <a href="/book/name/edit/<%= book._id %>?return=/book/category/<%= category._id %>" class="btn btn-sm btn-edit">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
                                         Edit
                                     </a>
-                                    <form action="/book/category/delete/<%= category._id %>" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this category? This will fail if books exist in this category.');">
+                                    <form action="/book/name/delete/<%= book._id %>" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this book? This will also delete all chapters and content.');">
+                                        <input type="hidden" name="return" value="/book/category/<%= category._id %>">
                                         <button type="submit" class="btn btn-sm btn-delete">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -260,13 +284,13 @@
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
-                        <h3>No Categories Found</h3>
-                        <p>Get started by creating your first book category.</p>
-                        <a href="/book/category/add" class="btn btn-primary mt-3">
+                        <h3>No Books Found</h3>
+                        <p>Get started by adding your first book to this category.</p>
+                        <a href="/book/name/add?category=<%= category._id %>" class="btn btn-primary mt-3">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                             </svg>
-                            Add Category
+                            Add Book
                         </a>
                     </div>
                 <% } %>
@@ -277,3 +301,4 @@
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

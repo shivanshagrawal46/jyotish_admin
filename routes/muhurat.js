@@ -24,11 +24,22 @@ const storage = multer.diskStorage({
 const upload = multer({ 
     storage: storage,
     fileFilter: function (req, file, cb) {
-        if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
-            file.mimetype === 'application/vnd.ms-excel') {
+        // Accept various Excel MIME types and also check file extension
+        const allowedMimes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+            'application/excel',
+            'application/x-excel',
+            'application/x-msexcel'
+        ];
+        const allowedExtensions = ['.xlsx', '.xls'];
+        const fileExt = require('path').extname(file.originalname).toLowerCase();
+        
+        if (allowedMimes.includes(file.mimetype) || allowedExtensions.includes(fileExt)) {
             cb(null, true);
         } else {
-            cb(new Error('Only Excel files are allowed!'), false);
+            console.error('File rejected - MIME type:', file.mimetype, 'Extension:', fileExt);
+            cb(new Error('Only Excel files (.xlsx or .xls) are allowed!'), false);
         }
     }
 });
@@ -274,17 +285,29 @@ router.post('/content/:categoryId/upload-excel', requireAuth, upload.single('exc
         const category = await MuhuratCategory.findById(categoryId);
         
         if (!category) {
-            return res.status(404).json({ error: 'Category not found' });
+            return res.status(404).json({ 
+                success: false,
+                error: 'Category not found' 
+            });
         }
         
         if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
+            return res.status(400).json({ 
+                success: false,
+                error: 'No file uploaded. Please select an Excel file.' 
+            });
         }
 
+        console.log('Reading Excel file:', req.file.path);
         const workbook = xlsx.readFile(req.file.path);
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const data = xlsx.utils.sheet_to_json(worksheet);
+        
+        console.log('Excel data rows:', data.length);
+        if (data.length > 0) {
+            console.log('First row sample:', data[0]);
+        }
 
         // Expected columns: year, date, detail (case-insensitive matching)
         const contents = [];
@@ -294,8 +317,8 @@ router.post('/content/:categoryId/upload-excel', requireAuth, upload.single('exc
                 !row.Year && !row.Date && !row.Detail) {
                 continue;
             }
-
-            // Handle year - can be number or string
+            
+            // Handle year first (needed for template detection)
             let yearValue = undefined;
             if (row.year !== undefined && row.year !== null && row.year !== '') {
                 yearValue = typeof row.year === 'number' ? row.year : parseInt(String(row.year));
@@ -304,9 +327,40 @@ router.post('/content/:categoryId/upload-excel', requireAuth, upload.single('exc
                 yearValue = typeof row.Year === 'number' ? row.Year : parseInt(String(row.Year));
                 if (isNaN(yearValue)) yearValue = undefined;
             }
+            
+            // Skip template/example rows (rows that contain "Example", "example", "sample" in detail)
+            const detailStr = String(row.detail || row.Detail || '').toLowerCase();
+            const dateStr = String(row.date || row.Date || '').toLowerCase();
+            if (detailStr.includes('example') || detailStr.includes('sample') || 
+                dateStr.includes('15 jan') || dateStr === '15 jan') {
+                console.log('Skipping template row:', row);
+                continue;
+            }
+            
+            // Also skip if year is 2025 and detail contains "muhurat detail" (template pattern)
+            if (yearValue === 2025 && detailStr.includes('muhurat detail')) {
+                console.log('Skipping template row (2025 pattern):', row);
+                continue;
+            }
 
-            // Handle date - can be string
-            const dateValue = row.date || row.Date || undefined;
+            // Handle date - can be string or Excel serial number
+            let dateValue = undefined;
+            const rawDate = row.date || row.Date;
+            if (rawDate !== undefined && rawDate !== null && rawDate !== '') {
+                // Check if it's an Excel serial number (large number like 46003)
+                if (typeof rawDate === 'number' && rawDate > 1000 && rawDate < 1000000) {
+                    // Excel date serial: days since 1900-01-01
+                    // Excel incorrectly treats 1900 as a leap year
+                    const excelEpoch = new Date(1899, 11, 30); // Dec 30, 1899
+                    const dateObj = new Date(excelEpoch.getTime() + rawDate * 24 * 60 * 60 * 1000);
+                    // Format as readable date string (e.g., "15 Jan")
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    dateValue = `${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
+                } else {
+                    // It's already a string
+                    dateValue = String(rawDate);
+                }
+            }
             
             // Handle detail - can be string
             const detailValue = row.detail || row.Detail || undefined;
@@ -316,20 +370,36 @@ router.post('/content/:categoryId/upload-excel', requireAuth, upload.single('exc
                 contents.push({
                     categoryId,
                     year: yearValue,
-                    date: dateValue ? String(dateValue) : undefined,
+                    date: dateValue,
                     detail: detailValue ? String(detailValue) : undefined
                 });
             }
         }
 
         if (contents.length === 0) {
+            // Clean up uploaded file
+            if (req.file && req.file.path) {
+                const fs = require('fs');
+                try {
+                    fs.unlinkSync(req.file.path);
+                } catch (err) {
+                    console.error('Error deleting uploaded file:', err);
+                }
+            }
+            
             return res.status(400).json({
                 success: false,
-                error: 'No valid content data found in the Excel file. Please ensure the file has data in year, date, or detail columns.'
+                error: 'No valid content data found in the Excel file. Please ensure the file has data in year, date, or detail columns.',
+                message: 'The Excel file appears to be empty or does not contain valid data.'
             });
         }
 
-        await MuhuratContent.insertMany(contents);
+        console.log('Inserting', contents.length, 'content items');
+        // Use create in loop to avoid AutoIncrement plugin issues with insertMany
+        // The AutoIncrement plugin works better with individual creates
+        for (const content of contents) {
+            await MuhuratContent.create(content);
+        }
 
         // Clean up uploaded file
         if (req.file && req.file.path) {
@@ -348,6 +418,7 @@ router.post('/content/:categoryId/upload-excel', requireAuth, upload.single('exc
         });
     } catch (error) {
         console.error('Error uploading content:', error);
+        console.error('Error stack:', error.stack);
         
         // Clean up uploaded file on error
         if (req.file && req.file.path) {
@@ -362,7 +433,8 @@ router.post('/content/:categoryId/upload-excel', requireAuth, upload.single('exc
         res.status(500).json({
             success: false,
             error: 'Error processing Excel file',
-            message: error.message || 'Please check the file format and try again.'
+            message: error.message || 'Please check the file format and try again.',
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 });

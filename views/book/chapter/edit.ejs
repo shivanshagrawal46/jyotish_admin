@@ -85,20 +85,36 @@
 
     <!-- Main Content -->
     <main class="main-content">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb-nav" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: #424769; font-size: 0.9rem;">
+            <a href="/book" style="color: #2D3250; text-decoration: none;">Book Categories</a>
+            <span>/</span>
+            <% if (chapter.category && chapter.category._id) { %>
+                <a href="/book/category/<%= chapter.category._id %>" style="color: #2D3250; text-decoration: none;"><%= chapter.category.name %></a>
+                <span>/</span>
+            <% } %>
+            <% if (chapter.book && chapter.book._id) { %>
+                <a href="/book/category/<%= chapter.category._id || chapter.category %>/book/<%= chapter.book._id %>" style="color: #2D3250; text-decoration: none;"><%= chapter.book.name %></a>
+                <span>/</span>
+            <% } %>
+            <span>Edit <%= chapter.name %></span>
+        </div>
+
         <!-- Topbar -->
         <div class="topbar">
             <h1 class="page-title">Edit Chapter</h1>
-            <a href="/book/chapter" class="btn btn-outline-secondary">
+            <a href="<%= returnPath || '/book' %>" class="btn btn-outline-secondary">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="me-2">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Back to Chapters
+                Back
             </a>
         </div>
 
         <!-- Edit Form -->
         <div class="form-card">
             <form action="/book/chapter/edit/<%= chapter._id %>" method="POST">
+                <input type="hidden" name="return" value="<%= returnPath || '/book' %>">
                 <div class="mb-4">
                     <label for="name" class="form-label">Chapter Name</label>
                     <input type="text" class="form-control" id="name" name="name" value="<%= chapter.name %>" required>
@@ -108,8 +124,9 @@
                     <label for="category" class="form-label">Category</label>
                     <select class="form-control" id="category" name="category" required>
                         <option value="">Select Category</option>
+                        <% const chapterCatId = chapter.category._id ? chapter.category._id.toString() : chapter.category.toString(); %>
                         <% categories.forEach(function(cat) { %>
-                            <option value="<%= cat._id %>" <%= chapter.category.toString() === cat._id.toString() ? 'selected' : '' %>>
+                            <option value="<%= cat._id %>" <%= chapterCatId === cat._id.toString() ? 'selected' : '' %>>
                                 <%= cat.name %>
                             </option>
                         <% }); %>
@@ -120,8 +137,9 @@
                     <label for="book" class="form-label">Book</label>
                     <select class="form-control" id="book" name="book" required>
                         <option value="">Select Book</option>
+                        <% const chapterBookId = chapter.book._id ? chapter.book._id.toString() : chapter.book.toString(); %>
                         <% books.forEach(function(bk) { %>
-                            <option value="<%= bk._id %>" <%= chapter.book.toString() === bk._id.toString() ? 'selected' : '' %>>
+                            <option value="<%= bk._id %>" <%= chapterBookId === bk._id.toString() ? 'selected' : '' %>>
                                 <%= bk.name %>
                             </option>
                         <% }); %>
