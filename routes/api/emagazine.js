@@ -7,7 +7,87 @@ const EMagazineWriter = require('../../models/EMagazineWriter');
 const EMagazine = require('../../models/EMagazine');
 
 // ============================================
-// Helper function for aggregation with lookups (single query instead of multiple populates)
+// CACHING SYSTEM - Cache category, subject, writer names
+// ============================================
+let lookupCache = {
+    categories: null,
+    subjects: null,
+    writers: null,
+    timestamp: 0
+};
+const LOOKUP_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+async function getLookupMaps() {
+    // Check if cache is valid
+    if (lookupCache.categories && Date.now() - lookupCache.timestamp < LOOKUP_CACHE_TTL) {
+        return lookupCache;
+    }
+    
+    // Fetch all lookup data in parallel (very fast - small collections)
+    const [categories, subjects, writers] = await Promise.all([
+        EMagazineCategory.find().select('_id name').lean(),
+        EMagazineSubject.find().select('_id name').lean(),
+        EMagazineWriter.find().select('_id name').lean()
+    ]);
+    
+    // Convert to Maps for O(1) lookup
+    lookupCache = {
+        categories: new Map(categories.map(c => [c._id.toString(), c.name])),
+        subjects: new Map(subjects.map(s => [s._id.toString(), s.name])),
+        writers: new Map(writers.map(w => [w._id.toString(), w.name])),
+        timestamp: Date.now()
+    };
+    
+    return lookupCache;
+}
+
+// Clear lookup cache (call when category/subject/writer is added/updated/deleted)
+function clearLookupCache() {
+    lookupCache = { categories: null, subjects: null, writers: null, timestamp: 0 };
+}
+router.clearLookupCache = clearLookupCache;
+
+// ============================================
+// FAST: Get magazines without $lookup - use cached maps instead
+// ============================================
+async function getMagazinesFast(matchQuery = {}, skip = 0, limit = null, sort = { createdAt: -1 }) {
+    // Get cached lookup maps
+    const { categories, subjects, writers } = await getLookupMaps();
+    
+    // Simple query - no $lookup needed!
+    let query = EMagazine.find(matchQuery)
+        .sort(sort)
+        .skip(skip)
+        .lean();
+    
+    if (limit) {
+        query = query.limit(limit);
+    }
+    
+    const magazines = await query;
+    
+    // Map names using cached data (super fast - O(1) per item)
+    return magazines.map(mag => ({
+        _id: mag._id,
+        language: mag.language,
+        category: mag.category ? categories.get(mag.category.toString()) || '' : '',
+        subject: mag.subject ? subjects.get(mag.subject.toString()) || '' : '',
+        writer: mag.writer ? writers.get(mag.writer.toString()) || '' : '',
+        month: mag.month,
+        year: mag.year,
+        title: mag.title,
+        introduction: mag.introduction,
+        subPoints: mag.subPoints,
+        importance: mag.importance,
+        explain: mag.explain,
+        summary: mag.summary,
+        reference: mag.reference,
+        images: mag.images
+    }));
+}
+
+// ============================================
+// Helper function for aggregation with lookups (fallback - single query instead of multiple populates)
 // ============================================
 async function getMagazinesWithLookup(matchQuery = {}, skip = 0, limit = null, sort = { createdAt: -1 }) {
     const pipeline = [
@@ -92,8 +172,8 @@ router.get('/category/:categoryId', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Category not found' });
         }
         
-        // Use aggregation with $lookup (single query instead of 4 queries)
-        const result = await getMagazinesWithLookup({ category: category._id });
+        // Use fast cached lookup method
+        const result = await getMagazinesFast({ category: category._id });
         
         res.json({ success: true, magazines: result });
     } catch (err) {
@@ -130,8 +210,8 @@ router.get('/subject/:subjectId', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Subject not found' });
         }
         
-        // Use aggregation with $lookup (single query instead of 4 queries)
-        const result = await getMagazinesWithLookup({ subject: subject._id });
+        // Use fast cached lookup method
+        const result = await getMagazinesFast({ subject: subject._id });
         
         res.json({ success: true, magazines: result });
     } catch (err) {
@@ -148,8 +228,8 @@ router.get('/writer/:writerId', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Writer not found' });
         }
         
-        // Use aggregation with $lookup (single query instead of 4 queries)
-        const result = await getMagazinesWithLookup({ writer: writer._id });
+        // Use fast cached lookup method
+        const result = await getMagazinesFast({ writer: writer._id });
         
         res.json({ success: true, magazines: result });
     } catch (err) {
@@ -168,8 +248,8 @@ router.get('/all', async (req, res) => {
         // Get total count of all magazines (uses index on _id)
         const total = await EMagazine.countDocuments({});
 
-        // Use aggregation with $lookup (single query instead of 4 queries)
-        const result = await getMagazinesWithLookup({}, skip, limit, { createdAt: -1 });
+        // Use fast cached lookup method (NO $lookup = much faster!)
+        const result = await getMagazinesFast({}, skip, limit, { createdAt: -1 });
 
         // Calculate total pages
         const totalPages = Math.ceil(total / limit);
