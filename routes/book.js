@@ -438,7 +438,8 @@ router.get('/chapter/:chapterId/contents', async (req, res) => {
         const contents = await BookContent.find({ chapter: req.params.chapterId })
             .populate('category')
             .populate('book')
-            .populate('chapter');
+            .populate('chapter')
+            .sort({ sequence: 1 });
         const chapter = await BookChapter.findById(req.params.chapterId)
             .populate('category')
             .populate('book');
@@ -464,7 +465,7 @@ router.get('/content', async (req, res) => {
             .populate('category')
             .populate('book')
             .populate('chapter')
-            .sort({ createdAt: -1 });
+            .sort({ sequence: 1 });
         const categories = await BookCategory.find();
         const books = await BookName.find();
         const chapters = await BookChapter.find();
@@ -559,6 +560,10 @@ router.post('/content/add', upload.array('images', 10), async (req, res) => {
         // Process uploaded images
         const imageLinks = req.files ? req.files.map(file => `/uploads/books/${file.filename}`) : [];
 
+        // Get max sequence for this chapter to assign next sequence number
+        const maxContent = await BookContent.findOne({ chapter }).sort({ sequence: -1 });
+        const nextSequence = maxContent ? maxContent.sequence + 1 : 1;
+
         const content = new BookContent({
             category,
             book,
@@ -570,7 +575,8 @@ router.post('/content/add', upload.array('images', 10), async (req, res) => {
             details,
             extra,
             images: imageLinks,
-            video_links: videoLinksArray
+            video_links: videoLinksArray,
+            sequence: nextSequence
         });
 
         await content.save();
@@ -851,7 +857,7 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                 return res.redirect(`/book/category/${categoryId}/book/${bookId}/chapter/${chapterId}?error=Please upload an Excel file.`);
             }
             return res.render('book/content/index', {
-                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
+                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ sequence: 1 }),
                 categories: await BookCategory.find(),
                 books: await BookName.find(),
                 chapters: await BookChapter.find(),
@@ -872,7 +878,7 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                 return res.redirect(`/book/category/${categoryId}/book/${bookId}/chapter/${chapterId}?error=Excel file is empty or has no data rows.`);
             }
             return res.render('book/content/index', {
-                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
+                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ sequence: 1 }),
                 categories: await BookCategory.find(),
                 books: await BookName.find(),
                 chapters: await BookChapter.find(),
@@ -887,6 +893,13 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
         const errors = [];
         let processedRows = 0;
 
+        // Get max sequence for this chapter to continue from where we left off
+        let maxSequence = 0;
+        if (hasContext && chapterId) {
+            const maxContent = await BookContent.findOne({ chapter: chapterId }).sort({ sequence: -1 });
+            maxSequence = maxContent ? maxContent.sequence : 0;
+        }
+
         // If context is provided, use it for all rows (simplified Excel format)
         if (hasContext) {
             for (let i = 0; i < data.length; i++) {
@@ -897,6 +910,7 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                     row['Video Links'].split(',').map(link => link.trim()).filter(link => link) : 
                     [];
 
+                maxSequence++; // Increment sequence for each row (preserves Excel order)
                 contents.push({
                     category: categoryId,
                     book: bookId,
@@ -907,7 +921,8 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                     meaning: row['Meaning'] || row['meaning'] || undefined,
                     details: row['Details'] || row['details'] || undefined,
                     extra: row['Extra'] || row['extra'] || undefined,
-                    video_links: videoLinks
+                    video_links: videoLinks,
+                    sequence: maxSequence // Assign sequence to preserve Excel order
                 });
                 processedRows++;
             }
@@ -920,7 +935,7 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
             if (missingHeaders.length > 0) {
                 fs.unlinkSync(req.file.path);
                 return res.render('book/content/index', {
-                    contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
+                    contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ sequence: 1 }),
                     categories: await BookCategory.find(),
                     books: await BookName.find(),
                     chapters: await BookChapter.find(),
@@ -931,6 +946,9 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                 });
             }
 
+            // Track sequences per chapter
+            const chapterSequences = {};
+            
             for (let i = 0; i < data.length; i++) {
                 const row = data[i];
                 const rowNumber = i + 2;
@@ -963,6 +981,14 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                     row['Video Links'].split(',').map(link => link.trim()).filter(link => link) : 
                     [];
 
+                // Get or initialize max sequence for this chapter
+                if (!chapterSequences[chapter._id.toString()]) {
+                    const chapterMaxContent = await BookContent.findOne({ chapter: chapter._id }).sort({ sequence: -1 });
+                    chapterSequences[chapter._id.toString()] = chapterMaxContent ? chapterMaxContent.sequence : 0;
+                }
+                chapterSequences[chapter._id.toString()]++;
+                const currentSequence = chapterSequences[chapter._id.toString()];
+
                 contents.push({
                     category: category._id,
                     book: book._id,
@@ -973,7 +999,8 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                     meaning: row.Meaning || undefined,
                     details: row.Details || undefined,
                     extra: row.Extra || undefined,
-                    video_links: videoLinks
+                    video_links: videoLinks,
+                    sequence: currentSequence // Assign sequence to preserve Excel order
                 });
                 processedRows++;
             }
@@ -994,7 +1021,7 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
             }
             
             return res.render('book/content/index', {
-                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
+                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ sequence: 1 }),
                 categories: await BookCategory.find(),
                 books: await BookName.find(),
                 chapters: await BookChapter.find(),
@@ -1011,7 +1038,7 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
             }
             
             return res.render('book/content/index', {
-                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
+                contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ sequence: 1 }),
                 categories: await BookCategory.find(),
                 books: await BookName.find(),
                 chapters: await BookChapter.find(),
@@ -1208,7 +1235,7 @@ router.get('/category/:categoryId/book/:bookId/chapter/:chapterId', async (req, 
             .populate('category')
             .populate('book')
             .populate('chapter')
-            .sort({ createdAt: -1 });
+            .sort({ sequence: 1 });
         
         res.render('book/chapter/contents', {
             category,

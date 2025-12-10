@@ -39,7 +39,11 @@ const bookContentSchema = new mongoose.Schema({
     }],
     video_links: [{
         type: String
-    }]
+    }],
+    sequence: {
+        type: Number,
+        default: 0
+    }
 }, {
     timestamps: true
 });

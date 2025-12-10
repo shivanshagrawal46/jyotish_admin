@@ -3,7 +3,7 @@ const AutoIncrement = require('mongoose-sequence')(mongoose);
 
 const koshContentSchema = new mongoose.Schema({
   id: { type: Number, unique: true },
-  subCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'KoshSubCategory', required: true },
+  subCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'KoshSubCategory', required: true, index: true },
   sequenceNo: { type: Number, required: true },
   hindiWord: { type: String },
   englishWord: { type: String },
@@ -16,6 +16,9 @@ const koshContentSchema = new mongoose.Schema({
   image: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
+
+// Compound index for efficient queries - subCategory with hindiWord for sorting
+koshContentSchema.index({ subCategory: 1, hindiWord: 1 });
 
 koshContentSchema.plugin(AutoIncrement, { inc_field: 'id', id: 'content_id_counter' });
 

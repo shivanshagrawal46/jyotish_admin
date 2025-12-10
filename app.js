@@ -130,10 +130,19 @@ app.use((req, res, next) => {
 });
 
 // Middleware to fetch categories and subcategories for sidebar
+// OPTIMIZED: Skip for API routes (they don't need sidebar data)
 app.use(async (req, res, next) => {
+  // Skip this middleware for API routes - they don't render views with sidebar
+  if (req.path.startsWith('/api/')) {
+    res.locals.koshCategories = [];
+    res.locals.koshSubCategoriesMap = {};
+    return next();
+  }
+  
   try {
-    const koshCategories = await KoshCategory.find().sort({ position: 1 });
-    const koshSubCategories = await KoshSubCategory.find().sort({ position: 1 });
+    // Use lean() for faster queries
+    const koshCategories = await KoshCategory.find().sort({ position: 1 }).lean();
+    const koshSubCategories = await KoshSubCategory.find().sort({ position: 1 }).lean();
     // Map subcategories by parentCategory
     const koshSubCategoriesMap = {};
     koshCategories.forEach(cat => {

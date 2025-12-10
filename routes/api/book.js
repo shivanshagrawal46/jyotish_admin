@@ -156,7 +156,7 @@ router.get('/category/:categoryId/:nameId/:chapterId', async (req, res) => {
             chapter: chapter._id
         })
         .select('id title_hn title_en title_hinglish meaning details extra images video_links')
-        .sort({ id: 1 })
+        .sort({ sequence: 1 })
         .skip(skip)
         .limit(limit);
 

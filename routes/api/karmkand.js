@@ -4,6 +4,39 @@ const KarmkandCategory = require('../../models/KarmkandCategory');
 const KarmkandSubCategory = require('../../models/KarmkandSubCategory');
 const KarmkandContent = require('../../models/KarmkandContent');
 
+// ============================================
+// CACHING SYSTEM FOR vishesh_suchi
+// ============================================
+const karmkandVisheshSuchiCache = new Map();
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour cache
+
+function getCachedKarmkandVisheshSuchi(subcategoryId) {
+    const cached = karmkandVisheshSuchiCache.get(subcategoryId);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.data;
+    }
+    return null;
+}
+
+function setCachedKarmkandVisheshSuchi(subcategoryId, data) {
+    karmkandVisheshSuchiCache.set(subcategoryId, {
+        data,
+        timestamp: Date.now()
+    });
+}
+
+// Clear cache for a subcategory (call this when content is added/updated/deleted)
+function clearKarmkandVisheshSuchiCache(subcategoryId) {
+    if (subcategoryId) {
+        karmkandVisheshSuchiCache.delete(subcategoryId);
+    } else {
+        karmkandVisheshSuchiCache.clear();
+    }
+}
+
+// Export cache clearing function for use in content routes
+router.clearKarmkandVisheshSuchiCache = clearKarmkandVisheshSuchiCache;
+
 // Hindi alphabet order for sorting (numbers first, then Hindi letters)
 const hindiAlphabet = [
     'अ', 'आ', 'इ', 'ई', 'उ', 'ऊ', 'ए', 'ऐ', 'ओ', 'औ', 'अं', 'अः',
@@ -215,12 +248,13 @@ function sortByHindiWord(contents) {
     });
 }
 
-// GET /api/karmkand/category - Get all categories
+// GET /api/karmkand/category - Get all categories - OPTIMIZED
 router.get('/category', async (req, res) => {
     try {
         const categories = await KarmkandCategory.find()
             .sort({ position: 1 })
-            .select('id name position introduction cover_image -_id');
+            .select('id name position introduction cover_image -_id')
+            .lean(); // Use lean() for faster queries
 
         res.json({
             success: true,
@@ -234,13 +268,13 @@ router.get('/category', async (req, res) => {
     }
 });
 
-// GET /api/karmkand/category/:categoryId - Get all subcategories for a category
+// GET /api/karmkand/category/:categoryId - Get all subcategories for a category - OPTIMIZED
 router.get('/category/:categoryId', async (req, res) => {
     try {
         const { categoryId } = req.params;
 
-        // Check if category exists
-        const category = await KarmkandCategory.findOne({ id: categoryId });
+        // Check if category exists - use lean() for faster queries
+        const category = await KarmkandCategory.findOne({ id: categoryId }).lean();
         if (!category) {
             return res.status(404).json({
                 success: false,
@@ -250,7 +284,8 @@ router.get('/category/:categoryId', async (req, res) => {
 
         const subcategories = await KarmkandSubCategory.find({ parentCategory: category._id })
             .sort({ position: 1 })
-            .select('id name position introduction cover_image -_id');
+            .select('id name position introduction cover_image -_id')
+            .lean(); // Use lean() for faster queries
 
         res.json({
             success: true,
@@ -264,7 +299,7 @@ router.get('/category/:categoryId', async (req, res) => {
     }
 });
 
-// GET /api/karmkand/category/:categoryId/:subcategoryId - Get all contents for a subcategory with pagination
+// GET /api/karmkand/category/:categoryId/:subcategoryId - Get all contents for a subcategory with pagination - OPTIMIZED
 router.get('/category/:categoryId/:subcategoryId', async (req, res) => {
     try {
         const { categoryId, subcategoryId } = req.params;
@@ -272,8 +307,8 @@ router.get('/category/:categoryId/:subcategoryId', async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        // Check if category exists
-        const category = await KarmkandCategory.findOne({ id: categoryId });
+        // Use lean() for faster queries (returns plain JS objects instead of Mongoose docs)
+        const category = await KarmkandCategory.findOne({ id: categoryId }).lean();
         if (!category) {
             return res.status(404).json({
                 success: false,
@@ -285,7 +320,7 @@ router.get('/category/:categoryId/:subcategoryId', async (req, res) => {
         const subcategory = await KarmkandSubCategory.findOne({
             id: subcategoryId,
             parentCategory: category._id
-        });
+        }).lean();
         if (!subcategory) {
             return res.status(404).json({
                 success: false,
@@ -293,30 +328,66 @@ router.get('/category/:categoryId/:subcategoryId', async (req, res) => {
             });
         }
 
-        // Get all contents for sorting and vishesh_suchi extraction
-        const allContents = await KarmkandContent.find({
-            subCategory: subcategory._id
-        })
-            .select('id hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image sequenceNo -_id');
+        const subcategoryIdStr = subcategory._id.toString();
 
-        // Sort all contents by Hindi word alphabetically (numbers first, then Hindi alphabet)
-        const sortedContents = sortByHindiWord(allContents);
+        // ============================================
+        // OPTIMIZATION 1: Get vishesh_suchi from cache or compute efficiently
+        // ============================================
+        let vishesh_suchi = getCachedKarmkandVisheshSuchi(subcategoryIdStr);
 
-        // Process search terms for vishesh_suchi
-        const searchTermsSet = new Set();
-        allContents.forEach((content) => {
-            if (content.search && typeof content.search === 'string' && content.search.trim() !== '') {
-                const terms = content.search.split(',')
-                    .map(term => term.trim())
-                    .filter(term => term !== '');
-                terms.forEach(term => searchTermsSet.add(term));
+        if (!vishesh_suchi) {
+            // Use MongoDB aggregation to extract unique search terms efficiently
+            const searchTermsResult = await KarmkandContent.aggregate([
+                { $match: { subCategory: subcategory._id } },
+                { $match: { search: { $exists: true, $ne: null, $ne: '' } } },
+                { $project: { search: 1 } },
+                { $group: { _id: null, allSearchTerms: { $push: '$search' } } }
+            ]);
+
+            const searchTermsSet = new Set();
+            if (searchTermsResult.length > 0 && searchTermsResult[0].allSearchTerms) {
+                searchTermsResult[0].allSearchTerms.forEach(searchStr => {
+                    if (searchStr && typeof searchStr === 'string') {
+                        const terms = searchStr.split(',')
+                            .map(term => term.trim())
+                            .filter(term => term !== '');
+                        terms.forEach(term => searchTermsSet.add(term));
+                    }
+                });
             }
-        });
-        const vishesh_suchi = Array.from(searchTermsSet).sort();
+            vishesh_suchi = Array.from(searchTermsSet).sort();
 
-        // Apply pagination after sorting
-        const total = sortedContents.length;
-        const contents = sortedContents.slice(skip, skip + limit);
+            // Cache for future requests
+            setCachedKarmkandVisheshSuchi(subcategoryIdStr, vishesh_suchi);
+        }
+
+        // ============================================
+        // OPTIMIZATION 2: Get total count efficiently (single count query)
+        // ============================================
+        const total = await KarmkandContent.countDocuments({ subCategory: subcategory._id });
+
+        // ============================================
+        // OPTIMIZATION 3: Get ONLY the paginated contents with Hindi collation sorting
+        // ============================================
+        let contents;
+        try {
+            contents = await KarmkandContent.find({ subCategory: subcategory._id })
+                .select('id hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image sequenceNo -_id')
+                .collation({ locale: 'hi', strength: 1 })
+                .sort({ hindiWord: 1 })
+                .skip(skip)
+                .limit(limit)
+                .lean();
+        } catch (collationError) {
+            // Fallback: If collation fails, use a hybrid approach
+            const allContentsForSort = await KarmkandContent.find({ subCategory: subcategory._id })
+                .select('id hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image sequenceNo -_id')
+                .lean();
+
+            // Sort using custom Hindi sorting
+            const sortedContents = sortByHindiWord(allContentsForSort);
+            contents = sortedContents.slice(skip, skip + limit);
+        }
 
         res.json({
             success: true,
@@ -332,6 +403,7 @@ router.get('/category/:categoryId/:subcategoryId', async (req, res) => {
             }
         });
     } catch (error) {
+        console.error('Error in karmkand category/subcategory API:', error);
         res.status(500).json({
             success: false,
             error: 'Server Error'

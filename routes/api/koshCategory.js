@@ -3,6 +3,39 @@ const router = express.Router();
 const KoshCategory = require('../../models/KoshCategory');
 const auth = require('../../middleware/auth');
 
+// ============================================
+// CACHING SYSTEM FOR vishesh_suchi
+// ============================================
+const visheshSuchiCache = new Map();
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour cache
+
+function getCachedVisheshSuchi(subcategoryId) {
+    const cached = visheshSuchiCache.get(subcategoryId);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.data;
+    }
+    return null;
+}
+
+function setCachedVisheshSuchi(subcategoryId, data) {
+    visheshSuchiCache.set(subcategoryId, {
+        data,
+        timestamp: Date.now()
+    });
+}
+
+// Clear cache for a subcategory (call this when content is added/updated/deleted)
+function clearVisheshSuchiCache(subcategoryId) {
+    if (subcategoryId) {
+        visheshSuchiCache.delete(subcategoryId);
+    } else {
+        visheshSuchiCache.clear();
+    }
+}
+
+// Export cache clearing function for use in content routes
+router.clearVisheshSuchiCache = clearVisheshSuchiCache;
+
 // Hindi alphabet order for sorting
 const hindiAlphabet = [
     'अ', 'आ', 'इ', 'ई', 'उ', 'ऊ', 'ए', 'ऐ', 'ओ', 'औ', 'अं', 'अः',
@@ -212,7 +245,7 @@ router.get('/:categoryId', async (req, res) => {
     }
 });
 
-// Get all content in a subcategory (by integer id, paginated)
+// Get all content in a subcategory (by integer id, paginated) - OPTIMIZED
 router.get('/:categoryId/:subCategoryId', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -220,42 +253,80 @@ router.get('/:categoryId/:subCategoryId', async (req, res) => {
         const skip = (page - 1) * limit;
         const KoshSubCategory = require('../../models/KoshSubCategory');
         const KoshContent = require('../../models/KoshContent');
-        const category = await KoshCategory.findOne({ id: parseInt(req.params.categoryId) });
+        
+        // Use lean() for faster queries (returns plain JS objects instead of Mongoose docs)
+        const category = await KoshCategory.findOne({ id: parseInt(req.params.categoryId) }).lean();
         if (!category) return res.status(404).json({ message: 'Category not found' });
-        const subcategory = await KoshSubCategory.findOne({ id: parseInt(req.params.subCategoryId), parentCategory: category._id });
+        
+        const subcategory = await KoshSubCategory.findOne({ 
+            id: parseInt(req.params.subCategoryId), 
+            parentCategory: category._id 
+        }).lean();
         if (!subcategory) return res.status(404).json({ message: 'Subcategory not found' });
         
-        // Get all contents for vishesh_suchi
-        const allContents = await KoshContent.find({ subCategory: subcategory._id });
-        console.log('1. Found total contents for subcategory:', allContents.length);
-
-        // Process search terms
-        const searchTermsSet = new Set();
-        allContents.forEach((content, index) => {
-            console.log(`Content ${index + 1} search field: "${content.search}" (type: ${typeof content.search})`);
-            if (content.search && typeof content.search === 'string' && content.search.trim() !== '') {
-                const terms = content.search.split(',')
-                    .map(term => term.trim())
-                    .filter(term => term !== '');
-                console.log(`Content ${index + 1} extracted terms:`, terms);
-                terms.forEach(term => searchTermsSet.add(term));
+        const subcategoryId = subcategory._id.toString();
+        
+        // ============================================
+        // OPTIMIZATION 1: Get vishesh_suchi from cache or compute efficiently
+        // ============================================
+        let vishesh_suchi = getCachedVisheshSuchi(subcategoryId);
+        
+        if (!vishesh_suchi) {
+            // Use MongoDB aggregation to extract unique search terms efficiently
+            const searchTermsResult = await KoshContent.aggregate([
+                { $match: { subCategory: subcategory._id } },
+                { $match: { search: { $exists: true, $ne: null, $ne: '' } } },
+                { $project: { search: 1 } },
+                { $group: { _id: null, allSearchTerms: { $push: '$search' } } }
+            ]);
+            
+            const searchTermsSet = new Set();
+            if (searchTermsResult.length > 0 && searchTermsResult[0].allSearchTerms) {
+                searchTermsResult[0].allSearchTerms.forEach(searchStr => {
+                    if (searchStr && typeof searchStr === 'string') {
+                        const terms = searchStr.split(',')
+                            .map(term => term.trim())
+                            .filter(term => term !== '');
+                        terms.forEach(term => searchTermsSet.add(term));
+                    }
+                });
             }
-        });
-
-        // Convert Set to sorted array
-        const vishesh_suchi = Array.from(searchTermsSet).sort();
-        console.log('2. Extracted vishesh_suchi:', vishesh_suchi);
-
-        // Get all contents for sorting (no pagination yet)
-        const allContentsForSort = await KoshContent.find({ subCategory: subcategory._id })
-            .select('-_id id sequenceNo hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image createdAt');
-
-        // Sort all contents by Hindi word alphabetically
-        const sortedContents = sortByHindiWord(allContentsForSort);
-
-        // Apply pagination after sorting
-        const total = sortedContents.length;
-        const contents = sortedContents.slice(skip, skip + limit);
+            vishesh_suchi = Array.from(searchTermsSet).sort();
+            
+            // Cache for future requests
+            setCachedVisheshSuchi(subcategoryId, vishesh_suchi);
+        }
+        
+        // ============================================
+        // OPTIMIZATION 2: Get total count efficiently (single count query)
+        // ============================================
+        const total = await KoshContent.countDocuments({ subCategory: subcategory._id });
+        
+        // ============================================
+        // OPTIMIZATION 3: Get ONLY the paginated contents with Hindi collation sorting
+        // ============================================
+        // First try MongoDB's Hindi collation for sorting
+        let contents;
+        try {
+            contents = await KoshContent.find({ subCategory: subcategory._id })
+                .select('-_id id sequenceNo hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image createdAt')
+                .collation({ locale: 'hi', strength: 1 })
+                .sort({ hindiWord: 1 })
+                .skip(skip)
+                .limit(limit)
+                .lean();
+        } catch (collationError) {
+            // Fallback: If collation fails, use a hybrid approach
+            // Get slightly more than needed, sort in memory, then slice
+            const batchSize = Math.min(total, 500); // Get max 500 for sorting
+            const allContentsForSort = await KoshContent.find({ subCategory: subcategory._id })
+                .select('-_id id sequenceNo hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image createdAt')
+                .lean();
+            
+            // Sort using custom Hindi sorting
+            const sortedContents = sortByHindiWord(allContentsForSort);
+            contents = sortedContents.slice(skip, skip + limit);
+        }
         
         res.json({
             contents,
