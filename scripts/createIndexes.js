@@ -303,6 +303,88 @@ async function createIndexes() {
         }
         
         // ============================================
+        // EMagazine Collection Indexes
+        // ============================================
+        console.log('\n📦 Creating indexes for EMagazine collection...');
+        
+        const emagazineCollection = db.collection('emagazines');
+        
+        // Index: category (for filtering by category)
+        try {
+            await emagazineCollection.createIndex(
+                { category: 1 },
+                { name: 'category_1', background: true }
+            );
+            console.log('   ✅ Created index: category_1');
+        } catch (e) {
+            if (e.code === 85) {
+                console.log('   ⚠️  Index category_1 already exists');
+            } else {
+                throw e;
+            }
+        }
+        
+        // Index: subject (for filtering by subject)
+        try {
+            await emagazineCollection.createIndex(
+                { subject: 1 },
+                { name: 'subject_1', background: true }
+            );
+            console.log('   ✅ Created index: subject_1');
+        } catch (e) {
+            if (e.code === 85) {
+                console.log('   ⚠️  Index subject_1 already exists');
+            } else {
+                throw e;
+            }
+        }
+        
+        // Index: writer (for filtering by writer)
+        try {
+            await emagazineCollection.createIndex(
+                { writer: 1 },
+                { name: 'writer_1', background: true }
+            );
+            console.log('   ✅ Created index: writer_1');
+        } catch (e) {
+            if (e.code === 85) {
+                console.log('   ⚠️  Index writer_1 already exists');
+            } else {
+                throw e;
+            }
+        }
+        
+        // Index: createdAt descending (for sorting in /all endpoint)
+        try {
+            await emagazineCollection.createIndex(
+                { createdAt: -1 },
+                { name: 'createdAt_-1', background: true }
+            );
+            console.log('   ✅ Created index: createdAt_-1');
+        } catch (e) {
+            if (e.code === 85) {
+                console.log('   ⚠️  Index createdAt_-1 already exists');
+            } else {
+                throw e;
+            }
+        }
+        
+        // Index: id field
+        try {
+            await emagazineCollection.createIndex(
+                { id: 1 },
+                { name: 'id_1', unique: true, background: true }
+            );
+            console.log('   ✅ Created index: id_1');
+        } catch (e) {
+            if (e.code === 85) {
+                console.log('   ⚠️  Index id_1 already exists');
+            } else {
+                throw e;
+            }
+        }
+        
+        // ============================================
         // Verify Indexes
         // ============================================
         console.log('\n📊 Verifying indexes...\n');
@@ -324,6 +406,9 @@ async function createIndexes() {
         
         const karmkandSubCategoryIndexes = await karmkandSubCategoryCollection.indexes();
         console.log('KarmkandSubCategory indexes:', karmkandSubCategoryIndexes.map(i => i.name).join(', '));
+        
+        const emagazineIndexes = await emagazineCollection.indexes();
+        console.log('EMagazine indexes:', emagazineIndexes.map(i => i.name).join(', '));
         
         console.log('\n✅ All indexes created successfully!');
         console.log('\n🚀 Your API should now be significantly faster!\n');
