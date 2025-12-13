@@ -344,16 +344,16 @@ router.get('/category/:categoryId/:subcategoryId', async (req, res) => {
                 { $group: { _id: null, allSearchTerms: { $push: '$search' } } }
             ]);
 
-            const searchTermsSet = new Set();
+        const searchTermsSet = new Set();
             if (searchTermsResult.length > 0 && searchTermsResult[0].allSearchTerms) {
                 searchTermsResult[0].allSearchTerms.forEach(searchStr => {
                     if (searchStr && typeof searchStr === 'string') {
                         const terms = searchStr.split(',')
-                            .map(term => term.trim())
-                            .filter(term => term !== '');
-                        terms.forEach(term => searchTermsSet.add(term));
-                    }
-                });
+                    .map(term => term.trim())
+                    .filter(term => term !== '');
+                terms.forEach(term => searchTermsSet.add(term));
+            }
+        });
             }
             vishesh_suchi = Array.from(searchTermsSet).sort();
 

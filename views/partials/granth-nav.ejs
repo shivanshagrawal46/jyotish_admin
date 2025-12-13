@@ -1,0 +1,73 @@
+<nav class="granth-nav mb-4">
+    <div class="nav nav-tabs" id="granthNavTabs" role="tablist">
+        <a class="nav-link <%= activeTab === 'category' ? 'active' : '' %>" 
+           href="/granth/category" 
+           role="tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder me-1" viewBox="0 0 16 16">
+                <path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19zm4.69-1.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006.139C1.72 3.042 1.95 3 2.19 3h5.396l-.707-.707z"/>
+            </svg>
+            Categories
+        </a>
+        <a class="nav-link <%= activeTab === 'name' ? 'active' : '' %>" 
+           href="/granth/name" 
+           role="tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-granth me-1" viewBox="0 0 16 16">
+                <path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783z"/>
+            </svg>
+            Granths
+        </a>
+        <a class="nav-link <%= activeTab === 'chapter' ? 'active' : '' %>" 
+           href="/granth/chapter" 
+           role="tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-ol me-1" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5z"/>
+                <path d="M1.713 11.865v-.474H2c.217 0 .363-.137.363-.317 0-.185-.158-.31-.361-.31-.223 0-.367.152-.373.31h-.59c.016-.467.434-.787.891-.787.588 0 .891.387.891.852v.47c0 .554-.293.854-.891.854-.591 0-.891-.3-.891-.854zm1.004-.45v.027c0 .332.214.547.547.547.327 0 .546-.201.546-.564v-.036c0-.363-.219-.546-.547-.546-.333 0-.546.201-.546.564zm.803.645v.04c0 .413.248.65.65.65.403 0 .65-.237.65-.65v-.04c0-.412-.247-.65-.65-.65-.402 0-.65.238-.65.65z"/>
+            </svg>
+            Chapters
+        </a>
+        <a class="nav-link <%= activeTab === 'content' ? 'active' : '' %>" 
+           href="/granth/content" 
+           role="tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-text me-1" viewBox="0 0 16 16">
+                <path d="M5 4a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zM5 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1H5z"/>
+                <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/>
+            </svg>
+            Content
+        </a>
+    </div>
+</nav>
+
+<style>
+.granth-nav {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    padding: 0.5rem;
+}
+
+.granth-nav .nav-link {
+    color: var(--dark);
+    border: none;
+    padding: 0.75rem 1.25rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.granth-nav .nav-link:hover {
+    color: var(--primary);
+    background: rgba(103, 111, 157, 0.05);
+    border-radius: 6px;
+}
+
+.granth-nav .nav-link.active {
+    color: var(--primary);
+    background: rgba(103, 111, 157, 0.1);
+    border-radius: 6px;
+}
+
+.granth-nav .nav-link svg {
+    margin-right: 0.5rem;
+}
+</style> 

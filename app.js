@@ -39,6 +39,8 @@ const pujaRouter = require('./routes/puja');
 const pujaApiRouter = require('./routes/api/puja');
 const bookRouter = require('./routes/book');
 const bookApiRouter = require('./routes/api/book');
+const granthRouter = require('./routes/granth');
+const granthApiRouter = require('./routes/api/granth');
 const prashanYantraRouter = require('./routes/prashanYantra');
 const hanumatJyotishRouter = require('./routes/hanumatJyotish');
 const hanumatPrashanwaliRouter = require('./routes/hanumatPrashanwali');
@@ -74,6 +76,8 @@ const commentRouter = require('./routes/comment');
 const commentApiRouter = require('./routes/api/comment');
 const divineQuoteRouter = require('./routes/divineQuote');
 const divineQuoteApiRouter = require('./routes/api/divineQuote');
+const divineSanskritRouter = require('./routes/divineSanskrit');
+const divineSanskritApiRouter = require('./routes/api/divineSanskrit');
 
 const app = express();
 
@@ -110,8 +114,8 @@ app.use(
     }),
     cookie: { 
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
-      secure: true, // Only use secure cookies in production
-      httpOnly: true,
+      //secure: true, // Only use secure cookies in production
+      //httpOnly: true,
       sameSite: 'lax',
       path: '/'
     },
@@ -227,12 +231,20 @@ app.use('/api/comment', commentApiRouter);
 app.use('/divine-quotes', divineQuoteRouter);
 app.use('/api/divinequotes', divineQuoteApiRouter);
 
+// Divine Sanskrit routes (uses same DivineQuote model)
+app.use('/divine-sanskrit', divineSanskritRouter);
+app.use('/api/divinesanskrit', divineSanskritApiRouter);
+
 app.use('/puja', pujaRouter);
 app.use('/api/puja', pujaApiRouter);
 
 // Book routes
 app.use('/book', bookRouter);
 app.use('/api/book', bookApiRouter);
+
+// Granth routes
+app.use('/granth', granthRouter);
+app.use('/api/granth', granthApiRouter);
 
 // E-Magazine routes
 app.use('/e-magazine', eMagazineRouter);
