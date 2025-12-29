@@ -6,6 +6,7 @@ const MongoStore = require('connect-mongo');
 const path = require('path');
 const mongoose = require('mongoose');
 const methodOverride = require('method-override');
+const cors = require('cors');
 const util = require('util');
 util.isArray = Array.isArray;
 const authRoutes = require('./routes/auth');
@@ -95,6 +96,14 @@ app.use('/bootstrap', express.static(path.join(__dirname, 'node_modules/bootstra
 // Body parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// CORS - Allow all origins
+app.use(cors({
+  origin: '*',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 
 // Method Override middleware to enable DELETE and PUT methods
 app.use(methodOverride('_method'));
