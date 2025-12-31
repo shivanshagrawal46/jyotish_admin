@@ -893,15 +893,11 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
         const errors = [];
         let processedRows = 0;
 
-        // Get max sequence for this chapter to continue from where we left off
-        let maxSequence = 0;
-        if (hasContext && chapterId) {
-            const maxContent = await BookContent.findOne({ chapter: chapterId }).sort({ sequence: -1 });
-            maxSequence = maxContent ? maxContent.sequence : 0;
-        }
-
         // If context is provided, use it for all rows (simplified Excel format)
         if (hasContext) {
+            // Check if Excel has a Sequence column
+            const hasSequenceColumn = data.length > 0 && ('Sequence' in data[0] || 'sequence' in data[0]);
+            
             for (let i = 0; i < data.length; i++) {
                 const row = data[i];
                 
@@ -910,7 +906,24 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                     row['Video Links'].split(',').map(link => link.trim()).filter(link => link) : 
                     [];
 
-                maxSequence++; // Increment sequence for each row (preserves Excel order)
+                // Determine sequence: use Sequence column if present, otherwise use row index (1-based) to match Excel order
+                let sequenceValue;
+                if (hasSequenceColumn) {
+                    sequenceValue = row['Sequence'] || row['sequence'];
+                    if (sequenceValue === undefined || sequenceValue === null || sequenceValue === '') {
+                        // If Sequence column exists but value is empty, use row index
+                        sequenceValue = i + 1;
+                    } else {
+                        sequenceValue = parseInt(sequenceValue);
+                        if (isNaN(sequenceValue)) {
+                            sequenceValue = i + 1; // Fallback to row index if invalid
+                        }
+                    }
+                } else {
+                    // No Sequence column - use row index (1-based) to preserve Excel order
+                    sequenceValue = i + 1;
+                }
+
                 contents.push({
                     category: categoryId,
                     book: bookId,
@@ -922,7 +935,7 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                     details: row['Details'] || row['details'] || undefined,
                     extra: row['Extra'] || row['extra'] || undefined,
                     video_links: videoLinks,
-                    sequence: maxSequence // Assign sequence to preserve Excel order
+                    sequence: sequenceValue // Assign sequence to match Excel order
                 });
                 processedRows++;
             }
@@ -946,7 +959,10 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                 });
             }
 
-            // Track sequences per chapter
+            // Check if Excel has a Sequence column
+            const hasSequenceColumn = data.length > 0 && ('Sequence' in data[0] || 'sequence' in data[0]);
+            
+            // Track sequences per chapter (for fallback when no Sequence column)
             const chapterSequences = {};
             
             for (let i = 0; i < data.length; i++) {
@@ -981,13 +997,23 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                     row['Video Links'].split(',').map(link => link.trim()).filter(link => link) : 
                     [];
 
-                // Get or initialize max sequence for this chapter
-                if (!chapterSequences[chapter._id.toString()]) {
-                    const chapterMaxContent = await BookContent.findOne({ chapter: chapter._id }).sort({ sequence: -1 });
-                    chapterSequences[chapter._id.toString()] = chapterMaxContent ? chapterMaxContent.sequence : 0;
+                // Determine sequence: use Sequence column if present, otherwise use row index (1-based) to match Excel order
+                let sequenceValue;
+                if (hasSequenceColumn) {
+                    sequenceValue = row['Sequence'] || row['sequence'];
+                    if (sequenceValue === undefined || sequenceValue === null || sequenceValue === '') {
+                        // If Sequence column exists but value is empty, use row index
+                        sequenceValue = i + 1;
+                    } else {
+                        sequenceValue = parseInt(sequenceValue);
+                        if (isNaN(sequenceValue)) {
+                            sequenceValue = i + 1; // Fallback to row index if invalid
+                        }
+                    }
+                } else {
+                    // No Sequence column - use row index (1-based) to preserve Excel order
+                    sequenceValue = i + 1;
                 }
-                chapterSequences[chapter._id.toString()]++;
-                const currentSequence = chapterSequences[chapter._id.toString()];
 
                 contents.push({
                     category: category._id,
@@ -1000,7 +1026,7 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
                     details: row.Details || undefined,
                     extra: row.Extra || undefined,
                     video_links: videoLinks,
-                    sequence: currentSequence // Assign sequence to preserve Excel order
+                    sequence: sequenceValue // Assign sequence to match Excel order
                 });
                 processedRows++;
             }
@@ -1065,7 +1091,7 @@ router.post('/content/upload-excel', upload.single('excelFile'), async (req, res
         }
         
         res.render('book/content/index', {
-            contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ createdAt: -1 }),
+            contents: await BookContent.find().populate('category').populate('book').populate('chapter').sort({ sequence: 1 }),
             categories: await BookCategory.find(),
             books: await BookName.find(),
             chapters: await BookChapter.find(),
