@@ -106,11 +106,11 @@ router.post('/upload-daily/:dateId', requireAuth, upload.single('excelFile'), as
         if (!rawData || rawData.length === 0) {
             return res.status(400).json({
                 success: false,
-                error: 'No data rows found in Excel. Please ensure the first sheet has headers: title_hn, title_en, date, details_hn, details_en, images (optional).'
+                error: 'No data rows found in Excel. Please ensure the first sheet has headers: title_hn, title_en, details_hn, details_en, images (optional), sequence (optional).'
             });
         }
 
-        const entries = data.map((row, index) => ({
+        const entries = rawData.map((row, index) => ({
             dateRef: dateId,
             sequence: row.sequence ? Number(row.sequence) : index + 1,
             title_hn: row.title_hn || '',
