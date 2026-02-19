@@ -679,7 +679,16 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">View Contents for Date: <span id="viewRashifalDateLabel"></span></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-success btn-sm" onclick="exportCurrentRashifalDailyExcel()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                                <path d="M5 1a1 1 0 0 0-1 1v9.5A1.5 1.5 0 0 0 5.5 13h5a1.5 1.5 0 0 0 1.5-1.5V6.414a1 1 0 0 0-.293-.707l-3.414-3.414A1 1 0 0 0 8.586 2H5z"/>
+                                <path d="M4.5 15a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1h-7z"/>
+                            </svg>
+                            Export Excel
+                        </button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -964,6 +973,7 @@
                 <td>${new Date(date.createdAt).toLocaleDateString()}</td>
                 <td>
                     <button class="btn btn-sm btn-primary me-2" onclick="viewRashifalDateContent('${date._id}', '${date.dateLabel}')">View Contents</button>
+                    <button class="btn btn-sm btn-success me-2" onclick="exportDailyExcelRashifal('${date._id}')">Export Excel</button>
                     <button class="btn btn-sm btn-warning me-2" onclick="editRashifalDate('${date._id}', '${date.dateLabel}', ${date.dateISO ? `'${date.dateISO}'` : 'null'}, ${date.notes ? `'${date.notes}'` : 'null'})">Edit</button>
                     <button class="btn btn-sm btn-danger" onclick="deleteRashifalDate('${date._id}', '${date.dateLabel}')">Delete</button>
                 </td>
@@ -1167,6 +1177,18 @@
         } catch (error) {
             alert('Error loading contents');
         }
+    }
+
+    function exportDailyExcelRashifal(dateId) {
+        window.location.href = `/rashifal/export-daily/${dateId}`;
+    }
+
+    function exportCurrentRashifalDailyExcel() {
+        if (!currentViewingRashifalDateId) {
+            alert('Please open a date first');
+            return;
+        }
+        exportDailyExcelRashifal(currentViewingRashifalDateId);
     }
 
     function showRashifalUploadExcelForDate() {
