@@ -80,6 +80,7 @@ const divineQuoteApiRouter = require('./routes/api/divineQuote');
 const divineSanskritRouter = require('./routes/divineSanskrit');
 const divineSanskritApiRouter = require('./routes/api/divineSanskrit');
 const csuApiRouter = require('./routes/api/csu');
+const csu2ApiRouter = require('./routes/api/csu2');
 
 const app = express();
 
@@ -245,6 +246,7 @@ app.use('/api/divinequotes', divineQuoteApiRouter);
 app.use('/divine-sanskrit', divineSanskritRouter);
 app.use('/api/divinesanskrit', divineSanskritApiRouter);
 app.use('/api/csu', csuApiRouter);
+app.use('/api/csu2', csu2ApiRouter);
 
 app.use('/puja', pujaRouter);
 app.use('/api/puja', pujaApiRouter);
