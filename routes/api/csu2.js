@@ -55,8 +55,7 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
     }
 
     const groups = [];
-    const groupMap = new Map();
-    let currentHeading = '';
+    let currentGroup = null;
 
     for (let i = 1; i < rows.length; i += 1) {
       const row = rows[i] || [];
@@ -64,31 +63,28 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
       const dateCell = toText(row[1]);
       const lagnaCell = toText(row[2]);
 
-      if (headingCell) currentHeading = headingCell;
+      // New heading starts a new block immediately (keeps exact sheet order)
+      if (headingCell) {
+        currentGroup = {
+          pageNo,
+          sequence: groups.length + 1,
+          heading: headingCell,
+          items: []
+        };
+        groups.push(currentGroup);
+      }
 
       // Skip fully empty rows
       if (!headingCell && !dateCell && !lagnaCell) continue;
-      // If no current heading yet, skip loose data rows
-      if (!currentHeading) continue;
-
-      if (!groupMap.has(currentHeading)) {
-        const nextGroup = {
-          pageNo,
-          sequence: groups.length + 1,
-          heading: currentHeading,
-          items: []
-        };
-        groups.push(nextGroup);
-        groupMap.set(currentHeading, nextGroup);
-      }
+      // If no heading encountered yet, skip loose data rows
+      if (!currentGroup) continue;
 
       // Add entry only when row carries date/lagna data
       if (dateCell || lagnaCell) {
-        const target = groupMap.get(currentHeading);
-        target.items.push({
+        currentGroup.items.push({
           date: dateCell,
           lagna: lagnaCell,
-          sequence: target.items.length + 1
+          sequence: currentGroup.items.length + 1
         });
       }
     }
