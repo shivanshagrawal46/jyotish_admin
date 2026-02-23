@@ -98,7 +98,8 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
-    const rows = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+    // raw:false keeps Excel display formatting (e.g. 6:53 instead of 0.2868...)
+    const rows = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
 
     if (!rows || rows.length <= 1) {
       return res.status(400).json({ success: false, error: 'Excel file has no data rows' });
