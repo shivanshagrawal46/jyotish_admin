@@ -38,6 +38,26 @@ function escapeRegex(value) {
   return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Expand query so Latin "rashifal" etc. also matches Hindi/Devanagari in DB
+function getExpandedRegexForQuery(normalizedQuery) {
+  const q = normalizedQuery.toLowerCase();
+  const parts = [escapeRegex(normalizedQuery)];
+
+  if (q.includes('rashifal') || q.includes('rashi') || q.includes('राशिफल') || q.includes('राशि')) {
+    parts.push('राशिफल', 'राशि', 'rashi', 'rashifal');
+  }
+  if (q.includes('numerology') || q.includes('अंक') || q.includes('ank')) {
+    parts.push('numerology', 'अंक', 'ank');
+  }
+  if (q.includes('horoscope') || q.includes('zodiac')) {
+    parts.push('horoscope', 'zodiac', 'rashifal', 'राशिफल');
+  }
+
+  const unique = [...new Set(parts)].filter(Boolean);
+  if (unique.length <= 1) return null;
+  return new RegExp(unique.map(escapeRegex).join('|'), 'i');
+}
+
 function truncateText(value, maxLen = 240) {
   const text = normalizeSpace(value);
   if (!text) return '';
@@ -398,9 +418,11 @@ async function searchAppContent(query, options = {}) {
   if (cached) return { ...cached, cache: true };
 
   const orderedModels = getPrioritizedModels(normalizedQuery, searchableModelNames);
-  const queryRegex = new RegExp(escapeRegex(normalizedQuery), 'i');
+  const expandedRegex = getExpandedRegexForQuery(normalizedQuery);
+  const queryRegex = expandedRegex || new RegExp(escapeRegex(normalizedQuery), 'i');
   const tokens = tokenizeQuery(normalizedQuery);
-  const tokenRegex = tokens.length ? new RegExp(escapeRegex(tokens[0]), 'i') : queryRegex;
+  let tokenRegex = tokens.length ? new RegExp(escapeRegex(tokens[0]), 'i') : queryRegex;
+  if (expandedRegex) tokenRegex = expandedRegex;
   const queryLower = normalizedQuery.toLowerCase();
 
   const searchResult = await searchInBatches(

@@ -27,10 +27,21 @@ function isOpenAIQuotaOrRateError(message) {
 
 function toUserFacingError(error) {
   const msg = error && error.message ? error.message : String(error);
-  if (isOpenAIQuotaOrRateError(msg)) {
-    return new Error(ASSISTANT_UNAVAILABLE_MESSAGE);
+
+  // Always log the real error for debugging (server logs / console)
+  console.error('[Assistant] Error:', msg);
+  if (error && error.stack) {
+    console.error('[Assistant] Stack:', error.stack);
   }
-  return error instanceof Error ? error : new Error(msg);
+
+  if (isOpenAIQuotaOrRateError(msg)) {
+    const userError = new Error(ASSISTANT_UNAVAILABLE_MESSAGE);
+    userError.originalMessage = msg;
+    return userError;
+  }
+  const out = error instanceof Error ? error : new Error(msg);
+  out.originalMessage = out.originalMessage || msg;
+  return out;
 }
 
 const SYSTEM_PROMPT = `
@@ -42,11 +53,9 @@ Reply in the same language as the user whenever possible.
 Rules:
 1) APP DATA
 - Backend already searched the app database and provided APP_SEARCH_CONTEXT.
-- If user asks for in-app data (rashifal, zodiac predictions in app content, learning content, app information),
-  answer ONLY from APP_SEARCH_CONTEXT.
-- Never invent app data.
-- If APP_SEARCH_CONTEXT has no relevant data for app-data query, clearly say it is not available in app database.
-- Return only the relevant part; do not dump unnecessary data.
+- If APP_SEARCH_CONTEXT has relevant hits (found: true, hits array not empty), use that data to answer. Return only the relevant part.
+- If APP_SEARCH_CONTEXT has no relevant data (found: false or empty hits), answer from your general astrology knowledge. Do NOT say "not in database" or "not available" — answer helpfully yourself.
+- Never invent or fake app-specific content (e.g. do not make up today's rashifal). If you have no app data, answer generally.
 
 2) GENERAL ASTROLOGY KNOWLEDGE
 - If the user asks general educational astrology questions, answer simply.
@@ -63,6 +72,38 @@ Rules:
 - If uncertain, choose redirect.
 - Keep responses concise and polite.
 `.trim();
+
+// App catalog: what we have in the app/database (for "what do we have" type questions)
+const APP_CATALOG = [
+  'Kosh (Kosh / शब्दकोश)',
+  'Karmkand (कर्मकांड)',
+  'Granth (ग्रंथ / Books)',
+  'Astroshop',
+  'E-Pooja (E Pooja / पूजा)',
+  'Talk to Guruji',
+  'Samta AI',
+  'E-Magazine (E Magazine)',
+  'Ankjyotish (अंक ज्योतिष / Numerology)',
+  'Hastrekha (हस्तरेखा / Palmistry)',
+  'Kundli (कुंडली)',
+  'Kundli Match (कुंडली मिलान)',
+  'Prashan Yantra (प्रश्न यंत्र)',
+  'MCQ (Quiz)',
+  'Rashifal (राशिफल / Horoscope)',
+  'Ankfal (अंकफल / Numerology predictions)',
+  'Learning (Jyotish learning content)',
+  'Festivals (त्योहार)',
+  'Muhurat (मुहूर्त)',
+  'Divine Quotes / Divine Sanskrit',
+  'Celebrity Kundli',
+  'Puja (पूजा)',
+  'YouTube content',
+  'Books & Chapters'
+];
+
+const APP_CATALOG_INSTRUCTION = `
+When the user asks what is in the app, what we have, what categories/sections exist, or what is in the database (in any language: English, Hindi, Hinglish), use the APP_CATALOG list above.
+Reply in the same language as the user. List or briefly describe these sections; do not invent new ones.`;
 
 const PERSONAL_PREDICTION_PATTERNS = [
   /kundli/i,
@@ -125,6 +166,49 @@ function isLikelyAppDataQuery(message) {
   ];
 
   return appDataPatterns.some((pattern) => pattern.test(text));
+}
+
+function isCatalogQuery(message) {
+  const text = normalizeSpace(message);
+  if (!text || text.length < 3) return false;
+  const lower = text.toLowerCase();
+
+  const catalogPatterns = [
+    /what(\s+all)?\s+(do\s+we\s+have|is\s+in|are\s+in|content)/i,
+    /what(\s+all)?\s+(we\s+have|you\s+have)/i,
+    /what('s|s)\s+in\s+(the\s+)?(app|database)/i,
+    /(app|database)\s+(me|main)\s+kya\s+(hai|hain|milkar)/i,
+    /(app|database)\s+mein\s+kya\s+kya\s+hai/i,
+    /kya\s+kya\s+hai\s+(app|database)/i,
+    /(app|database)\s+ke\s+andar\s+kya/i,
+    /categories?\s+(we\s+have|in\s+app|list)/i,
+    /sections?\s+(we\s+have|in\s+app|list)/i,
+    /list\s+(of\s+)?(categories|sections|content|features)/i,
+    /(sabhi|sare)\s+categories?\s+batao/i,
+    /app\s+me\s+kya\s+kya\s+hai/i,
+    /हमारे\s+(पास|डेटाबेस|ऐप)\s+में\s+क्या/i,
+    /ऐप\s+में\s+क्या\s+क्या\s+है/i,
+    /डेटाबेस\s+में\s+क्या\s+है/i,
+    /कैटगरी\s+क्या\s+क्या\s+है/i,
+    /सभी\s+सेक्शन\s+बताओ/i,
+    /content\s+kya\s+kya\s+hai/i,
+    /features?\s+(of\s+)?(app|this\s+app)/i,
+    /batao\s+(app|database)\s+me\s+kya\s+kya/i,
+    /humare\s+app\s+me\s+kya\s+hai/i,
+    /sections?\s+batao/i,
+    /sab\s+categories?\s+(batao|list)/i,
+    /available\s+(content|sections|categories)/i
+  ];
+
+  return catalogPatterns.some((pattern) => pattern.test(text));
+}
+
+function buildCatalogContext() {
+  return [
+    'APP_CATALOG (sections/categories in our app and database):',
+    JSON.stringify(APP_CATALOG, null, 2),
+    APP_CATALOG_INSTRUCTION
+  ].join('\n');
 }
 
 function buildAppSearchContext(searchResult, appDataLikely) {
@@ -230,9 +314,19 @@ function postJsonToOpenAI(pathname, payload) {
           if (res.statusCode >= 400) {
             const message =
               parsed?.error?.message || `OpenAI request failed with status ${res.statusCode}`;
+            // Debug: log OpenAI error details
+            console.error('[Assistant] OpenAI API error:', {
+              statusCode: res.statusCode,
+              message,
+              code: parsed?.error?.code,
+              type: parsed?.error?.type
+            });
             return reject(new Error(message));
           }
-          if (!parsed) return reject(new Error('Invalid OpenAI response payload.'));
+          if (!parsed) {
+            console.error('[Assistant] Invalid OpenAI response (no JSON). Raw length:', raw?.length);
+            return reject(new Error('Invalid OpenAI response payload.'));
+          }
           resolve(parsed);
         });
       }
@@ -269,6 +363,8 @@ async function runOpenAI(messages, options = {}) {
 }
 
 async function generateAssistantReply(userMessage, recentMessages) {
+  console.log('[Assistant] generateAssistantReply start, message length:', (userMessage || '').length);
+
   const callGuard = { count: 0 };
   const appDataLikely = isLikelyAppDataQuery(userMessage);
 
@@ -277,25 +373,29 @@ async function generateAssistantReply(userMessage, recentMessages) {
     searchResult = await searchAppContent(userMessage, { limit: 12 });
   } catch (searchErr) {
     // Search failure must not block reply: continue with empty context, one AI call only
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('Assistant search failed, using empty context:', searchErr && searchErr.message);
+    console.warn('[Assistant] Search failed, using empty context:', searchErr && searchErr.message);
+    if (searchErr && searchErr.stack) {
+      console.warn('[Assistant] Search stack:', searchErr.stack);
     }
   }
 
   const searchContext = buildAppSearchContext(searchResult, appDataLikely);
+  const includeCatalog = isCatalogQuery(userMessage);
+  const catalogContext = includeCatalog ? buildCatalogContext() : null;
 
   const inputMessages = [
     { role: 'system', content: SYSTEM_PROMPT },
     { role: 'system', content: searchContext },
+    ...(catalogContext ? [{ role: 'system', content: catalogContext }] : []),
     ...recentMessages,
     { role: 'user', content: userMessage }
   ];
 
+  console.log('[Assistant] Calling OpenAI, model:', MODEL_NAME);
   const completion = await runOpenAI(inputMessages, { maxTokens: 450, callGuard });
   let finalReply = normalizeSpace(completion?.choices?.[0]?.message?.content);
-  if (appDataLikely && !searchResult.found) {
-    finalReply = 'This information is not available in the app database right now.';
-  }
+  console.log('[Assistant] OpenAI responded, reply length:', (finalReply || '').length);
+  // When search found nothing, we already passed that in context; AI answers from general knowledge. No override.
 
   return {
     reply: finalReply,

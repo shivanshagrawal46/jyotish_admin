@@ -24,10 +24,17 @@ router.post('/chat', async (req, res) => {
       data: result
     });
   } catch (error) {
-    res.status(400).json({
+    const payload = {
       success: false,
       error: error.message || 'Failed to process assistant chat.'
-    });
+    };
+    // Include real error in response when DEBUG_ASSISTANT=1 (for debugging only)
+    if (process.env.DEBUG_ASSISTANT === '1') {
+      payload.debug = {
+        originalError: (error && error.originalMessage) || (error && error.message) || String(error)
+      };
+    }
+    res.status(400).json(payload);
   }
 });
 
