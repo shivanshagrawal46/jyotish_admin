@@ -7,8 +7,10 @@ const { searchAppContent } = require('./assistantSearchService');
 const MODEL_NAME = process.env.OPENAI_MODEL || 'gpt-4.1-nano';
 const MAX_CONTEXT_MESSAGES = 5;
 const MAX_OPENAI_CALLS_PER_QUESTION = 1;
-const REDIRECT_MESSAGE =
-  'For personalized kundli analysis, please consult Samta AI or Guruji inside the app.';
+const REDIRECT_MESSAGE_EN =
+  'For personalized kundli analysis, please consult Samta AI (समता AI) or Guruji inside the app.';
+const REDIRECT_MESSAGE_HI =
+  'व्यक्तिगत कुंडली विश्लेषण के लिए कृपया ऐप में Samta AI (समता AI) या Guruji से संपर्क करें।';
 
 const ASSISTANT_UNAVAILABLE_MESSAGE =
   'Assistant is temporarily unavailable. Please try again in a few moments.';
@@ -47,24 +49,27 @@ function toUserFacingError(error) {
 const SYSTEM_PROMPT = `
 You are Astro Assistant, an AI helper inside an astrology mobile application.
 
-The user may speak in English, Hindi, or Hinglish. Understand intent in all three.
-Reply in the same language as the user whenever possible.
+LANGUAGE RULE (STRICT):
+- You MUST reply in the SAME language as the user's question.
+- If the user writes in English → reply ONLY in English.
+- If the user writes in Hindi → reply in Hindi (देवनागरी).
+- If the user writes in Hinglish → reply in Hinglish.
+- Do NOT switch language. English question = English answer. Hindi question = Hindi answer.
 
 Rules:
-1) APP DATA
-- Backend already searched the app database and provided APP_SEARCH_CONTEXT.
-- If APP_SEARCH_CONTEXT has relevant hits (found: true, hits array not empty), use that data to answer. Return only the relevant part.
-- If APP_SEARCH_CONTEXT has no relevant data (found: false or empty hits), answer from your general astrology knowledge. Do NOT say "not in database" or "not available" — answer helpfully yourself.
-- Never invent or fake app-specific content (e.g. do not make up today's rashifal). If you have no app data, answer generally.
+1) APP DATA & WHEN DATABASE HAS NOTHING
+- Backend searched the app database and provided APP_SEARCH_CONTEXT.
+- If APP_SEARCH_CONTEXT has relevant hits (found: true, hits not empty): use that data to answer. Do NOT refuse when data is provided.
+- If APP_SEARCH_CONTEXT has NO data (found: false or empty hits): you MUST still reply. Answer from your own general astrology knowledge. Reply according to you — do not say "I don't have this" or "not in database" and stop. Always give a helpful answer (general horoscope tip, zodiac info, or suggest checking that section in the app). The user must get a proper reply from you even when the database has nothing.
+- Never invent or fake app-specific content (e.g. do not make up today's exact rashifal text). When you have no app data, answer generally in your own words.
 
 2) GENERAL ASTROLOGY KNOWLEDGE
-- If the user asks general educational astrology questions, answer simply.
+- If the user asks general educational astrology questions, answer simply in the user's language.
 - Do NOT provide personal predictions.
 
 3) PERSONAL KUNDLI/FUTURE REQUESTS (STRICT BLOCK)
 - If user asks personal kundli, marriage timing, career prediction, future prediction, or personal horoscope analysis,
-  always reply exactly:
-  "${REDIRECT_MESSAGE}"
+  reply with the redirect message in the user's language: English → "${REDIRECT_MESSAGE_EN}" ; Hindi/Hinglish → "${REDIRECT_MESSAGE_HI}"
 
 4) SAFETY
 - Never assume birth details.
@@ -81,7 +86,7 @@ const APP_CATALOG = [
   'Astroshop',
   'E-Pooja (E Pooja / पूजा)',
   'Talk to Guruji',
-  'Samta AI',
+  'Samta AI (समता AI)',
   'E-Magazine (E Magazine)',
   'Ankjyotish (अंक ज्योतिष / Numerology)',
   'Hastrekha (हस्तरेखा / Palmistry)',
@@ -126,6 +131,18 @@ const PERSONAL_PREDICTION_PATTERNS = [
 
 function normalizeSpace(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function isPredominantlyHindi(text) {
+  if (!text || !text.trim()) return false;
+  const devanagariRange = /[\u0900-\u097F]/;
+  const devanagariCount = (text.match(new RegExp(devanagariRange, 'g')) || []).length;
+  const letterCount = (text.match(/[a-zA-Z\u0900-\u097F]/g) || []).length;
+  return letterCount > 0 && devanagariCount / letterCount >= 0.3;
+}
+
+function getRedirectMessage(userMessage) {
+  return isPredominantlyHindi(userMessage) ? REDIRECT_MESSAGE_HI : REDIRECT_MESSAGE_EN;
 }
 
 function parseJsonSafely(value, fallback = {}) {
@@ -433,18 +450,19 @@ async function processAssistantChat({ userId, message, sessionId, source = 'api'
   });
 
   if (isPersonalPredictionRequest(normalizedMessage)) {
+    const redirectReply = getRedirectMessage(normalizedMessage);
     await saveChatMessage({
       sessionId: session._id,
       userId: normalizedUserId,
       role: 'assistant',
-      content: REDIRECT_MESSAGE,
+      content: redirectReply,
       metadata: { blockedByPolicy: true }
     });
     await updateSessionActivity(session._id);
 
     return {
       sessionId: String(session._id),
-      reply: REDIRECT_MESSAGE,
+      reply: redirectReply,
       usedSearch: false,
       redirected: true
     };
