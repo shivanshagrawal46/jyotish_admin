@@ -1,6 +1,8 @@
 require('dotenv').config();
 
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const path = require('path');
@@ -69,6 +71,7 @@ const orderApiRoutes = require('./routes/api/order');
 const calculatorApiRoutes = require('./routes/api/calculators');
 const locationApiRoutes = require('./routes/api/locations');
 const enhancedJyotishApiRoutes = require('./routes/api/enhanced-jyotish');
+const assistantApiRouter = require('./routes/api/assistant');
 const savedKundliRoutes = require('./routes/savedKundli');
 const savedKundliApiRoutes = require('./routes/api/savedKundli');
 const muhuratRouter = require('./routes/muhurat');
@@ -81,6 +84,7 @@ const divineSanskritRouter = require('./routes/divineSanskrit');
 const divineSanskritApiRouter = require('./routes/api/divineSanskrit');
 const csuApiRouter = require('./routes/api/csu');
 const csu2ApiRouter = require('./routes/api/csu2');
+const { registerAssistantSocketHandlers } = require('./sockets/assistantSocket');
 
 const app = express();
 
@@ -328,11 +332,24 @@ app.use('/api/locations', locationApiRoutes.router);
 // Enhanced Jyotish API routes
 app.use('/api/jyotish', enhancedJyotishApiRoutes.router);
 
+// Assistant AI routes (single-call chat + global search)
+app.use('/api/assistant', assistantApiRouter);
+
 // Saved Kundli routes
 app.use('/saved-kundli', savedKundliRoutes);
 app.use('/api/saved-kundli', savedKundliApiRoutes);
 
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+
+registerAssistantSocketHandlers(io);
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-}); 
+});
