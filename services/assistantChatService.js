@@ -10,6 +10,29 @@ const MAX_OPENAI_CALLS_PER_QUESTION = 1;
 const REDIRECT_MESSAGE =
   'For personalized kundli analysis, please consult Samta AI or Guruji inside the app.';
 
+const ASSISTANT_UNAVAILABLE_MESSAGE =
+  'Assistant is temporarily unavailable. Please try again in a few moments.';
+
+function isOpenAIQuotaOrRateError(message) {
+  if (!message || typeof message !== 'string') return false;
+  const lower = message.toLowerCase();
+  return (
+    lower.includes('quota') ||
+    lower.includes('rate limit') ||
+    lower.includes('exceeded') ||
+    lower.includes('insufficient_quota') ||
+    lower.includes('billing')
+  );
+}
+
+function toUserFacingError(error) {
+  const msg = error && error.message ? error.message : String(error);
+  if (isOpenAIQuotaOrRateError(msg)) {
+    return new Error(ASSISTANT_UNAVAILABLE_MESSAGE);
+  }
+  return error instanceof Error ? error : new Error(msg);
+}
+
 const SYSTEM_PROMPT = `
 You are Astro Assistant, an AI helper inside an astrology mobile application.
 
@@ -248,7 +271,17 @@ async function runOpenAI(messages, options = {}) {
 async function generateAssistantReply(userMessage, recentMessages) {
   const callGuard = { count: 0 };
   const appDataLikely = isLikelyAppDataQuery(userMessage);
-  const searchResult = await searchAppContent(userMessage, { limit: 12 });
+
+  let searchResult = { found: false, hits: [], totalMatches: 0 };
+  try {
+    searchResult = await searchAppContent(userMessage, { limit: 12 });
+  } catch (searchErr) {
+    // Search failure must not block reply: continue with empty context, one AI call only
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('Assistant search failed, using empty context:', searchErr && searchErr.message);
+    }
+  }
+
   const searchContext = buildAppSearchContext(searchResult, appDataLikely);
 
   const inputMessages = [
@@ -266,7 +299,7 @@ async function generateAssistantReply(userMessage, recentMessages) {
 
   return {
     reply: finalReply,
-    usedSearch: true, // backend search is always executed before AI call
+    usedSearch: true,
     searchFound: searchResult.found,
     searchQuery: userMessage,
     aiApiCalls: callGuard.count
@@ -317,7 +350,13 @@ async function processAssistantChat({ userId, message, sessionId, source = 'api'
     };
   }
 
-  const aiResult = await generateAssistantReply(normalizedMessage, recentMessages);
+  let aiResult;
+  try {
+    aiResult = await generateAssistantReply(normalizedMessage, recentMessages);
+  } catch (err) {
+    throw toUserFacingError(err);
+  }
+
   const finalReply =
     normalizeSpace(aiResult.reply) || 'I am sorry, I could not process that right now.';
 
