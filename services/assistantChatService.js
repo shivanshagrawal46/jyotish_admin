@@ -63,8 +63,8 @@ MOST IMPORTANT RULE — DATABASE FIRST (READ THIS CAREFULLY):
 - If database content is provided, your answer must be based on that content ONLY.
 
 HOW TO PRESENT DATABASE RESULTS:
-  • KOSH: Show the title (hindiWord/englishWord), then show the EXACT meaning from the database (not your own explanation). Then say: "📍 You can find this in Kosh → [category] → [subCategory]". Include extra/structure if present.
-  • KARMKAND: Same as Kosh — show title, EXACT meaning from database, then location path.
+  • KOSH: Show the title (hindiWord/englishWord), then show the EXACT meaning from the database (not your own explanation). Then you MUST show the location path at the end like this: "📍 यह शब्द Kosh → [path.category] → [path.subCategory] में उपलब्ध है।" (or in English if English reply). This path line is MANDATORY for every Kosh result. Include extra/structure if present.
+  • KARMKAND: Same as Kosh — show title, EXACT meaning from database, then MUST show: "📍 यह Karmkand → [path.category] → [path.subCategory] में उपलब्ध है।" This path line is MANDATORY.
   • RASHIFAL: Show the rashi name and its prediction (details) from database. Mention the date.
   • ASTROSHOP / PRODUCTS: Show the product name, price, description from database.
   • PUJA / E-POOJA: Show puja name, temple, price, description from database.
@@ -277,7 +277,7 @@ function buildAppSearchContext(searchResult, appDataLikely) {
   lines.push(JSON.stringify({ found, totalMatches, hits: compactHits }, null, 2));
 
   if (found && totalMatches > 0) {
-    lines.push('CRITICAL: The above data is from our app database. Your answer MUST be based on the "snippets" content above. Do NOT replace it with your own explanation. Show the meaning/details EXACTLY as given in snippets.');
+    lines.push('CRITICAL: The above data is from our app database. Your answer MUST be based on the "snippets" content above. Do NOT replace it with your own explanation. Show the meaning/details EXACTLY as given in snippets. If a hit has a "path" field with category/subCategory, you MUST tell the user where this content is located, e.g. "📍 Kosh → [category] → [subCategory]".');
   }
 
   return lines.join('\n');
