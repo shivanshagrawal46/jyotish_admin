@@ -259,15 +259,19 @@ async function searchKosh(query, limit) {
   for (const doc of docs) {
     const subCat = subCatMap[String(doc.subCategory)];
     const cat = subCat ? catMap[String(subCat.parentCategory)] : null;
+    const categoryName = cat ? cat.name : '';
+    const subCategoryName = subCat ? subCat.name : '';
+
+    const locationPath = (categoryName || subCategoryName)
+      ? `📍 Kosh → ${categoryName}${subCategoryName ? ' → ' + subCategoryName : ''}`
+      : '';
+
+    console.log(`[Search:Kosh] Hit: title="${doc.hindiWord}", path="${locationPath}"`);
 
     hits.push({
       model: 'KoshContent',
       documentId: String(doc.id || doc._id),
       section: 'Kosh',
-      path: {
-        category: cat ? cat.name : '',
-        subCategory: subCat ? subCat.name : ''
-      },
       snippets: {
         title: truncate(doc.hindiWord || doc.englishWord || doc.hinglishWord, 200),
         hindiWord: truncate(doc.hindiWord),
@@ -275,7 +279,8 @@ async function searchKosh(query, limit) {
         hinglishWord: truncate(doc.hinglishWord),
         meaning: truncate(doc.meaning, 500),
         extra: truncate(doc.extra, 400),
-        structure: truncate(doc.structure, 300)
+        structure: truncate(doc.structure, 300),
+        location: locationPath
       }
     });
   }
@@ -345,15 +350,17 @@ async function searchKarmkand(query, limit) {
   for (const doc of docs) {
     const subCat = subCatMap[String(doc.subCategory)];
     const cat = subCat ? catMap[String(subCat.parentCategory)] : null;
+    const categoryName = cat ? cat.name : '';
+    const subCategoryName = subCat ? subCat.name : '';
+
+    const locationPath = (categoryName || subCategoryName)
+      ? `📍 Karmkand → ${categoryName}${subCategoryName ? ' → ' + subCategoryName : ''}`
+      : '';
 
     hits.push({
       model: 'KarmkandContent',
       documentId: String(doc.id || doc._id),
       section: 'Karmkand',
-      path: {
-        category: cat ? cat.name : '',
-        subCategory: subCat ? subCat.name : ''
-      },
       snippets: {
         title: truncate(doc.hindiWord || doc.englishWord || doc.hinglishWord, 200),
         hindiWord: truncate(doc.hindiWord),
@@ -361,7 +368,8 @@ async function searchKarmkand(query, limit) {
         hinglishWord: truncate(doc.hinglishWord),
         meaning: truncate(doc.meaning, 500),
         extra: truncate(doc.extra, 400),
-        structure: truncate(doc.structure, 300)
+        structure: truncate(doc.structure, 300),
+        location: locationPath
       }
     });
   }
