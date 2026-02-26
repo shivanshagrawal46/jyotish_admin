@@ -56,30 +56,31 @@ LANGUAGE RULE (STRICT):
 - If the user writes in Hinglish → reply in Hinglish.
 - Do NOT switch language. English question = English answer. Hindi question = Hindi answer.
 
-Rules:
-1) APP DATA — HOW TO USE SEARCH RESULTS
-- Backend searched the app database and provided APP_SEARCH_CONTEXT with section-wise results.
-- If APP_SEARCH_CONTEXT has relevant hits (found: true, hits not empty): you MUST use that data to answer. Present the information clearly to the user.
-  • RASHIFAL: Show the rashi name (title_en / title_hn) and its prediction (details). Mention the date if available.
-  • KOSH: Show the title/word (hindiWord / englishWord / hinglishWord), then show its meaning. Then tell the user where it is located: "You can find this in Kosh → [category] → [subCategory]". If extra or structure info is available, include it.
-  • KARMKAND: Show the title/word (hindiWord / englishWord / hinglishWord), then show its meaning. Then tell the user its location: "You can find this in Karmkand → [category] → [subCategory]". If extra or structure info is available, include it.
-  • ASTROSHOP / PRODUCTS: Show the product name, price, and description. If user asked about a remedy (e.g. sade saati stone), show matching products.
-  • PUJA / E-POOJA: Show puja name, temple, price, and description.
-  • PANCHANG / FESTIVAL: Show the date, festival name, vrat, vishesh details.
-  • MUHURAT: Show the muhurat date and details with category.
-  • LEARNING: Show the topic title and a summary of the content, with chapter/category path.
-  • BOOKS / GRANTH: Show the title and meaning/details.
-  • NUMEROLOGY: Show the number title and prediction details.
-  • E-MAGAZINE: Show the article title and introduction.
-- Do NOT refuse or say "I cannot give" when data is provided.
+MOST IMPORTANT RULE — DATABASE FIRST (READ THIS CAREFULLY):
+- Backend searched the app database and provided APP_SEARCH_CONTEXT.
+- If APP_SEARCH_CONTEXT has found: true and hits are present: you MUST answer ONLY from the database content. Do NOT use your own knowledge. Do NOT rephrase the content in your own words. Use the EXACT meaning/details from the database snippets.
+- NEVER ignore database results. NEVER give a general answer when database content is available.
+- If database content is provided, your answer must be based on that content ONLY.
 
-2) WHEN DATABASE HAS NOTHING
-- If APP_SEARCH_CONTEXT has NO data (found: false or empty hits): you MUST still reply helpfully.
-- Answer from your own general astrology knowledge in the user's language.
-- Do NOT say "not in database" or "I don't have this" and stop. Always provide a helpful answer.
-- If the question was about a product/shop item not found, give general advice AND recommend: "Visit the Astroshop section in our app for related products."
-- If the question was about rashifal/panchang not found, give general zodiac info AND recommend: "Check the Rashifal/Panchang section in the app for the latest updates."
-- Never invent fake app-specific data. When no data, answer generally in your own words.
+HOW TO PRESENT DATABASE RESULTS:
+  • KOSH: Show the title (hindiWord/englishWord), then show the EXACT meaning from the database (not your own explanation). Then say: "📍 You can find this in Kosh → [category] → [subCategory]". Include extra/structure if present.
+  • KARMKAND: Same as Kosh — show title, EXACT meaning from database, then location path.
+  • RASHIFAL: Show the rashi name and its prediction (details) from database. Mention the date.
+  • ASTROSHOP / PRODUCTS: Show the product name, price, description from database.
+  • PUJA / E-POOJA: Show puja name, temple, price, description from database.
+  • PANCHANG / FESTIVAL: Show date, festival name, vrat, vishesh from database.
+  • MUHURAT: Show muhurat date and details with category from database.
+  • LEARNING: Show topic title and content summary from database with chapter/category path.
+  • BOOKS / GRANTH: Show title and meaning/details from database.
+  • NUMEROLOGY: Show number title and prediction from database.
+  • E-MAGAZINE: Show article title and introduction from database.
+
+WHEN DATABASE HAS NOTHING (found: false or empty hits):
+- ONLY THEN answer from your own general astrology knowledge.
+- Do NOT say "not in database" and stop. Always give a helpful general answer.
+- If about products: give general advice + "Visit the Astroshop section in our app."
+- If about rashifal/panchang: give general info + "Check the Rashifal/Panchang section in the app."
+- Never invent fake app-specific data.
 
 3) GENERAL ASTROLOGY KNOWLEDGE
 - If the user asks general educational astrology questions, answer simply in the user's language.
@@ -262,21 +263,24 @@ function buildAppSearchContext(searchResult, appDataLikely) {
     return entry;
   });
 
-  return [
-    'APP_SEARCH_CONTEXT:',
-    JSON.stringify(
-      {
-        appDataLikely,
-        found: !!searchResult.found,
-        totalMatches: searchResult.totalMatches || 0,
-        intents: searchResult.intents || [],
-        hits: compactHits
-      },
-      null,
-      2
-    ),
-    'Instruction: Use this context for app-data answers. For Kosh results, mention the category and sub-category path. For Astroshop products, mention the product name and price. If no hits found but user asked about products/shop, recommend visiting the Astroshop section in the app.'
-  ].join('\n');
+  const found = !!searchResult.found;
+  const totalMatches = searchResult.totalMatches || 0;
+
+  const lines = [];
+  if (found && totalMatches > 0) {
+    lines.push('=== DATABASE RESULTS FOUND — YOU MUST USE THIS DATA, NOT YOUR OWN KNOWLEDGE ===');
+  } else {
+    lines.push('=== NO DATABASE RESULTS — Answer from your own general knowledge ===');
+  }
+
+  lines.push('APP_SEARCH_CONTEXT:');
+  lines.push(JSON.stringify({ found, totalMatches, hits: compactHits }, null, 2));
+
+  if (found && totalMatches > 0) {
+    lines.push('CRITICAL: The above data is from our app database. Your answer MUST be based on the "snippets" content above. Do NOT replace it with your own explanation. Show the meaning/details EXACTLY as given in snippets.');
+  }
+
+  return lines.join('\n');
 }
 
 function buildSessionTitle(message) {
@@ -424,6 +428,18 @@ async function generateAssistantReply(userMessage, recentMessages) {
     }
   }
 
+  console.log('[Assistant] Search result:', JSON.stringify({
+    found: searchResult.found,
+    totalMatches: searchResult.totalMatches,
+    intents: searchResult.intents,
+    hitCount: (searchResult.hits || []).length,
+    firstHit: (searchResult.hits || [])[0] ? {
+      model: searchResult.hits[0].model,
+      section: searchResult.hits[0].section,
+      title: searchResult.hits[0].snippets?.title || searchResult.hits[0].snippets?.hindiWord || ''
+    } : null
+  }));
+
   const searchContext = buildAppSearchContext(searchResult, appDataLikely);
   const includeCatalog = isCatalogQuery(userMessage);
   const catalogContext = includeCatalog ? buildCatalogContext() : null;
@@ -437,7 +453,7 @@ async function generateAssistantReply(userMessage, recentMessages) {
   ];
 
   console.log('[Assistant] Calling OpenAI, model:', MODEL_NAME);
-  const completion = await runOpenAI(inputMessages, { maxTokens: 450, callGuard });
+  const completion = await runOpenAI(inputMessages, { maxTokens: 700, callGuard });
   let finalReply = normalizeSpace(completion?.choices?.[0]?.message?.content);
   console.log('[Assistant] OpenAI responded, reply length:', (finalReply || '').length);
   // When search found nothing, we already passed that in context; AI answers from general knowledge. No override.

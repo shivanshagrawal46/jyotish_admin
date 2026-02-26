@@ -205,20 +205,46 @@ async function searchKosh(query, limit) {
   const KoshCategory = getModel('KoshCategory');
   if (!KoshContent) return hits;
 
-  const regex = buildSmartRegex(query);
-  if (!regex) return hits;
+  const trimmedQuery = normalizeSpace(query);
 
-  const docs = await KoshContent.find({
+  // STEP 1: Try EXACT title match first (highest priority)
+  let docs = await KoshContent.find({
     $or: [
-      { hindiWord: regex },
-      { englishWord: regex },
-      { hinglishWord: regex },
-      { meaning: regex },
-      { search: regex }
+      { hindiWord: trimmedQuery },
+      { englishWord: { $regex: new RegExp(`^${escapeRegex(trimmedQuery)}$`, 'i') } },
+      { hinglishWord: { $regex: new RegExp(`^${escapeRegex(trimmedQuery)}$`, 'i') } }
     ]
-  })
-    .limit(limit)
-    .lean();
+  }).limit(limit).lean();
+
+  // STEP 2: Try contains-match on title fields
+  if (!docs.length) {
+    const titleRegex = new RegExp(escapeRegex(trimmedQuery), 'i');
+    docs = await KoshContent.find({
+      $or: [
+        { hindiWord: titleRegex },
+        { englishWord: titleRegex },
+        { hinglishWord: titleRegex },
+        { search: titleRegex }
+      ]
+    }).limit(limit).lean();
+  }
+
+  // STEP 3: Smart regex (word-level + transliteration)
+  if (!docs.length) {
+    const regex = buildSmartRegex(trimmedQuery);
+    if (!regex) return hits;
+    docs = await KoshContent.find({
+      $or: [
+        { hindiWord: regex },
+        { englishWord: regex },
+        { hinglishWord: regex },
+        { meaning: regex },
+        { search: regex }
+      ]
+    }).limit(limit).lean();
+  }
+
+  console.log(`[Search:Kosh] query="${trimmedQuery}", found=${docs.length} docs`);
 
   if (!docs.length) return hits;
 
@@ -265,20 +291,46 @@ async function searchKarmkand(query, limit) {
   const KarmkandCategory = getModel('KarmkandCategory');
   if (!KarmkandContent) return hits;
 
-  const regex = buildSmartRegex(query);
-  if (!regex) return hits;
+  const trimmedQuery = normalizeSpace(query);
 
-  const docs = await KarmkandContent.find({
+  // STEP 1: Try EXACT title match first
+  let docs = await KarmkandContent.find({
     $or: [
-      { hindiWord: regex },
-      { englishWord: regex },
-      { hinglishWord: regex },
-      { meaning: regex },
-      { search: regex }
+      { hindiWord: trimmedQuery },
+      { englishWord: { $regex: new RegExp(`^${escapeRegex(trimmedQuery)}$`, 'i') } },
+      { hinglishWord: { $regex: new RegExp(`^${escapeRegex(trimmedQuery)}$`, 'i') } }
     ]
-  })
-    .limit(limit)
-    .lean();
+  }).limit(limit).lean();
+
+  // STEP 2: Contains-match on title fields
+  if (!docs.length) {
+    const titleRegex = new RegExp(escapeRegex(trimmedQuery), 'i');
+    docs = await KarmkandContent.find({
+      $or: [
+        { hindiWord: titleRegex },
+        { englishWord: titleRegex },
+        { hinglishWord: titleRegex },
+        { search: titleRegex }
+      ]
+    }).limit(limit).lean();
+  }
+
+  // STEP 3: Smart regex fallback
+  if (!docs.length) {
+    const regex = buildSmartRegex(trimmedQuery);
+    if (!regex) return hits;
+    docs = await KarmkandContent.find({
+      $or: [
+        { hindiWord: regex },
+        { englishWord: regex },
+        { hinglishWord: regex },
+        { meaning: regex },
+        { search: regex }
+      ]
+    }).limit(limit).lean();
+  }
+
+  console.log(`[Search:Karmkand] query="${trimmedQuery}", found=${docs.length} docs`);
 
   if (!docs.length) return hits;
 
