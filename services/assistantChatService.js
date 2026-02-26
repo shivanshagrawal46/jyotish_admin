@@ -57,25 +57,49 @@ LANGUAGE RULE (STRICT):
 - Do NOT switch language. English question = English answer. Hindi question = Hindi answer.
 
 Rules:
-1) APP DATA & WHEN DATABASE HAS NOTHING
-- Backend searched the app database and provided APP_SEARCH_CONTEXT.
-- If APP_SEARCH_CONTEXT has relevant hits (found: true, hits not empty): use that data to answer. Do NOT refuse when data is provided.
-- If APP_SEARCH_CONTEXT has NO data (found: false or empty hits): you MUST still reply. Answer from your own general astrology knowledge. Reply according to you — do not say "I don't have this" or "not in database" and stop. Always give a helpful answer (general horoscope tip, zodiac info, or suggest checking that section in the app). The user must get a proper reply from you even when the database has nothing.
-- Never invent or fake app-specific content (e.g. do not make up today's exact rashifal text). When you have no app data, answer generally in your own words.
+1) APP DATA — HOW TO USE SEARCH RESULTS
+- Backend searched the app database and provided APP_SEARCH_CONTEXT with section-wise results.
+- If APP_SEARCH_CONTEXT has relevant hits (found: true, hits not empty): you MUST use that data to answer. Present the information clearly to the user.
+  • RASHIFAL: Show the rashi name (title_en / title_hn) and its prediction (details). Mention the date if available.
+  • KOSH: Show the title/word (hindiWord / englishWord / hinglishWord), then show its meaning. Then tell the user where it is located: "You can find this in Kosh → [category] → [subCategory]". If extra or structure info is available, include it.
+  • KARMKAND: Show the title/word (hindiWord / englishWord / hinglishWord), then show its meaning. Then tell the user its location: "You can find this in Karmkand → [category] → [subCategory]". If extra or structure info is available, include it.
+  • ASTROSHOP / PRODUCTS: Show the product name, price, and description. If user asked about a remedy (e.g. sade saati stone), show matching products.
+  • PUJA / E-POOJA: Show puja name, temple, price, and description.
+  • PANCHANG / FESTIVAL: Show the date, festival name, vrat, vishesh details.
+  • MUHURAT: Show the muhurat date and details with category.
+  • LEARNING: Show the topic title and a summary of the content, with chapter/category path.
+  • BOOKS / GRANTH: Show the title and meaning/details.
+  • NUMEROLOGY: Show the number title and prediction details.
+  • E-MAGAZINE: Show the article title and introduction.
+- Do NOT refuse or say "I cannot give" when data is provided.
 
-2) GENERAL ASTROLOGY KNOWLEDGE
+2) WHEN DATABASE HAS NOTHING
+- If APP_SEARCH_CONTEXT has NO data (found: false or empty hits): you MUST still reply helpfully.
+- Answer from your own general astrology knowledge in the user's language.
+- Do NOT say "not in database" or "I don't have this" and stop. Always provide a helpful answer.
+- If the question was about a product/shop item not found, give general advice AND recommend: "Visit the Astroshop section in our app for related products."
+- If the question was about rashifal/panchang not found, give general zodiac info AND recommend: "Check the Rashifal/Panchang section in the app for the latest updates."
+- Never invent fake app-specific data. When no data, answer generally in your own words.
+
+3) GENERAL ASTROLOGY KNOWLEDGE
 - If the user asks general educational astrology questions, answer simply in the user's language.
 - Do NOT provide personal predictions.
 
-3) PERSONAL KUNDLI/FUTURE REQUESTS (STRICT BLOCK)
+4) PERSONAL KUNDLI/FUTURE REQUESTS (STRICT BLOCK)
 - If user asks personal kundli, marriage timing, career prediction, future prediction, or personal horoscope analysis,
   reply with the redirect message in the user's language: English → "${REDIRECT_MESSAGE_EN}" ; Hindi/Hinglish → "${REDIRECT_MESSAGE_HI}"
 
-4) SAFETY
+5) SAFETY
 - Never assume birth details.
 - Never bypass redirect.
 - If uncertain, choose redirect.
 - Keep responses concise and polite.
+
+6) FOOTER (MANDATORY — NEVER SKIP)
+- You MUST always end EVERY reply with this footer line on a new line.
+- English reply → end with: "Please consult Samta AI (समता AI) or Guruji for more insights."
+- Hindi/Hinglish reply → end with: "अधिक जानकारी के लिए Samta AI (समता AI) या Guruji से संपर्क करें।"
+- This footer MUST appear at the end of EVERY response, including redirect responses, general answers, and app-data answers.
 `.trim();
 
 // App catalog: what we have in the app/database (for "what do we have" type questions)
@@ -165,21 +189,20 @@ function isLikelyAppDataQuery(message) {
   if (!text) return false;
 
   const appDataPatterns = [
-    /rashifal/,
-    /राशिफल/,
-    /zodiac/,
-    /today.*prediction/,
-    /app (data|content|info|information)/,
-    /learning content/,
-    /granth/,
-    /kosh/,
-    /festival/,
-    /muhurat/,
-    /numerology/,
-    /book/,
-    /daily horoscope/,
-    /monthly horoscope/,
-    /yearly horoscope/
+    /rashifal/i, /राशिफल/i, /zodiac/i, /horoscope/i, /rashi/i, /राशि/i,
+    /today.*prediction/i, /app (data|content|info|information)/i,
+    /learning/i, /granth/i, /ग्रंथ/i, /kosh/i, /कोश/i, /शब्दकोश/i,
+    /festival/i, /त्योहार/i, /muhurat/i, /मुहूर्त/i,
+    /numerology/i, /अंक/i, /ankjyotish/i,
+    /book/i, /किताब/i, /पुस्तक/i,
+    /karmkand/i, /कर्मकांड/i, /ritual/i,
+    /puja/i, /pooja/i, /पूजा/i,
+    /astroshop/i, /stone/i, /gemstone/i, /rudraksha/i, /yantra/i, /रत्न/i, /यंत्र/i,
+    /product/i, /sade\s*saati/i, /साढ़े\s*साती/i,
+    /magazine/i, /पत्रिका/i, /ई.*मैगजीन/i,
+    /panchang/i, /पंचांग/i, /vrat/i, /व्रत/i,
+    /daily horoscope/i, /monthly horoscope/i, /yearly horoscope/i,
+    /mcq/i, /quiz/i
   ];
 
   return appDataPatterns.some((pattern) => pattern.test(text));
@@ -229,11 +252,15 @@ function buildCatalogContext() {
 }
 
 function buildAppSearchContext(searchResult, appDataLikely) {
-  const compactHits = (searchResult.hits || []).slice(0, 10).map((hit) => ({
-    model: hit.model,
-    documentId: hit.documentId,
-    snippets: hit.snippets
-  }));
+  const compactHits = (searchResult.hits || []).slice(0, 15).map((hit) => {
+    const entry = {
+      section: hit.section || hit.model,
+      snippets: hit.snippets
+    };
+    if (hit.path) entry.path = hit.path;
+    if (hit.dateLabel) entry.dateLabel = hit.dateLabel;
+    return entry;
+  });
 
   return [
     'APP_SEARCH_CONTEXT:',
@@ -242,12 +269,13 @@ function buildAppSearchContext(searchResult, appDataLikely) {
         appDataLikely,
         found: !!searchResult.found,
         totalMatches: searchResult.totalMatches || 0,
+        intents: searchResult.intents || [],
         hits: compactHits
       },
       null,
       2
     ),
-    'Instruction: Use only this context for app-data answers.'
+    'Instruction: Use this context for app-data answers. For Kosh results, mention the category and sub-category path. For Astroshop products, mention the product name and price. If no hits found but user asked about products/shop, recommend visiting the Astroshop section in the app.'
   ].join('\n');
 }
 

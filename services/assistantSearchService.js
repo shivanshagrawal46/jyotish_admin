@@ -18,16 +18,8 @@ const EXCLUDED_MODEL_NAMES = new Set([
 
 const QUERY_CACHE_TTL_MS = 2 * 60 * 1000;
 const QUERY_CACHE_MAX_ENTRIES = 500;
-const MAX_TEXT_FIELDS_PER_MODEL = 18;
-const TEXT_QUERY_MAX_TIME_MS = 500;
-const REGEX_QUERY_MAX_TIME_MS = 350;
-const MAX_TOKENS = 8;
 
 let modelsInitialized = false;
-let searchableModelNames = [];
-const modelFieldCache = new Map();
-const modelTextIndexCache = new Map();
-const modelTextIndexCheckPromise = new Map();
 const queryCache = new Map();
 
 function normalizeSpace(value) {
@@ -38,420 +30,896 @@ function escapeRegex(value) {
   return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Expand query so Latin "rashifal" etc. also matches Hindi/Devanagari in DB
-function getExpandedRegexForQuery(normalizedQuery) {
-  const q = normalizedQuery.toLowerCase();
-  const parts = [escapeRegex(normalizedQuery)];
-
-  if (q.includes('rashifal') || q.includes('rashi') || q.includes('राशिफल') || q.includes('राशि')) {
-    parts.push('राशिफल', 'राशि', 'rashi', 'rashifal');
-  }
-  if (q.includes('numerology') || q.includes('अंक') || q.includes('ank')) {
-    parts.push('numerology', 'अंक', 'ank');
-  }
-  if (q.includes('horoscope') || q.includes('zodiac')) {
-    parts.push('horoscope', 'zodiac', 'rashifal', 'राशिफल');
-  }
-
-  const unique = [...new Set(parts)].filter(Boolean);
-  if (unique.length <= 1) return null;
-  return new RegExp(unique.map(escapeRegex).join('|'), 'i');
-}
-
-function truncateText(value, maxLen = 240) {
+function truncate(value, maxLen = 300) {
   const text = normalizeSpace(value);
   if (!text) return '';
   return text.length <= maxLen ? text : `${text.slice(0, maxLen)}...`;
 }
 
-function tokenizeQuery(query) {
-  const tokens = query
-    .toLowerCase()
-    .split(/[\s,.;:!?()[\]{}'"`~|/\\+-]+/)
-    .map((token) => token.trim())
-    .filter((token) => token.length >= 2);
-
-  const unique = [...new Set(tokens)];
-  unique.sort((a, b) => b.length - a.length);
-  return unique.slice(0, MAX_TOKENS);
+function buildCacheKey(query, limit) {
+  return `${query.toLowerCase().trim()}::${limit}`;
 }
 
-function buildCacheKey(query, limit, perModelLimit) {
-  return `${query.toLowerCase()}::${limit}::${perModelLimit}`;
-}
-
-function getCachedQueryResult(query, limit, perModelLimit) {
-  const key = buildCacheKey(query, limit, perModelLimit);
+function getCached(query, limit) {
+  const key = buildCacheKey(query, limit);
   const cached = queryCache.get(key);
   if (!cached) return null;
   if (Date.now() - cached.ts > QUERY_CACHE_TTL_MS) {
     queryCache.delete(key);
     return null;
   }
-  // keep hot keys alive in LRU order
   queryCache.delete(key);
   queryCache.set(key, cached);
   return cached.payload;
 }
 
-function setCachedQueryResult(query, limit, perModelLimit, payload) {
-  const key = buildCacheKey(query, limit, perModelLimit);
-  if (queryCache.has(key)) {
-    queryCache.delete(key);
-  }
+function setCache(query, limit, payload) {
+  const key = buildCacheKey(query, limit);
+  if (queryCache.has(key)) queryCache.delete(key);
   queryCache.set(key, { ts: Date.now(), payload });
-  if (queryCache.size <= QUERY_CACHE_MAX_ENTRIES) return;
-
-  const firstKey = queryCache.keys().next().value;
-  if (firstKey) queryCache.delete(firstKey);
+  if (queryCache.size > QUERY_CACHE_MAX_ENTRIES) {
+    const firstKey = queryCache.keys().next().value;
+    if (firstKey) queryCache.delete(firstKey);
+  }
 }
 
 function initializeAllModels() {
   if (modelsInitialized) return;
-
   const modelsDir = path.join(__dirname, '..', 'models');
   const files = fs
     .readdirSync(modelsDir)
     .filter((file) => file.endsWith('.js') && !EXCLUDED_MODEL_FILES.has(file));
-
   for (const file of files) {
-    const fullPath = path.join(modelsDir, file);
-    // eslint-disable-next-line global-require, import/no-dynamic-require
-    require(fullPath);
+    require(path.join(modelsDir, file));
   }
-
-  searchableModelNames = mongoose
-    .modelNames()
-    .filter(isSearchableModelName)
-    .sort((a, b) => a.localeCompare(b));
-
   modelsInitialized = true;
 }
 
-function isSearchableModelName(modelName) {
-  return !EXCLUDED_MODEL_NAMES.has(modelName);
+function getModel(name) {
+  return mongoose.models[name] || null;
 }
 
-function extractSearchableStringFields(model) {
-  if (modelFieldCache.has(model.modelName)) {
-    return modelFieldCache.get(model.modelName);
-  }
-
-  const fields = [];
-  const schemaPaths = model.schema?.paths || {};
-
-  for (const [fieldName, schemaType] of Object.entries(schemaPaths)) {
-    if (fieldName === '_id' || fieldName === '__v') continue;
-    if (fieldName.startsWith('_')) continue;
-
-    if (schemaType.instance === 'String') {
-      fields.push(fieldName);
-      continue;
-    }
-
-    if (
-      schemaType.instance === 'Array' &&
-      schemaType.caster &&
-      schemaType.caster.instance === 'String'
-    ) {
-      fields.push(fieldName);
-    }
-  }
-
-  const fieldPriority = [
-    'title',
-    'name',
-    'hindiword',
-    'englishword',
-    'hinglishword',
-    'meaning',
-    'details',
-    'description',
-    'content',
-    'search',
-    'keywords',
-    'notes',
-    'month',
-    'year',
-    'date'
-  ];
-
-  const uniqueFields = [...new Set(fields)].sort((a, b) => {
-    const aLower = a.toLowerCase();
-    const bLower = b.toLowerCase();
-
-    const aPriority = fieldPriority.findIndex((item) => aLower.includes(item));
-    const bPriority = fieldPriority.findIndex((item) => bLower.includes(item));
-
-    const aScore = aPriority === -1 ? 999 : aPriority;
-    const bScore = bPriority === -1 ? 999 : bPriority;
-    if (aScore !== bScore) return aScore - bScore;
-    return a.length - b.length;
-  });
-
-  modelFieldCache.set(model.modelName, uniqueFields);
-  return uniqueFields;
+function buildRegex(terms) {
+  if (!terms || !terms.length) return null;
+  const unique = [...new Set(terms.filter(Boolean))];
+  if (!unique.length) return null;
+  return new RegExp(unique.map(escapeRegex).join('|'), 'i');
 }
 
-function getPrioritizedModels(query, allModelNames) {
-  const text = query.toLowerCase();
-  const priorityNames = new Set();
-
-  const keywordToModels = [
-    {
-      keywords: ['rashifal', 'राशिफल', 'horoscope', 'zodiac'],
-      models: ['RashifalDailyContent', 'RashifalMonthly', 'RashifalYearly', 'RashifalDailyDate']
-    },
-    {
-      keywords: ['numerology', 'अंक', 'ank'],
-      models: ['NumerologyDailyContent', 'NumerologyMonthly', 'NumerologyYearly', 'NumerologyDailyDate']
-    },
-    {
-      keywords: ['learning', 'learn', 'सीख', 'jyotish learning'],
-      models: ['LearningContent', 'LearningChapter', 'LearningCategory']
-    },
-    {
-      keywords: ['festival', 'त्योहार', 'parv'],
-      models: ['Festival']
-    },
-    {
-      keywords: ['kosh', 'dictionary', 'शब्द', 'word meaning'],
-      models: ['KoshContent', 'KoshSubCategory', 'KoshCategory']
-    },
-    {
-      keywords: ['book', 'granth', 'ग्रंथ', 'chapter'],
-      models: ['BookContent', 'BookChapter', 'BookName', 'GranthContent', 'GranthChapter', 'GranthName']
-    }
-  ];
-
-  for (const mapping of keywordToModels) {
-    const hit = mapping.keywords.some((keyword) => text.includes(keyword));
-    if (!hit) continue;
-    mapping.models.forEach((modelName) => priorityNames.add(modelName));
-  }
-
-  const orderedPriority = [...priorityNames].filter((name) => allModelNames.includes(name));
-  const rest = allModelNames.filter((name) => !priorityNames.has(name));
-  return [...orderedPriority, ...rest];
+function todayDateLabel() {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const yyyy = now.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
 }
 
-function extractSnippetsFromDocument(doc, fields, queryRegex, queryLower) {
-  const snippets = {};
-  let score = 0;
-
-  for (const field of fields) {
-    const value = doc[field];
-    if (value == null) continue;
-
-    let textValue = '';
-    if (typeof value === 'string') {
-      textValue = value;
-    } else if (Array.isArray(value)) {
-      textValue = value
-        .filter((v) => typeof v === 'string' && v.trim())
-        .join(' | ');
-    }
-
-    if (!textValue) continue;
-
-    const normalized = normalizeSpace(textValue);
-    if (!normalized) continue;
-
-    if (queryRegex.test(normalized) || normalized.toLowerCase().includes(queryLower)) {
-      snippets[field] = truncateText(normalized);
-      score += field.toLowerCase().includes('title') || field.toLowerCase().includes('name') ? 5 : 2;
-    }
-  }
-
-  return { snippets, score };
+function currentMonthName() {
+  return new Date().toLocaleString('en-US', { month: 'long' });
 }
 
-async function hasTextIndex(model) {
-  if (modelTextIndexCache.has(model.modelName)) {
-    return modelTextIndexCache.get(model.modelName);
-  }
-
-  if (modelTextIndexCheckPromise.has(model.modelName)) {
-    return modelTextIndexCheckPromise.get(model.modelName);
-  }
-
-  const checkPromise = (async () => {
-    try {
-      const indexes = await model.collection.indexes();
-      const hasIndex = indexes.some((index) =>
-        Object.values(index.key || {}).some((value) => value === 'text')
-      );
-      modelTextIndexCache.set(model.modelName, hasIndex);
-      return hasIndex;
-    } catch (error) {
-      modelTextIndexCache.set(model.modelName, false);
-      return false;
-    } finally {
-      modelTextIndexCheckPromise.delete(model.modelName);
-    }
-  })();
-
-  modelTextIndexCheckPromise.set(model.modelName, checkPromise);
-  return checkPromise;
+function currentYear() {
+  return new Date().getFullYear();
 }
 
-async function searchSingleModel(
-  modelName,
-  query,
-  queryRegex,
-  queryLower,
-  tokenRegex,
-  perModelLimit
-) {
-  const model = mongoose.models[modelName];
-  if (!model) return [];
+// ─── INTENT DETECTION ───
 
-  const fields = extractSearchableStringFields(model);
-  if (!fields.length) return [];
-  const searchFields = fields.slice(0, MAX_TEXT_FIELDS_PER_MODEL);
+const INTENT_PATTERNS = {
+  rashifal_daily: [/aaj\s*ka\s*rashifal/i, /today.*(rashifal|horoscope)/i, /daily\s*(rashifal|horoscope)/i, /आज\s*का\s*राशिफल/i, /dainik\s*rashifal/i, /दैनिक\s*राशिफल/i],
+  rashifal_monthly: [/monthly\s*(rashifal|horoscope)/i, /masik\s*rashifal/i, /मासिक\s*राशिफल/i, /is\s*mahine\s*ka\s*rashifal/i, /this\s*month.*(rashifal|horoscope)/i],
+  rashifal_yearly: [/yearly\s*(rashifal|horoscope)/i, /varshik\s*rashifal/i, /वार्षिक\s*राशिफल/i, /this\s*year.*(rashifal|horoscope)/i, /sal\s*ka\s*rashifal/i],
+  rashifal_generic: [/rashifal/i, /राशिफल/i, /horoscope/i, /rashi/i, /राशि/i, /zodiac/i],
+  numerology: [/numerology/i, /अंक\s*ज्योतिष/i, /ankjyotish/i, /ankfal/i, /अंकफल/i, /ank\s*shastra/i],
+  kosh: [/kosh/i, /कोश/i, /शब्दकोश/i, /dictionary/i, /word\s*meaning/i, /shabd/i, /शब्द/i],
+  karmkand: [/karmkand/i, /कर्मकांड/i, /karma\s*kand/i, /ritual/i, /विधि/i],
+  astroshop: [/astroshop/i, /astro\s*shop/i, /stone/i, /gemstone/i, /rudraksha/i, /yantra/i, /product/i, /buy/i, /रत्न/i, /यंत्र/i, /sade\s*saati/i, /साढ़े\s*साती/i],
+  puja: [/puja/i, /pooja/i, /e-?pooja/i, /पूजा/i, /e\s*puja/i],
+  festival: [/festival/i, /panchang/i, /पंचांग/i, /त्योहार/i, /tyohar/i, /vrat/i, /व्रत/i, /jyanti/i, /जयंती/i],
+  muhurat: [/muhurat/i, /मुहूर्त/i, /shubh\s*muhurat/i, /शुभ\s*मुहूर्त/i],
+  learning: [/learning/i, /learn/i, /सीख/i, /jyotish\s*(learning|sikhe|course)/i, /ज्योतिष\s*(सीख|कोर्स)/i],
+  book: [/book/i, /किताब/i, /पुस्तक/i, /pustak/i, /kitab/i],
+  granth: [/granth/i, /ग्रंथ/i],
+  emagazine: [/magazine/i, /e-?magazine/i, /ई-?मैगजीन/i, /patrika/i, /पत्रिका/i],
+  mcq: [/mcq/i, /quiz/i, /प्रश्नोत्तरी/i, /question/i]
+};
 
-  const projection = { _id: 1, id: 1 };
-  searchFields.forEach((field) => {
-    projection[field] = 1;
-  });
+function detectIntents(query) {
+  const text = normalizeSpace(query);
+  const matched = [];
+  for (const [intent, patterns] of Object.entries(INTENT_PATTERNS)) {
+    if (patterns.some((p) => p.test(text))) {
+      matched.push(intent);
+    }
+  }
+  return matched;
+}
+
+// ─── INTENT-SPECIFIC SEARCH FUNCTIONS ───
+
+async function searchRashifalDaily(query, limit) {
+  const hits = [];
+  const RashifalDailyDate = getModel('RashifalDailyDate');
+  const RashifalDailyContent = getModel('RashifalDailyContent');
+  if (!RashifalDailyDate || !RashifalDailyContent) return hits;
+
+  const today = todayDateLabel();
+  let dateDoc = await RashifalDailyDate.findOne({
+    $or: [
+      { dateLabel: { $regex: today, $options: 'i' } },
+      { dateISO: { $gte: new Date(new Date().setHours(0, 0, 0, 0)), $lte: new Date(new Date().setHours(23, 59, 59, 999)) } }
+    ]
+  }).lean();
+
+  if (!dateDoc) {
+    dateDoc = await RashifalDailyDate.findOne().sort({ sequence: -1, createdAt: -1 }).lean();
+  }
+
+  if (!dateDoc) return hits;
+
+  const contents = await RashifalDailyContent.find({ dateRef: dateDoc._id })
+    .sort({ sequence: 1 })
+    .limit(limit)
+    .lean();
+
+  for (const doc of contents) {
+    hits.push({
+      model: 'RashifalDailyContent',
+      documentId: String(doc._id),
+      section: 'Rashifal Daily',
+      dateLabel: dateDoc.dateLabel || '',
+      snippets: {
+        title_hn: truncate(doc.title_hn),
+        title_en: truncate(doc.title_en),
+        details_hn: truncate(doc.details_hn),
+        details_en: truncate(doc.details_en)
+      }
+    });
+  }
+  return hits;
+}
+
+async function searchRashifalMonthly(query, limit) {
+  const hits = [];
+  const RashifalMonthlyYear = getModel('RashifalMonthlyYear');
+  const RashifalMonthly = getModel('RashifalMonthly');
+  if (!RashifalMonthlyYear || !RashifalMonthly) return hits;
+
+  const yearDoc = await RashifalMonthlyYear.findOne({ year: currentYear() }).lean();
+  if (!yearDoc) return hits;
+
+  const month = currentMonthName();
+  const contents = await RashifalMonthly.find({ yearRef: yearDoc._id, month })
+    .sort({ sequence: 1 })
+    .limit(limit)
+    .lean();
+
+  for (const doc of contents) {
+    hits.push({
+      model: 'RashifalMonthly',
+      documentId: String(doc._id),
+      section: `Rashifal Monthly - ${month} ${currentYear()}`,
+      snippets: {
+        title_hn: truncate(doc.title_hn),
+        title_en: truncate(doc.title_en),
+        details_hn: truncate(doc.details_hn),
+        details_en: truncate(doc.details_en)
+      }
+    });
+  }
+  return hits;
+}
+
+async function searchRashifalYearly(query, limit) {
+  const hits = [];
+  const RashifalYearlyYear = getModel('RashifalYearlyYear');
+  const RashifalYearly = getModel('RashifalYearly');
+  if (!RashifalYearlyYear || !RashifalYearly) return hits;
+
+  const yearDoc = await RashifalYearlyYear.findOne({ year: currentYear() }).lean();
+  if (!yearDoc) return hits;
+
+  const contents = await RashifalYearly.find({ yearRef: yearDoc._id })
+    .sort({ sequence: 1 })
+    .limit(limit)
+    .lean();
+
+  for (const doc of contents) {
+    hits.push({
+      model: 'RashifalYearly',
+      documentId: String(doc._id),
+      section: `Rashifal Yearly - ${currentYear()}`,
+      snippets: {
+        title_hn: truncate(doc.title_hn),
+        title_en: truncate(doc.title_en),
+        details_hn: truncate(doc.details_hn),
+        details_en: truncate(doc.details_en)
+      }
+    });
+  }
+  return hits;
+}
+
+async function searchKosh(query, limit) {
+  const hits = [];
+  const KoshContent = getModel('KoshContent');
+  const KoshSubCategory = getModel('KoshSubCategory');
+  const KoshCategory = getModel('KoshCategory');
+  if (!KoshContent) return hits;
+
+  const regex = buildRegex([query, ...query.split(/\s+/)]);
+  if (!regex) return hits;
+
+  const docs = await KoshContent.find({
+    $or: [
+      { hindiWord: regex },
+      { englishWord: regex },
+      { hinglishWord: regex },
+      { meaning: regex },
+      { search: regex }
+    ]
+  })
+    .limit(limit)
+    .lean();
+
+  const subCatIds = [...new Set(docs.map((d) => String(d.subCategory)).filter(Boolean))];
+  const subCats = KoshSubCategory ? await KoshSubCategory.find({ _id: { $in: subCatIds } }).lean() : [];
+  const subCatMap = Object.fromEntries(subCats.map((s) => [String(s._id), s]));
+
+  const catIds = [...new Set(subCats.map((s) => String(s.parentCategory)).filter(Boolean))];
+  const cats = KoshCategory ? await KoshCategory.find({ _id: { $in: catIds } }).lean() : [];
+  const catMap = Object.fromEntries(cats.map((c) => [String(c._id), c]));
+
+  for (const doc of docs) {
+    const subCat = subCatMap[String(doc.subCategory)];
+    const cat = subCat ? catMap[String(subCat.parentCategory)] : null;
+
+    hits.push({
+      model: 'KoshContent',
+      documentId: String(doc.id || doc._id),
+      section: 'Kosh',
+      path: {
+        category: cat ? cat.name : '',
+        subCategory: subCat ? subCat.name : ''
+      },
+      snippets: {
+        title: truncate(doc.hindiWord || doc.englishWord || doc.hinglishWord, 200),
+        hindiWord: truncate(doc.hindiWord),
+        englishWord: truncate(doc.englishWord),
+        hinglishWord: truncate(doc.hinglishWord),
+        meaning: truncate(doc.meaning, 500),
+        extra: truncate(doc.extra, 400),
+        structure: truncate(doc.structure, 300)
+      }
+    });
+  }
+  return hits;
+}
+
+async function searchKarmkand(query, limit) {
+  const hits = [];
+  const KarmkandContent = getModel('KarmkandContent');
+  const KarmkandSubCategory = getModel('KarmkandSubCategory');
+  const KarmkandCategory = getModel('KarmkandCategory');
+  if (!KarmkandContent) return hits;
+
+  const regex = buildRegex([query, ...query.split(/\s+/)]);
+  if (!regex) return hits;
+
+  const docs = await KarmkandContent.find({
+    $or: [
+      { hindiWord: regex },
+      { englishWord: regex },
+      { hinglishWord: regex },
+      { meaning: regex },
+      { search: regex }
+    ]
+  })
+    .limit(limit)
+    .lean();
+
+  const subCatIds = [...new Set(docs.map((d) => String(d.subCategory)).filter(Boolean))];
+  const subCats = KarmkandSubCategory ? await KarmkandSubCategory.find({ _id: { $in: subCatIds } }).lean() : [];
+  const subCatMap = Object.fromEntries(subCats.map((s) => [String(s._id), s]));
+
+  const catIds = [...new Set(subCats.map((s) => String(s.parentCategory)).filter(Boolean))];
+  const cats = KarmkandCategory ? await KarmkandCategory.find({ _id: { $in: catIds } }).lean() : [];
+  const catMap = Object.fromEntries(cats.map((c) => [String(c._id), c]));
+
+  for (const doc of docs) {
+    const subCat = subCatMap[String(doc.subCategory)];
+    const cat = subCat ? catMap[String(subCat.parentCategory)] : null;
+
+    hits.push({
+      model: 'KarmkandContent',
+      documentId: String(doc.id || doc._id),
+      section: 'Karmkand',
+      path: {
+        category: cat ? cat.name : '',
+        subCategory: subCat ? subCat.name : ''
+      },
+      snippets: {
+        title: truncate(doc.hindiWord || doc.englishWord || doc.hinglishWord, 200),
+        hindiWord: truncate(doc.hindiWord),
+        englishWord: truncate(doc.englishWord),
+        hinglishWord: truncate(doc.hinglishWord),
+        meaning: truncate(doc.meaning, 500),
+        extra: truncate(doc.extra, 400),
+        structure: truncate(doc.structure, 300)
+      }
+    });
+  }
+  return hits;
+}
+
+async function searchAstroshop(query, limit) {
+  const hits = [];
+  const Product = getModel('Product');
+  const AstroShopCategory = getModel('AstroShopCategory');
+  if (!Product) return hits;
+
+  const regex = buildRegex([query, ...query.split(/\s+/)]);
+  if (!regex) return hits;
+
+  const docs = await Product.find({
+    $or: [
+      { title: regex },
+      { short_description: regex },
+      { full_description: regex },
+      { slug: regex }
+    ],
+    is_active: true
+  })
+    .limit(limit)
+    .lean();
+
+  const catIds = [...new Set(docs.map((d) => String(d.category)).filter(Boolean))];
+  const cats = AstroShopCategory ? await AstroShopCategory.find({ _id: { $in: catIds } }).lean() : [];
+  const catMap = Object.fromEntries(cats.map((c) => [String(c._id), c]));
+
+  for (const doc of docs) {
+    const cat = catMap[String(doc.category)];
+    hits.push({
+      model: 'Product',
+      documentId: String(doc._id),
+      section: 'Astroshop',
+      path: { category: cat ? cat.name : '' },
+      snippets: {
+        title: truncate(doc.title),
+        short_description: truncate(doc.short_description),
+        price: doc.price,
+        rating: doc.rating
+      }
+    });
+  }
+  return hits;
+}
+
+async function searchPuja(query, limit) {
+  const hits = [];
+  const Puja = getModel('Puja');
+  if (!Puja) return hits;
+
+  const regex = buildRegex([query, ...query.split(/\s+/)]);
+  if (!regex) return hits;
+
+  const docs = await Puja.find({
+    $or: [
+      { title: regex },
+      { description: regex },
+      { temple_name: regex },
+      { tagline: regex }
+    ],
+    is_active: true
+  })
+    .limit(limit)
+    .lean();
+
+  for (const doc of docs) {
+    hits.push({
+      model: 'Puja',
+      documentId: String(doc._id),
+      section: 'E-Pooja',
+      snippets: {
+        title: truncate(doc.title),
+        tagline: truncate(doc.tagline),
+        temple_name: truncate(doc.temple_name),
+        description: truncate(doc.description),
+        price: doc.price
+      }
+    });
+  }
+  return hits;
+}
+
+async function searchFestivalPanchang(query, limit) {
+  const hits = [];
+  const Festival = getModel('Festival');
+  if (!Festival) return hits;
+
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  const isPanchangQuery = /panchang|पंचांग/i.test(query);
+  const isTodayQuery = /today|aaj|आज/i.test(query) || isPanchangQuery;
 
   let docs = [];
-  let strategy = 'regex';
-
-  const modelHasTextIndex = await hasTextIndex(model);
-  if (modelHasTextIndex) {
-    try {
-      docs = await model
-        .find({ $text: { $search: query } }, { ...projection, score: { $meta: 'textScore' } })
-        .sort({ score: { $meta: 'textScore' } })
-        .limit(Math.max(perModelLimit, 1))
-        .maxTimeMS(TEXT_QUERY_MAX_TIME_MS)
-        .lean();
-      if (docs.length) strategy = 'text';
-    } catch (error) {
-      docs = [];
-    }
+  if (isTodayQuery) {
+    docs = await Festival.find({ date: { $gte: startOfDay, $lte: endOfDay } })
+      .sort({ sequence: 1 })
+      .limit(limit)
+      .lean();
   }
 
   if (!docs.length) {
-    const regexForQuery = tokenRegex || queryRegex;
-    const orConditions = searchFields.map((field) => ({ [field]: regexForQuery }));
-    try {
-      docs = await model
-        .find({ $or: orConditions }, projection)
-        .limit(Math.max(perModelLimit * 2, 2))
-        .maxTimeMS(REGEX_QUERY_MAX_TIME_MS)
+    const regex = buildRegex([query, ...query.split(/\s+/)]);
+    if (regex) {
+      docs = await Festival.find({
+        $or: [
+          { festival_name: regex },
+          { vrat: regex },
+          { jyanti: regex },
+          { vishesh: regex }
+        ]
+      })
+        .sort({ date: -1 })
+        .limit(limit)
         .lean();
-    } catch (error) {
-      docs = [];
     }
   }
 
-  const hits = [];
-  for (const doc of docs) {
-    const extracted = extractSnippetsFromDocument(doc, searchFields, queryRegex, queryLower);
-    const snippets = extracted.snippets;
-    if (!Object.keys(snippets).length) continue;
+  if (!docs.length && isTodayQuery) {
+    docs = await Festival.find({ date: { $gte: startOfDay } })
+      .sort({ date: 1 })
+      .limit(limit)
+      .lean();
+  }
 
+  for (const doc of docs) {
     hits.push({
-      model: modelName,
-      documentId: String(doc.id || doc._id),
-      strategy,
-      snippets,
-      score: extracted.score
+      model: 'Festival',
+      documentId: String(doc._id),
+      section: isPanchangQuery ? 'Panchang' : 'Festival',
+      snippets: {
+        date: doc.date ? new Date(doc.date).toLocaleDateString('en-IN') : '',
+        festival_name: truncate(doc.festival_name),
+        vrat: truncate(doc.vrat),
+        jyanti: truncate(doc.jyanti),
+        vishesh: truncate(doc.vishesh)
+      }
     });
   }
-
-  hits.sort((a, b) => b.score - a.score);
-  return hits.slice(0, perModelLimit);
+  return hits;
 }
 
-async function searchInBatches(
-  modelNames,
-  query,
-  queryRegex,
-  queryLower,
-  tokenRegex,
-  limit,
-  perModelLimit
-) {
+async function searchMuhurat(query, limit) {
   const hits = [];
-  const batchSize = 8;
-  let searchedModels = 0;
+  const MuhuratContent = getModel('MuhuratContent');
+  const MuhuratCategory = getModel('MuhuratCategory');
+  if (!MuhuratContent) return hits;
 
-  for (let i = 0; i < modelNames.length; i += batchSize) {
-    const batch = modelNames.slice(i, i + batchSize);
-    searchedModels += batch.length;
-    const batchResults = await Promise.all(
-      batch.map((modelName) =>
-        searchSingleModel(modelName, query, queryRegex, queryLower, tokenRegex, perModelLimit)
-      )
-    );
+  const year = currentYear();
+  const regex = buildRegex([query, ...query.split(/\s+/)]);
 
-    for (const modelHits of batchResults) {
-      hits.push(...modelHits);
-      if (hits.length >= limit) return hits.slice(0, limit);
-    }
+  let docs = [];
+  if (regex) {
+    docs = await MuhuratContent.find({
+      $or: [{ detail: regex }, { date: regex }],
+      year
+    })
+      .limit(limit)
+      .lean();
   }
 
-  return { hits: hits.slice(0, limit), searchedModels };
+  if (!docs.length) {
+    docs = await MuhuratContent.find({ year }).limit(limit).lean();
+  }
+
+  const catIds = [...new Set(docs.map((d) => String(d.categoryId)).filter(Boolean))];
+  const cats = MuhuratCategory ? await MuhuratCategory.find({ _id: { $in: catIds } }).lean() : [];
+  const catMap = Object.fromEntries(cats.map((c) => [String(c._id), c]));
+
+  for (const doc of docs) {
+    const cat = catMap[String(doc.categoryId)];
+    hits.push({
+      model: 'MuhuratContent',
+      documentId: String(doc.id || doc._id),
+      section: 'Muhurat',
+      path: { category: cat ? cat.categoryName : '' },
+      snippets: {
+        date: truncate(doc.date),
+        detail: truncate(doc.detail),
+        year: doc.year
+      }
+    });
+  }
+  return hits;
 }
+
+async function searchLearning(query, limit) {
+  const hits = [];
+  const LearningContent = getModel('LearningContent');
+  const LearningChapter = getModel('LearningChapter');
+  const LearningCategory = getModel('LearningCategory');
+  if (!LearningContent) return hits;
+
+  const regex = buildRegex([query, ...query.split(/\s+/)]);
+  if (!regex) return hits;
+
+  const docs = await LearningContent.find({
+    $or: [{ title: regex }, { content: regex }],
+    isActive: true
+  })
+    .limit(limit)
+    .lean();
+
+  const chapterIds = [...new Set(docs.map((d) => String(d.chapter)).filter(Boolean))];
+  const chapters = LearningChapter ? await LearningChapter.find({ _id: { $in: chapterIds } }).lean() : [];
+  const chapterMap = Object.fromEntries(chapters.map((c) => [String(c._id), c]));
+
+  const catIds = [...new Set(chapters.map((c) => String(c.category)).filter(Boolean))];
+  const cats = LearningCategory ? await LearningCategory.find({ _id: { $in: catIds } }).lean() : [];
+  const catMap = Object.fromEntries(cats.map((c) => [String(c._id), c]));
+
+  for (const doc of docs) {
+    const chapter = chapterMap[String(doc.chapter)];
+    const cat = chapter ? catMap[String(chapter.category)] : null;
+    hits.push({
+      model: 'LearningContent',
+      documentId: String(doc.id || doc._id),
+      section: 'Learning',
+      path: {
+        category: cat ? cat.name : '',
+        chapter: chapter ? chapter.name : ''
+      },
+      snippets: {
+        title: truncate(doc.title),
+        content: truncate(doc.content)
+      }
+    });
+  }
+  return hits;
+}
+
+async function searchNumerology(query, limit) {
+  const hits = [];
+
+  const isMonthly = /monthly|masik|मासिक|is\s*mahine/i.test(query);
+  const isYearly = /yearly|varshik|वार्षिक|sal\s*ka/i.test(query);
+
+  if (isMonthly) {
+    const NumerologyMonthlyYear = getModel('NumerologyMonthlyYear');
+    const NumerologyMonthly = getModel('NumerologyMonthly');
+    if (NumerologyMonthlyYear && NumerologyMonthly) {
+      const yearDoc = await NumerologyMonthlyYear.findOne({ year: currentYear() }).lean();
+      if (yearDoc) {
+        const month = currentMonthName();
+        const docs = await NumerologyMonthly.find({ yearRef: yearDoc._id, month })
+          .sort({ sequence: 1 }).limit(limit).lean();
+        for (const doc of docs) {
+          hits.push({
+            model: 'NumerologyMonthly',
+            documentId: String(doc._id),
+            section: `Numerology Monthly - ${month} ${currentYear()}`,
+            snippets: { title_hn: truncate(doc.title_hn), title_en: truncate(doc.title_en), details_hn: truncate(doc.details_hn), details_en: truncate(doc.details_en) }
+          });
+        }
+      }
+    }
+    if (hits.length) return hits;
+  }
+
+  if (isYearly) {
+    const NumerologyYearlyYear = getModel('NumerologyYearlyYear');
+    const NumerologyYearly = getModel('NumerologyYearly');
+    if (NumerologyYearlyYear && NumerologyYearly) {
+      const yearDoc = await NumerologyYearlyYear.findOne({ year: currentYear() }).lean();
+      if (yearDoc) {
+        const docs = await NumerologyYearly.find({ yearRef: yearDoc._id })
+          .sort({ sequence: 1 }).limit(limit).lean();
+        for (const doc of docs) {
+          hits.push({
+            model: 'NumerologyYearly',
+            documentId: String(doc._id),
+            section: `Numerology Yearly - ${currentYear()}`,
+            snippets: { title_hn: truncate(doc.title_hn), title_en: truncate(doc.title_en), details_hn: truncate(doc.details_hn), details_en: truncate(doc.details_en) }
+          });
+        }
+      }
+    }
+    if (hits.length) return hits;
+  }
+
+  const NumerologyDailyDate = getModel('NumerologyDailyDate');
+  const NumerologyDailyContent = getModel('NumerologyDailyContent');
+  if (!NumerologyDailyDate || !NumerologyDailyContent) return hits;
+
+  let dateDoc = await NumerologyDailyDate.findOne().sort({ sequence: -1, createdAt: -1 }).lean();
+  if (!dateDoc) return hits;
+
+  const contents = await NumerologyDailyContent.find({ dateRef: dateDoc._id })
+    .sort({ sequence: 1 })
+    .limit(limit)
+    .lean();
+
+  for (const doc of contents) {
+    hits.push({
+      model: 'NumerologyDailyContent',
+      documentId: String(doc._id),
+      section: 'Numerology (Ankjyotish)',
+      dateLabel: dateDoc.dateLabel || '',
+      snippets: {
+        title_hn: truncate(doc.title_hn),
+        title_en: truncate(doc.title_en),
+        details_hn: truncate(doc.details_hn),
+        details_en: truncate(doc.details_en)
+      }
+    });
+  }
+  return hits;
+}
+
+async function searchBooks(query, limit) {
+  const hits = [];
+  const BookContent = getModel('BookContent');
+  if (!BookContent) return hits;
+
+  const regex = buildRegex([query, ...query.split(/\s+/)]);
+  if (!regex) return hits;
+
+  const docs = await BookContent.find({
+    $or: [
+      { title_hn: regex },
+      { title_en: regex },
+      { title_hinglish: regex },
+      { meaning: regex },
+      { details: regex }
+    ]
+  })
+    .limit(limit)
+    .lean();
+
+  for (const doc of docs) {
+    hits.push({
+      model: 'BookContent',
+      documentId: String(doc._id),
+      section: 'Books',
+      snippets: {
+        title_hn: truncate(doc.title_hn),
+        title_en: truncate(doc.title_en),
+        meaning: truncate(doc.meaning),
+        details: truncate(doc.details)
+      }
+    });
+  }
+  return hits;
+}
+
+async function searchGranth(query, limit) {
+  const hits = [];
+  const GranthContent = getModel('GranthContent');
+  if (!GranthContent) return hits;
+
+  const regex = buildRegex([query, ...query.split(/\s+/)]);
+  if (!regex) return hits;
+
+  const docs = await GranthContent.find({
+    $or: [
+      { title_hn: regex },
+      { title_en: regex },
+      { title_hinglish: regex },
+      { meaning: regex },
+      { details: regex }
+    ]
+  })
+    .limit(limit)
+    .lean();
+
+  for (const doc of docs) {
+    hits.push({
+      model: 'GranthContent',
+      documentId: String(doc._id),
+      section: 'Granth',
+      snippets: {
+        title_hn: truncate(doc.title_hn),
+        title_en: truncate(doc.title_en),
+        meaning: truncate(doc.meaning),
+        details: truncate(doc.details)
+      }
+    });
+  }
+  return hits;
+}
+
+async function searchEMagazine(query, limit) {
+  const hits = [];
+  const EMagazine = getModel('EMagazine');
+  if (!EMagazine) return hits;
+
+  const regex = buildRegex([query, ...query.split(/\s+/)]);
+  if (!regex) return hits;
+
+  const docs = await EMagazine.find({
+    $or: [
+      { title: regex },
+      { introduction: regex },
+      { subPoints: regex },
+      { summary: regex }
+    ]
+  })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+
+  for (const doc of docs) {
+    hits.push({
+      model: 'EMagazine',
+      documentId: String(doc.id || doc._id),
+      section: 'E-Magazine',
+      snippets: {
+        title: truncate(doc.title),
+        introduction: truncate(doc.introduction),
+        month: doc.month,
+        year: doc.year
+      }
+    });
+  }
+  return hits;
+}
+
+async function searchGenericFallback(query, limit) {
+  const hits = [];
+  const regex = buildRegex([query, ...query.split(/\s+/)]);
+  if (!regex) return hits;
+
+  const modelSearchList = [
+    { name: 'DivineQuote', fields: ['hindiQuote', 'englishQuote', 'source'], section: 'Divine Quotes' },
+    { name: 'DivineSanskrit', fields: ['hindiQuote', 'englishQuote', 'source'], section: 'Divine Sanskrit' },
+    { name: 'CelebrityKundli', fields: ['name', 'about', 'place'], section: 'Celebrity Kundli' },
+    { name: 'YouTube', fields: ['title', 'description'], section: 'YouTube' },
+    { name: 'McqContent', fields: ['question', 'explanation'], section: 'MCQ' },
+    { name: 'AboutUs', fields: ['title', 'content', 'description'], section: 'About Us' },
+    { name: 'RashifalDaily', fields: ['title_hn', 'title_en', 'details_hn', 'details_en'], section: 'Rashifal Daily (old)' },
+    { name: 'KoshContent', fields: ['hindiWord', 'englishWord', 'hinglishWord', 'meaning'], section: 'Kosh' },
+    { name: 'KarmkandContent', fields: ['hindiWord', 'englishWord', 'hinglishWord', 'meaning'], section: 'Karmkand' },
+    { name: 'Product', fields: ['title', 'short_description', 'full_description'], section: 'Astroshop' },
+    { name: 'Puja', fields: ['title', 'description', 'tagline', 'temple_name'], section: 'E-Pooja' },
+    { name: 'LearningContent', fields: ['title', 'content'], section: 'Learning' },
+    { name: 'BookContent', fields: ['title_hn', 'title_en', 'meaning', 'details'], section: 'Books' },
+    { name: 'GranthContent', fields: ['title_hn', 'title_en', 'meaning', 'details'], section: 'Granth' },
+    { name: 'EMagazine', fields: ['title', 'introduction', 'summary'], section: 'E-Magazine' },
+    { name: 'Festival', fields: ['festival_name', 'vrat', 'jyanti', 'vishesh'], section: 'Festival/Panchang' },
+    { name: 'MuhuratContent', fields: ['detail', 'date'], section: 'Muhurat' }
+  ];
+
+  for (const entry of modelSearchList) {
+    if (hits.length >= limit) break;
+    const model = getModel(entry.name);
+    if (!model) continue;
+
+    const orConditions = entry.fields
+      .filter((f) => model.schema && model.schema.paths && model.schema.paths[f])
+      .map((f) => ({ [f]: regex }));
+    if (!orConditions.length) continue;
+
+    try {
+      const docs = await model.find({ $or: orConditions }).limit(3).lean();
+      for (const doc of docs) {
+        const snippets = {};
+        for (const f of entry.fields) {
+          if (doc[f]) snippets[f] = truncate(doc[f]);
+        }
+        if (!Object.keys(snippets).length) continue;
+
+        hits.push({
+          model: entry.name,
+          documentId: String(doc.id || doc._id),
+          section: entry.section,
+          snippets
+        });
+      }
+    } catch (err) {
+      // skip
+    }
+  }
+  return hits;
+}
+
+// ─── INTENT ROUTER ───
+
+const INTENT_TO_SEARCH = {
+  rashifal_daily: searchRashifalDaily,
+  rashifal_monthly: searchRashifalMonthly,
+  rashifal_yearly: searchRashifalYearly,
+  rashifal_generic: async (q, l) => {
+    const daily = await searchRashifalDaily(q, l);
+    if (daily.length) return daily;
+    const monthly = await searchRashifalMonthly(q, l);
+    if (monthly.length) return monthly;
+    return searchRashifalYearly(q, l);
+  },
+  numerology: searchNumerology,
+  kosh: searchKosh,
+  karmkand: searchKarmkand,
+  astroshop: searchAstroshop,
+  puja: searchPuja,
+  festival: searchFestivalPanchang,
+  muhurat: searchMuhurat,
+  learning: searchLearning,
+  book: searchBooks,
+  granth: searchGranth,
+  emagazine: searchEMagazine,
+  mcq: (q, l) => searchGenericFallback(q, l)
+};
 
 async function searchAppContent(query, options = {}) {
   initializeAllModels();
 
   const normalizedQuery = normalizeSpace(query);
-  const limit = Math.max(1, Math.min(Number(options.limit) || 12, 30));
-  const perModelLimit = Math.max(1, Math.min(Number(options.perModelLimit) || 2, 5));
+  const limit = Math.max(1, Math.min(Number(options.limit) || 15, 30));
 
   if (!normalizedQuery) {
-    return {
-      query: '',
-      found: false,
-      totalMatches: 0,
-      hits: [],
-      searchedModels: 0
-    };
+    return { query: '', found: false, totalMatches: 0, hits: [], searchedModels: 0 };
   }
 
-  const cached = getCachedQueryResult(normalizedQuery, limit, perModelLimit);
+  const cached = getCached(normalizedQuery, limit);
   if (cached) return { ...cached, cache: true };
 
-  const orderedModels = getPrioritizedModels(normalizedQuery, searchableModelNames);
-  const expandedRegex = getExpandedRegexForQuery(normalizedQuery);
-  const queryRegex = expandedRegex || new RegExp(escapeRegex(normalizedQuery), 'i');
-  const tokens = tokenizeQuery(normalizedQuery);
-  let tokenRegex = tokens.length ? new RegExp(escapeRegex(tokens[0]), 'i') : queryRegex;
-  if (expandedRegex) tokenRegex = expandedRegex;
-  const queryLower = normalizedQuery.toLowerCase();
+  const intents = detectIntents(normalizedQuery);
+  let allHits = [];
+  let searchedModels = 0;
+  const seenDocIds = new Set();
 
-  const searchResult = await searchInBatches(
-    orderedModels,
-    normalizedQuery,
-    queryRegex,
-    queryLower,
-    tokenRegex,
-    limit,
-    perModelLimit
-  );
+  function addHits(newHits) {
+    for (const hit of newHits) {
+      const key = `${hit.model}::${hit.documentId}`;
+      if (seenDocIds.has(key)) continue;
+      seenDocIds.add(key);
+      allHits.push(hit);
+    }
+  }
 
-  const sortedHits = searchResult.hits.sort((a, b) => b.score - a.score);
-  const finalHits = sortedHits.map((hit) => ({
-    model: hit.model,
-    documentId: hit.documentId,
-    strategy: hit.strategy,
-    snippets: hit.snippets
-  }));
+  if (intents.length > 0) {
+    const intentPromises = intents.map(async (intent) => {
+      const searchFn = INTENT_TO_SEARCH[intent];
+      if (!searchFn) return [];
+      try {
+        return await searchFn(normalizedQuery, limit);
+      } catch (err) {
+        console.warn(`[AssistantSearch] Intent ${intent} failed:`, err && err.message);
+        return [];
+      }
+    });
+
+    const intentResults = await Promise.all(intentPromises);
+    for (const intentHits of intentResults) {
+      addHits(intentHits);
+      searchedModels += 1;
+    }
+  }
+
+  if (allHits.length < 3) {
+    try {
+      const fallbackHits = await searchGenericFallback(normalizedQuery, limit);
+      addHits(fallbackHits);
+      searchedModels += 1;
+    } catch (err) {
+      console.warn('[AssistantSearch] Generic fallback failed:', err && err.message);
+    }
+  }
+
+  const finalHits = allHits.slice(0, limit);
 
   const payload = {
     query: normalizedQuery,
     found: finalHits.length > 0,
     totalMatches: finalHits.length,
     hits: finalHits,
-    searchedModels: searchResult.searchedModels
+    intents,
+    searchedModels
   };
 
-  setCachedQueryResult(normalizedQuery, limit, perModelLimit, payload);
+  setCache(normalizedQuery, limit, payload);
   return payload;
 }
 
