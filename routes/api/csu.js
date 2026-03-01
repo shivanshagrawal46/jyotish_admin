@@ -38,6 +38,47 @@ function normalizeStringArray(value) {
     .filter(Boolean);
 }
 
+const COLUMN_FIELD_ALIASES = {
+  heading_hn: ['heading_hn', 'headings', 'heading'],
+  di_hn: ['di_hn', 'दि', 'दि.', 'date'],
+  var_hn: ['var_hn', 'वार', 'var'],
+  tithi_hn: ['tithi_hn', 'तिथि', 'tithi'],
+  tithi_time_hn: ['tithi_time_hn', 'tithi_time', 'तिथि_घ.मि.', 'तिथि घ.मि.'],
+  nakshatra_hn: ['nakshatra_hn', 'नक्षत्र', 'nakshatra'],
+  nakshatra_time_hn: ['nakshatra_time_hn', 'nakshatra_time', 'नक्षत्र_घ.मि.', 'नक्षत्र घ.मि.'],
+  chara_rashi_pravesh_hn: ['chara_rashi_pravesh_hn', 'च.रा.प्र.', 'चरा राशि प्रवेश'],
+  chara_rashi_time_hn: ['chara_rashi_time_hn', 'chara_rashi_time', 'चरा_घ.मि.', 'चरा घ.मि.'],
+  vrat_parvadi_vivaran_hn: ['vrat_parvadi_vivaran_hn', 'व्रत-पर्वादि विवरण', 'विवरण']
+};
+
+const UPDATABLE_COLUMN_FIELDS = new Set(Object.keys(COLUMN_FIELD_ALIASES));
+
+function normalizeKey(value) {
+  return toText(value)
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/[._-]/g, '');
+}
+
+function resolveColumnField(value) {
+  const direct = toText(value);
+  if (UPDATABLE_COLUMN_FIELDS.has(direct)) return direct;
+
+  const normalizedInput = normalizeKey(value);
+  for (const [field, aliases] of Object.entries(COLUMN_FIELD_ALIASES)) {
+    const matched = aliases.some((alias) => normalizeKey(alias) === normalizedInput);
+    if (matched) return field;
+  }
+  return null;
+}
+
+function normalizeFieldValue(fieldName, rawValue) {
+  if (fieldName === 'tithi_hn' || fieldName === 'tithi_time_hn') {
+    return normalizeStringArray(rawValue);
+  }
+  return toText(rawValue);
+}
+
 function buildRowFromExcelColumns(row, rowIndex, pageNo) {
   // Column order expected from screenshot:
   // 0 Headings, 1 दि., 2 वार, 3 तिथि, 4 घ.मि., 5 नक्षत्र, 6 घ.मि., 7 च.रा.प्र., 8 घ.मि., 9 व्रत-पर्वादि विवरण
@@ -143,6 +184,98 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
     });
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Error uploading Excel', message: error.message });
+  }
+});
+
+// Upload one-column Excel and replace only that column for an existing page
+router.post('/upload-column-excel', excelMulter.single('excelFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Please upload an Excel file as excelFile' });
+    }
+
+    const pageNo = parsePageNo(req.body.pageNo || req.query.pageNo, NaN);
+    if (!Number.isFinite(pageNo)) {
+      return res.status(400).json({ success: false, error: 'Valid pageNo is required' });
+    }
+
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    const rows = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
+
+    if (!rows || rows.length <= 1) {
+      return res.status(400).json({ success: false, error: 'Excel file has no data rows' });
+    }
+
+    const requestedField = req.body.columnField || req.query.columnField;
+    const requestedHeading = req.body.columnHeading || req.query.columnHeading;
+    let targetField = resolveColumnField(requestedField) || resolveColumnField(requestedHeading);
+
+    const headerRow = Array.isArray(rows[0]) ? rows[0] : [];
+    let targetColumnIndex = -1;
+
+    if (targetField) {
+      const aliases = COLUMN_FIELD_ALIASES[targetField] || [targetField];
+      targetColumnIndex = headerRow.findIndex((cell) =>
+        aliases.some((alias) => normalizeKey(alias) === normalizeKey(cell))
+      );
+    }
+
+    // If field not explicitly provided, try infer from header first cell
+    if (!targetField) {
+      targetField = resolveColumnField(headerRow[0]);
+      targetColumnIndex = targetColumnIndex === -1 ? 0 : targetColumnIndex;
+    }
+
+    if (!targetField) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Could not detect target column. Provide columnField (recommended), e.g. tithi_hn, tithi_time_hn, nakshatra_hn'
+      });
+    }
+
+    if (targetColumnIndex === -1) {
+      // Fallback: treat first column as target in single-column uploads
+      targetColumnIndex = 0;
+    }
+
+    const pageRows = await Csu.find({ pageNo }).sort({ sequence: 1, createdAt: 1 });
+    if (pageRows.length === 0) {
+      return res.status(404).json({ success: false, error: `No CSU data found for page ${pageNo}` });
+    }
+
+    const values = rows.slice(1).map((r) => (Array.isArray(r) ? r[targetColumnIndex] : ''));
+    const updateCount = Math.min(values.length, pageRows.length);
+    const ops = [];
+
+    for (let i = 0; i < updateCount; i += 1) {
+      const rowDoc = pageRows[i];
+      const normalizedValue = normalizeFieldValue(targetField, values[i]);
+      ops.push({
+        updateOne: {
+          filter: { _id: rowDoc._id },
+          update: { $set: { [targetField]: normalizedValue } }
+        }
+      });
+    }
+
+    if (ops.length > 0) {
+      await Csu.bulkWrite(ops);
+    }
+
+    return res.json({
+      success: true,
+      message: `Updated column ${targetField} for page ${pageNo}`,
+      pageNo,
+      columnField: targetField,
+      updatedRows: ops.length,
+      pageRows: pageRows.length,
+      excelRows: values.length
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Error updating column from Excel', message: error.message });
   }
 });
 
