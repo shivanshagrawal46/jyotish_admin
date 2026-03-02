@@ -36,7 +36,7 @@ function normalizeItems(items) {
 }
 
 // Upload Excel and replace page data
-// Expected columns: Heading | date | lagna
+// Expected columns (any header name works): 1st col = heading, 2nd col = date, 3rd col = lagna
 router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) => {
   try {
     if (!req.file) {
@@ -44,41 +44,49 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
     }
 
     const pageNo = parsePageNo(req.body.pageNo || req.query.pageNo, 1);
-    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+
+    let workbook;
+    try {
+      workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    } catch (parseErr) {
+      return res.status(400).json({ success: false, error: 'Could not parse Excel file', message: parseErr.message });
+    }
+
     const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) {
+      return res.status(400).json({ success: false, error: 'Excel file has no sheets' });
+    }
     const worksheet = workbook.Sheets[firstSheetName];
 
-    // Read cells by absolute address (A=0, B=1, C=2) so empty leading cells don't shift columns
-    const ref = worksheet['!ref'];
-    if (!ref) {
-      return res.status(400).json({ success: false, error: 'Excel file is empty' });
-    }
-    const range = xlsx.utils.decode_range(ref);
-    const lastRow = range.e.r;
+    // Use object mode: keys come from header row, so column position never shifts
+    const rawData = xlsx.utils.sheet_to_json(worksheet, { defval: '', raw: false });
 
-    if (lastRow < 1) {
+    if (!rawData || rawData.length === 0) {
       return res.status(400).json({ success: false, error: 'Excel file has no data rows' });
     }
 
-    function getCellValue(row, col) {
-      const addr = xlsx.utils.encode_cell({ r: row, c: col });
-      const cell = worksheet[addr];
-      if (!cell) return '';
-      if (cell.w !== undefined) return cell.w;
-      if (cell.v !== undefined) return String(cell.v);
-      return '';
+    // Detect column keys from the first data row (preserves header order)
+    const allKeys = Object.keys(rawData[0]);
+    const headingKey = allKeys[0];
+    const dateKey = allKeys[1];
+    const lagnaKey = allKeys[2];
+
+    if (!headingKey || !dateKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'Excel must have at least 2 columns (heading, date). Found keys: ' + allKeys.join(', ')
+      });
     }
 
     const groups = [];
     let currentGroup = null;
 
-    // Row 0 = header, data starts from row 1; columns: A(0)=heading, B(1)=date, C(2)=lagna
-    for (let i = 1; i <= lastRow; i += 1) {
-      const headingCell = toText(getCellValue(i, 0));
-      const dateCell = toText(getCellValue(i, 1));
-      const lagnaCell = toText(getCellValue(i, 2));
+    for (let i = 0; i < rawData.length; i += 1) {
+      const row = rawData[i];
+      const headingCell = toText(row[headingKey]);
+      const dateCell = toText(row[dateKey]);
+      const lagnaCell = lagnaKey ? toText(row[lagnaKey]) : '';
 
-      // New heading starts a new block immediately (keeps exact sheet order)
       if (headingCell) {
         currentGroup = {
           pageNo,
@@ -89,12 +97,9 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
         groups.push(currentGroup);
       }
 
-      // Skip fully empty rows
       if (!headingCell && !dateCell && !lagnaCell) continue;
-      // If no heading encountered yet, skip loose data rows
       if (!currentGroup) continue;
 
-      // Add entry only when row carries date/lagna data
       if (dateCell || lagnaCell) {
         currentGroup.items.push({
           date: dateCell,
