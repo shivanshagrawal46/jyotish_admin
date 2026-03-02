@@ -84,6 +84,7 @@ const divineSanskritRouter = require('./routes/divineSanskrit');
 const divineSanskritApiRouter = require('./routes/api/divineSanskrit');
 const csuApiRouter = require('./routes/api/csu');
 const csu2ApiRouter = require('./routes/api/csu2');
+const csu3ApiRouter = require('./routes/api/csu3');
 const { registerAssistantSocketHandlers } = require('./sockets/assistantSocket');
 
 const app = express();
@@ -251,6 +252,7 @@ app.use('/divine-sanskrit', divineSanskritRouter);
 app.use('/api/divinesanskrit', divineSanskritApiRouter);
 app.use('/api/csu', csuApiRouter);
 app.use('/api/csu2', csu2ApiRouter);
+app.use('/api/csu3', csu3ApiRouter);
 
 app.use('/puja', pujaRouter);
 app.use('/api/puja', pujaApiRouter);
