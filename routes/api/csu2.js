@@ -48,24 +48,22 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
 
-    // Use worksheet range to build a proper 2D grid so empty leading cells are preserved
+    // Read cells by absolute address (A=0, B=1, C=2) so empty leading cells don't shift columns
     const ref = worksheet['!ref'];
     if (!ref) {
       return res.status(400).json({ success: false, error: 'Excel file is empty' });
     }
     const range = xlsx.utils.decode_range(ref);
-    const totalCols = range.e.c - range.s.c + 1;
-    const totalRows = range.e.r - range.s.r + 1;
+    const lastRow = range.e.r;
 
-    if (totalRows <= 1) {
+    if (lastRow < 1) {
       return res.status(400).json({ success: false, error: 'Excel file has no data rows' });
     }
 
-    function getCellValue(r, c) {
-      const addr = xlsx.utils.encode_cell({ r: range.s.r + r, c: range.s.c + c });
+    function getCellValue(row, col) {
+      const addr = xlsx.utils.encode_cell({ r: row, c: col });
       const cell = worksheet[addr];
       if (!cell) return '';
-      // Use formatted value (w) first, then string (v) to preserve display format
       if (cell.w !== undefined) return cell.w;
       if (cell.v !== undefined) return String(cell.v);
       return '';
@@ -74,10 +72,11 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
     const groups = [];
     let currentGroup = null;
 
-    for (let i = 1; i < totalRows; i += 1) {
+    // Row 0 = header, data starts from row 1; columns: A(0)=heading, B(1)=date, C(2)=lagna
+    for (let i = 1; i <= lastRow; i += 1) {
       const headingCell = toText(getCellValue(i, 0));
       const dateCell = toText(getCellValue(i, 1));
-      const lagnaCell = toText(totalCols > 2 ? getCellValue(i, 2) : '');
+      const lagnaCell = toText(getCellValue(i, 2));
 
       // New heading starts a new block immediately (keeps exact sheet order)
       if (headingCell) {
