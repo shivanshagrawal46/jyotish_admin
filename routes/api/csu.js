@@ -72,8 +72,10 @@ function resolveColumnField(value) {
   return null;
 }
 
+const ARRAY_FIELDS = new Set(['tithi_hn', 'tithi_time_hn', 'nakshatra_hn', 'nakshatra_time_hn']);
+
 function normalizeFieldValue(fieldName, rawValue) {
-  if (fieldName === 'tithi_hn' || fieldName === 'tithi_time_hn') {
+  if (ARRAY_FIELDS.has(fieldName)) {
     return normalizeStringArray(rawValue);
   }
   return toText(rawValue);
@@ -111,6 +113,8 @@ function buildRowFromExcelColumns(row, rowIndex, pageNo) {
 
   const tithi_hn_values = normalizeStringArray(tithi_hn);
   const tithi_time_hn_values = normalizeStringArray(tithi_time_hn);
+  const nakshatra_hn_values = normalizeStringArray(nakshatra_hn);
+  const nakshatra_time_hn_values = normalizeStringArray(nakshatra_time_hn);
 
   return {
     pageNo,
@@ -120,8 +124,8 @@ function buildRowFromExcelColumns(row, rowIndex, pageNo) {
     var_hn,
     tithi_hn: tithi_hn_values,
     tithi_time_hn: tithi_time_hn_values,
-    nakshatra_hn,
-    nakshatra_time_hn,
+    nakshatra_hn: nakshatra_hn_values,
+    nakshatra_time_hn: nakshatra_time_hn_values,
     chara_rashi_pravesh_hn,
     chara_rashi_time_hn,
     vrat_parvadi_vivaran_hn
@@ -151,23 +155,24 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
       const parsed = buildRowFromExcelColumns(rows[i], i - 1, pageNo);
       if (!parsed) continue;
 
-      const hasOnlyTithiData =
+      const hasOnlyMultiData =
         !parsed.heading_hn &&
         !parsed.di_hn &&
         !parsed.var_hn &&
-        !parsed.nakshatra_hn &&
-        !parsed.nakshatra_time_hn &&
         !parsed.chara_rashi_pravesh_hn &&
         !parsed.chara_rashi_time_hn &&
         !parsed.vrat_parvadi_vivaran_hn &&
-        (parsed.tithi_hn.length > 0 || parsed.tithi_time_hn.length > 0);
+        (parsed.tithi_hn.length > 0 || parsed.tithi_time_hn.length > 0 ||
+         parsed.nakshatra_hn.length > 0 || parsed.nakshatra_time_hn.length > 0);
 
-      // Easy handling for "same day has multiple tithi" rows:
-      // if a row only has tithi/time, append it to the previous day row.
-      if (hasOnlyTithiData && parsedDocs.length > 0) {
+      // Same day can have multiple tithi/nakshatra rows:
+      // if a row only has tithi/nakshatra data, append to previous day row.
+      if (hasOnlyMultiData && parsedDocs.length > 0) {
         const prev = parsedDocs[parsedDocs.length - 1];
         prev.tithi_hn = [...(prev.tithi_hn || []), ...parsed.tithi_hn];
         prev.tithi_time_hn = [...(prev.tithi_time_hn || []), ...parsed.tithi_time_hn];
+        prev.nakshatra_hn = [...(prev.nakshatra_hn || []), ...parsed.nakshatra_hn];
+        prev.nakshatra_time_hn = [...(prev.nakshatra_time_hn || []), ...parsed.nakshatra_time_hn];
       } else {
         parsedDocs.push(parsed);
       }
@@ -286,6 +291,8 @@ router.post('/', async (req, res) => {
     payload.pageNo = parsePageNo(payload.pageNo, 1);
     payload.tithi_hn = normalizeStringArray(payload.tithi_hn);
     payload.tithi_time_hn = normalizeStringArray(payload.tithi_time_hn);
+    payload.nakshatra_hn = normalizeStringArray(payload.nakshatra_hn);
+    payload.nakshatra_time_hn = normalizeStringArray(payload.nakshatra_time_hn);
 
     const created = await Csu.create(payload);
     return res.json({ success: true, data: created });
@@ -373,6 +380,8 @@ router.put('/:id', async (req, res) => {
     if (payload.pageNo !== undefined) payload.pageNo = parsePageNo(payload.pageNo, 1);
     if (payload.tithi_hn !== undefined) payload.tithi_hn = normalizeStringArray(payload.tithi_hn);
     if (payload.tithi_time_hn !== undefined) payload.tithi_time_hn = normalizeStringArray(payload.tithi_time_hn);
+    if (payload.nakshatra_hn !== undefined) payload.nakshatra_hn = normalizeStringArray(payload.nakshatra_hn);
+    if (payload.nakshatra_time_hn !== undefined) payload.nakshatra_time_hn = normalizeStringArray(payload.nakshatra_time_hn);
 
     const updated = await Csu.findByIdAndUpdate(req.params.id, payload, { new: true });
     if (!updated) return res.status(404).json({ success: false, error: 'CSU row not found' });

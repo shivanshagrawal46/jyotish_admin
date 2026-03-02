@@ -13,8 +13,9 @@ const csuSchema = new mongoose.Schema(
     tithi_hn: [{ type: String }],
     tithi_time_hn: [{ type: String }],
 
-    nakshatra_hn: { type: String },
-    nakshatra_time_hn: { type: String },
+    // Same day can have multiple nakshatra names and times
+    nakshatra_hn: [{ type: String }],
+    nakshatra_time_hn: [{ type: String }],
     chara_rashi_pravesh_hn: { type: String },
     chara_rashi_time_hn: { type: String },
     vrat_parvadi_vivaran_hn: { type: String }
