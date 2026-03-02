@@ -47,21 +47,37 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
-    // raw:false keeps display format for date-like cells
-    const rows = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
 
-    if (!rows || rows.length <= 1) {
+    // Use worksheet range to build a proper 2D grid so empty leading cells are preserved
+    const ref = worksheet['!ref'];
+    if (!ref) {
+      return res.status(400).json({ success: false, error: 'Excel file is empty' });
+    }
+    const range = xlsx.utils.decode_range(ref);
+    const totalCols = range.e.c - range.s.c + 1;
+    const totalRows = range.e.r - range.s.r + 1;
+
+    if (totalRows <= 1) {
       return res.status(400).json({ success: false, error: 'Excel file has no data rows' });
+    }
+
+    function getCellValue(r, c) {
+      const addr = xlsx.utils.encode_cell({ r: range.s.r + r, c: range.s.c + c });
+      const cell = worksheet[addr];
+      if (!cell) return '';
+      // Use formatted value (w) first, then string (v) to preserve display format
+      if (cell.w !== undefined) return cell.w;
+      if (cell.v !== undefined) return String(cell.v);
+      return '';
     }
 
     const groups = [];
     let currentGroup = null;
 
-    for (let i = 1; i < rows.length; i += 1) {
-      const row = rows[i] || [];
-      const headingCell = toText(row[0]);
-      const dateCell = toText(row[1]);
-      const lagnaCell = toText(row[2]);
+    for (let i = 1; i < totalRows; i += 1) {
+      const headingCell = toText(getCellValue(i, 0));
+      const dateCell = toText(getCellValue(i, 1));
+      const lagnaCell = toText(totalCols > 2 ? getCellValue(i, 2) : '');
 
       // New heading starts a new block immediately (keeps exact sheet order)
       if (headingCell) {
