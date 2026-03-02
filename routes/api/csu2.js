@@ -43,7 +43,10 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
       return res.status(400).json({ success: false, error: 'Please upload an Excel file as excelFile' });
     }
 
-    const pageNo = parsePageNo(req.body.pageNo || req.query.pageNo, 1);
+    const pageNo = parsePageNo(
+      req.body.pageNo || req.body.page || req.query.pageNo || req.query.page,
+      1
+    );
 
     let workbook;
     try {
@@ -58,24 +61,18 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
     }
     const worksheet = workbook.Sheets[firstSheetName];
 
-    // Use object mode: keys come from header row, so column position never shifts
-    const rawData = xlsx.utils.sheet_to_json(worksheet, { defval: '', raw: false });
+    // Force mapping by physical columns:
+    // A -> heading, B -> date, C -> lagna (no shifting when heading cell is empty)
+    const rawData = xlsx.utils.sheet_to_json(worksheet, {
+      header: ['heading', 'date', 'lagna'],
+      range: 1,
+      defval: '',
+      raw: false,
+      blankrows: false
+    });
 
     if (!rawData || rawData.length === 0) {
       return res.status(400).json({ success: false, error: 'Excel file has no data rows' });
-    }
-
-    // Detect column keys from the first data row (preserves header order)
-    const allKeys = Object.keys(rawData[0]);
-    const headingKey = allKeys[0];
-    const dateKey = allKeys[1];
-    const lagnaKey = allKeys[2];
-
-    if (!headingKey || !dateKey) {
-      return res.status(400).json({
-        success: false,
-        error: 'Excel must have at least 2 columns (heading, date). Found keys: ' + allKeys.join(', ')
-      });
     }
 
     const groups = [];
@@ -83,9 +80,9 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
 
     for (let i = 0; i < rawData.length; i += 1) {
       const row = rawData[i];
-      const headingCell = toText(row[headingKey]);
-      const dateCell = toText(row[dateKey]);
-      const lagnaCell = lagnaKey ? toText(row[lagnaKey]) : '';
+      const headingCell = toText(row.heading);
+      const dateCell = toText(row.date);
+      const lagnaCell = toText(row.lagna);
 
       if (headingCell) {
         currentGroup = {
@@ -107,6 +104,13 @@ router.post('/upload-excel', excelMulter.single('excelFile'), async (req, res) =
           sequence: currentGroup.items.length + 1
         });
       }
+    }
+
+    if (groups.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No valid heading blocks found in Excel. Ensure heading exists in column A.'
+      });
     }
 
     await Csu2.deleteMany({ pageNo });
