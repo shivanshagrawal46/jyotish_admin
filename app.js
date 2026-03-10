@@ -274,6 +274,9 @@ app.use('/notifications', notificationRouter);
 // Notification content API — cascading dropdowns for admin form
 app.use('/api/notification-content', require('./routes/api/notificationContent'));
 
+// Deep link resolver — Flutter calls this when any notification is tapped
+app.use('/api/deep-link', require('./routes/api/deepLink'));
+
 // Prashan Yantra routes
 app.use('/prashan-yantra', prashanYantraRouter);
 
