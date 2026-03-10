@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= formTitle %> | Admin Panel</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/sidebar.css" rel="stylesheet">
     <style>
@@ -12,323 +12,909 @@
             --primary: #2D3250;
             --secondary: #424769;
             --accent: #676F9D;
-            --light: #F9F9F9;
+            --orange: #FF6B35;
+            --light: #F4F6FB;
             --dark: #1A1B26;
+            --border: #E2E8F0;
+            --success: #22C55E;
+            --card-shadow: 0 4px 24px rgba(45,50,80,.10);
         }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--light);
-            min-height: 100vh;
-        }
-        .main-content {
-            margin-left: 280px;
-            padding: 2rem;
-        }
+        body { font-family: 'Inter', sans-serif; background: var(--light); min-height: 100vh; }
+        .main-content { margin-left: 280px; padding: 2rem; }
+
+        /* ── Topbar ─────────────────────────────────────────── */
         .topbar {
-            background: white;
-            padding: 1rem 2rem;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            background: white; padding: 1rem 2rem; border-radius: 16px;
+            box-shadow: var(--card-shadow); margin-bottom: 2rem;
+            display: flex; align-items: center; justify-content: space-between;
         }
-        .page-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.5rem;
-            color: var(--dark);
-            margin: 0;
+        .page-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--dark); margin: 0; }
+
+        /* ── Layout grid ────────────────────────────────────── */
+        .form-grid { display: grid; grid-template-columns: 1fr 380px; gap: 1.5rem; align-items: start; }
+        @media (max-width: 1200px) { .form-grid { grid-template-columns: 1fr; } }
+
+        /* ── Cards ──────────────────────────────────────────── */
+        .card {
+            background: white; border-radius: 16px; box-shadow: var(--card-shadow);
+            overflow: hidden; margin-bottom: 1.5rem;
         }
-        .content-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            max-width: 800px;
-            margin: 0 auto;
+        .card-header-bar {
+            background: var(--primary); color: white; padding: 1rem 1.5rem;
+            display: flex; align-items: center; gap: .75rem; font-weight: 600; font-size: 1rem;
         }
-        .card-header {
-            background: var(--primary);
-            color: white;
-            padding: 1.5rem 2rem;
-        }
-        .card-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.5rem;
-            margin: 0;
-        }
-        .card-body {
-            padding: 2rem;
-        }
-        .form-label {
-            font-weight: 500;
-            color: var(--dark);
-            margin-bottom: 0.5rem;
-            font-size: 1rem;
-        }
+        .card-header-bar .icon { font-size: 1.2rem; }
+        .card-header-bar.orange { background: linear-gradient(135deg, #FF6B35, #F7931E); }
+        .card-body { padding: 1.5rem; }
+
+        /* ── Form controls ──────────────────────────────────── */
+        .form-label { font-weight: 600; color: var(--dark); margin-bottom: .4rem; font-size: .9rem; }
         .form-control, .form-select {
-            border: 2px solid #E5E7EB;
-            border-radius: 12px;
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
-            transition: all 0.3s ease;
+            border: 2px solid var(--border); border-radius: 10px; padding: .65rem 1rem;
+            font-size: .95rem; transition: all .2s; color: var(--dark);
         }
         .form-control:focus, .form-select:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 4px rgba(103, 111, 157, 0.1);
+            border-color: var(--accent); box-shadow: 0 0 0 4px rgba(103,111,157,.12); outline: none;
         }
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
+        .form-control:disabled, .form-select:disabled {
+            background: #f8f9fc; color: #9CA3AF; cursor: not-allowed; opacity: .7;
         }
-        .btn-primary:hover {
-            background: var(--secondary);
-            transform: translateY(-1px);
+        textarea.form-control { resize: vertical; min-height: 100px; }
+
+        /* ── Badges ─────────────────────────────────────────── */
+        .section-badge {
+            display: inline-flex; align-items: center; gap: .4rem;
+            background: rgba(255,107,53,.1); color: var(--orange);
+            border: 1px solid rgba(255,107,53,.3); border-radius: 20px;
+            padding: .3rem .8rem; font-size: .8rem; font-weight: 600;
         }
-        .btn-secondary {
-            background: rgba(103, 111, 157, 0.1);
-            color: var(--secondary);
-            border: none;
-            border-radius: 12px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
+        .step-pill {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 22px; height: 22px; border-radius: 50%;
+            background: var(--primary); color: white; font-size: .7rem; font-weight: 700;
+            flex-shrink: 0;
         }
-        .btn-secondary:hover {
-            background: rgba(103, 111, 157, 0.2);
-            color: var(--primary);
+        .step-label { font-weight: 600; font-size: .85rem; color: var(--secondary); }
+        .step-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
+
+        /* ── Deep link selector ─────────────────────────────── */
+        .section-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .75rem;
+            margin-bottom: 1.5rem;
         }
-        .form-check-input:checked {
-            background-color: var(--primary);
-            border-color: var(--primary);
+        .section-card {
+            border: 2px solid var(--border); border-radius: 12px; padding: .75rem;
+            cursor: pointer; transition: all .2s; text-align: center; background: white;
+            position: relative;
         }
-        .form-text {
-            color: #666;
-            font-size: 0.875rem;
+        .section-card:hover { border-color: var(--accent); background: #F8F9FF; }
+        .section-card.active {
+            border-color: var(--orange); background: rgba(255,107,53,.06);
+            box-shadow: 0 0 0 3px rgba(255,107,53,.15);
         }
-        .preview-section {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-top: 2rem;
+        .section-card .s-icon { font-size: 1.6rem; display: block; margin-bottom: .3rem; }
+        .section-card .s-label { font-size: .75rem; font-weight: 600; color: var(--dark); line-height: 1.3; }
+        .section-card input[type=radio] { position: absolute; opacity: 0; width: 0; height: 0; }
+        .section-card .check-dot {
+            position: absolute; top: 6px; right: 6px;
+            width: 14px; height: 14px; border-radius: 50%;
+            background: var(--orange); display: none;
         }
-        .preview-title {
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 1rem;
+        .section-card.active .check-dot { display: block; }
+
+        /* ── Cascading dropdowns ────────────────────────────── */
+        .cascade-row { margin-bottom: 1rem; }
+        .cascade-row.hidden { display: none; }
+        .cascade-row select { width: 100%; }
+        .loading-spinner {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid var(--border); border-top-color: var(--accent);
+            border-radius: 50%; animation: spin .6s linear infinite; margin-left: .5rem;
         }
-        .notification-preview {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .cascade-label-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
+
+        /* ── Deep link preview ──────────────────────────────── */
+        .deeplink-preview {
+            background: linear-gradient(135deg, #1A1B26, #2D3250);
+            border-radius: 12px; padding: 1rem; margin-top: 1rem;
+            font-family: 'Courier New', monospace; font-size: .78rem;
+            word-break: break-all; display: none;
         }
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
+        .deeplink-preview .dl-label { color: #676F9D; font-size: .7rem; font-weight: 600; margin-bottom: .3rem; }
+        .deeplink-preview .dl-url { color: #FF6B35; }
+        .deeplink-preview .dl-screen { color: #22C55E; margin-top: .4rem; }
+
+        /* ── Phone preview ──────────────────────────────────── */
+        .phone-wrap { position: sticky; top: 1.5rem; }
+        .phone-frame {
+            background: #1A1B26; border-radius: 40px; padding: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.35), 0 0 0 2px #333;
+            max-width: 280px; margin: 0 auto;
         }
+        .phone-screen {
+            background: #0F1117; border-radius: 32px; overflow: hidden; min-height: 500px;
+            padding: 0;
+        }
+        .phone-status { background: #0F1117; padding: 12px 20px 6px; display: flex; justify-content: space-between; }
+        .phone-time { color: white; font-size: .7rem; font-weight: 700; }
+        .phone-icons { color: white; font-size: .65rem; }
+        .phone-notif-area { padding: 8px; }
+        .phone-notif {
+            background: rgba(255,255,255,.06); border-radius: 16px; padding: 12px;
+            margin-bottom: 8px; border: 1px solid rgba(255,255,255,.08);
+        }
+        .phone-notif-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .phone-app-icon {
+            width: 20px; height: 20px; border-radius: 5px;
+            background: linear-gradient(135deg, #FF6B35, #F7931E);
+            display: flex; align-items: center; justify-content: center; font-size: 10px;
+        }
+        .phone-app-name { color: rgba(255,255,255,.5); font-size: .6rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+        .phone-notif-time { color: rgba(255,255,255,.35); font-size: .6rem; margin-left: auto; }
+        .phone-notif-title { color: white; font-size: .78rem; font-weight: 700; margin-bottom: 3px; line-height: 1.3; }
+        .phone-notif-body { color: rgba(255,255,255,.65); font-size: .7rem; line-height: 1.4; }
+        .phone-deeplink-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: rgba(255,107,53,.2); border: 1px solid rgba(255,107,53,.4);
+            border-radius: 10px; padding: 3px 8px; margin-top: 6px;
+            font-size: .62rem; color: #FF6B35; font-weight: 600;
+        }
+        .phone-home {
+            padding: 12px 20px 16px; display: flex; justify-content: center;
+        }
+        .phone-home-bar {
+            width: 80px; height: 4px; background: rgba(255,255,255,.25); border-radius: 2px;
+        }
+        .preview-placeholder {
+            color: rgba(255,255,255,.2); font-size: .75rem; text-align: center; padding: 60px 20px;
+            line-height: 2;
+        }
+
+        /* ── Buttons ────────────────────────────────────────── */
+        .btn-send {
+            background: linear-gradient(135deg, #FF6B35, #F7931E); color: white; border: none;
+            border-radius: 12px; padding: .85rem 2rem; font-weight: 700; font-size: 1rem;
+            display: inline-flex; align-items: center; gap: .5rem; transition: all .2s;
+        }
+        .btn-send:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,107,53,.35); color: white; }
+        .btn-cancel {
+            background: rgba(103,111,157,.1); color: var(--secondary); border: none;
+            border-radius: 12px; padding: .85rem 1.5rem; font-weight: 600; transition: all .2s;
+        }
+        .btn-cancel:hover { background: rgba(103,111,157,.2); color: var(--primary); }
+        .btn-clear-dl {
+            background: rgba(239,68,68,.08); color: #EF4444; border: 1px solid rgba(239,68,68,.2);
+            border-radius: 8px; padding: .35rem .8rem; font-size: .8rem; font-weight: 600;
+            cursor: pointer; transition: all .2s;
+        }
+        .btn-clear-dl:hover { background: rgba(239,68,68,.15); }
+
+        /* ── Alerts ─────────────────────────────────────────── */
+        .alert-error { background: #FEF2F2; border: 1px solid #FECACA; border-radius: 12px; padding: 1rem 1.25rem; color: #DC2626; margin-bottom: 1.5rem; }
+        .alert-section-tip { background: rgba(255,107,53,.06); border: 1px solid rgba(255,107,53,.2); border-radius: 10px; padding: .75rem 1rem; font-size: .82rem; color: #7C4A2A; margin-top: .5rem; }
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
     <nav class="sidebar">
-        <%- include('../partials/sidebar', { 
-            activePage: 'notifications', 
-            username: username,
-            activeCategory: activeCategory,
-            activeSubCategory: activeSubCategory,
-            koshCategories: koshCategories,
-            mcqCategories: mcqCategories
+        <%- include('../partials/sidebar', {
+            activePage: 'notifications',
+            username,
+            activeCategory: null,
+            activeSubCategory: null,
+            koshCategories: [],
+            mcqCategories: []
         }) %>
     </nav>
-    
+
     <main class="main-content">
+        <!-- Topbar -->
         <div class="topbar">
             <h1 class="page-title"><%= formTitle %></h1>
-            <a href="/notifications" class="btn btn-secondary">Back to Notifications</a>
+            <a href="/notifications" class="btn-cancel">← Back</a>
         </div>
 
-        <div class="content-card">
-            <div class="card-header">
-                <h2 class="card-title"><%= formTitle %></h2>
-            </div>
-            <div class="card-body">
+        <% if (error) { %>
+            <div class="alert-error">⚠️ <%= error %></div>
+        <% } %>
 
-                <form method="POST" action="<%= formAction %>">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <label for="title" class="form-label">Title *</label>
-                                <input type="text" class="form-control" id="title" name="title" 
-                                       value="<%= notification ? notification.title : '' %>" required>
-                                <div class="form-text">A clear, concise title for the notification</div>
-                            </div>
+        <form method="POST" action="<%= formAction %>" id="notifForm">
+            <!-- Hidden fields for deep link data -->
+            <input type="hidden" name="dl_contentType"     id="dl_contentType">
+            <input type="hidden" name="dl_categoryId"      id="dl_categoryId">
+            <input type="hidden" name="dl_categoryName"    id="dl_categoryName">
+            <input type="hidden" name="dl_subCategoryId"   id="dl_subCategoryId">
+            <input type="hidden" name="dl_subCategoryName" id="dl_subCategoryName">
+            <input type="hidden" name="dl_level3Id"        id="dl_level3Id">
+            <input type="hidden" name="dl_level3Name"      id="dl_level3Name">
+            <input type="hidden" name="dl_contentId"       id="dl_contentId">
+            <input type="hidden" name="dl_contentTitle"    id="dl_contentTitle">
 
-                            <div class="mb-3">
-                                <label for="message" class="form-label">Message *</label>
-                                <textarea class="form-control" id="message" name="message" rows="4" required><%= notification ? notification.message : '' %></textarea>
-                                <div class="form-text">The main content of the notification</div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="type" class="form-label">Type</label>
-                                        <select class="form-select" id="type" name="type">
-                                            <option value="info" <%= notification && notification.type === 'info' ? 'selected' : '' %>>Info</option>
-                                            <option value="success" <%= notification && notification.type === 'success' ? 'selected' : '' %>>Success</option>
-                                            <option value="warning" <%= notification && notification.type === 'warning' ? 'selected' : '' %>>Warning</option>
-                                            <option value="error" <%= notification && notification.type === 'error' ? 'selected' : '' %>>Error</option>
-                                            <option value="announcement" <%= notification && notification.type === 'announcement' ? 'selected' : '' %>>Announcement</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="priority" class="form-label">Priority</label>
-                                        <select class="form-select" id="priority" name="priority">
-                                            <option value="low" <%= notification && notification.priority === 'low' ? 'selected' : '' %>>Low</option>
-                                            <option value="medium" <%= notification && notification.priority === 'medium' ? 'selected' : '' %>>Medium</option>
-                                            <option value="high" <%= notification && notification.priority === 'high' ? 'selected' : '' %>>High</option>
-                                            <option value="urgent" <%= notification && notification.priority === 'urgent' ? 'selected' : '' %>>Urgent</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="targetAudience" class="form-label">Target Audience</label>
-                                <select class="form-select" id="targetAudience" name="targetAudience">
-                                    <option value="all" <%= notification && notification.targetAudience === 'all' ? 'selected' : '' %>>All Users</option>
-                                    <option value="premium" <%= notification && notification.targetAudience === 'premium' ? 'selected' : '' %>>Premium Users Only</option>
-                                    <option value="free" <%= notification && notification.targetAudience === 'free' ? 'selected' : '' %>>Free Users Only</option>
-                                    <option value="specific" <%= notification && notification.targetAudience === 'specific' ? 'selected' : '' %>>Specific Users</option>
-                                </select>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="scheduledAt" class="form-label">Scheduled At</label>
-                                        <input type="datetime-local" class="form-control" id="scheduledAt" name="scheduledAt" 
-                                               value="<%= notification && notification.scheduledAt ? new Date(notification.scheduledAt).toISOString().slice(0, 16) : '' %>">
-                                        <div class="form-text">When to show this notification</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="expiresAt" class="form-label">Expires At</label>
-                                        <input type="datetime-local" class="form-control" id="expiresAt" name="expiresAt" 
-                                               value="<%= notification && notification.expiresAt ? new Date(notification.expiresAt).toISOString().slice(0, 16) : '' %>">
-                                        <div class="form-text">When to stop showing (optional)</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="actionUrl" class="form-label">Action URL</label>
-                                        <input type="url" class="form-control" id="actionUrl" name="actionUrl" 
-                                               value="<%= notification ? notification.actionUrl : '' %>" placeholder="https://example.com">
-                                        <div class="form-text">Optional URL for action button</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="actionText" class="form-label">Action Text</label>
-                                        <input type="text" class="form-control" id="actionText" name="actionText" 
-                                               value="<%= notification ? notification.actionText : '' %>" placeholder="Learn More">
-                                        <div class="form-text">Text for action button</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="imageUrl" class="form-label">Image URL</label>
-                                <input type="url" class="form-control" id="imageUrl" name="imageUrl" 
-                                       value="<%= notification ? notification.imageUrl : '' %>" placeholder="https://example.com/image.jpg">
-                                <div class="form-text">Optional image for the notification</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="isActive" name="isActive" 
-                                           <%= notification && notification.isActive ? 'checked' : 'checked' %>>
-                                    <label class="form-check-label" for="isActive">
-                                        Active (show this notification)
-                                    </label>
-                                </div>
-                            </div>
+            <div class="form-grid">
+                <!-- ── LEFT COLUMN ─────────────────────────────── -->
+                <div>
+                    <!-- Basic Info -->
+                    <div class="card">
+                        <div class="card-header-bar">
+                            <span class="icon">✏️</span> Notification Content
                         </div>
-
-                        <div class="col-md-4">
-                            <div class="preview-section">
-                                <h5 class="preview-title">Preview</h5>
-                                <div class="notification-preview" id="preview">
-                                    <div class="preview-header">
-                                        <h6 id="preview-title">Notification Title</h6>
-                                    </div>
-                                    <p id="preview-message" style="margin: 0; color: #666;">Notification message will appear here...</p>
-                                    <% if (notification && notification.actionUrl) { %>
-                                        <div class="mt-2">
-                                            <a href="#" class="btn btn-sm btn-primary" id="preview-action" style="display: none;">Action</a>
-                                        </div>
-                                    <% } %>
-                                </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Title *</label>
+                                <input type="text" class="form-control" name="title" id="notifTitle"
+                                       value="<%= notification ? notification.title : '' %>"
+                                       placeholder="e.g. New content added in Kosh!" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Message *</label>
+                                <textarea class="form-control" name="message" id="notifMessage"
+                                          rows="3" placeholder="Describe what's new..." required><%= notification ? notification.message : '' %></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Notification Image URL <span style="color:#9CA3AF;font-weight:400">(optional)</span></label>
+                                <input type="url" class="form-control" name="imageUrl" id="notifImage"
+                                       value="<%= notification ? (notification.imageUrl||'') : '' %>"
+                                       placeholder="https://...">
                             </div>
                         </div>
                     </div>
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">Save Notification</button>
-                        <a href="/notifications" class="btn btn-secondary">Cancel</a>
+                    <!-- Settings -->
+                    <div class="card">
+                        <div class="card-header-bar">
+                            <span class="icon">⚙️</span> Settings
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Type</label>
+                                    <select class="form-select" name="type" id="notifType">
+                                        <% ['info','success','warning','error','announcement','content'].forEach(t => { %>
+                                            <option value="<%= t %>" <%= notification && notification.type === t ? 'selected' : (t==='content'?'selected':'') %>><%= t.charAt(0).toUpperCase()+t.slice(1) %></option>
+                                        <% }) %>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Priority</label>
+                                    <select class="form-select" name="priority">
+                                        <% ['low','medium','high','urgent'].forEach(p => { %>
+                                            <option value="<%= p %>" <%= notification && notification.priority === p ? 'selected' : (p==='high'?'selected':'') %>><%= p.charAt(0).toUpperCase()+p.slice(1) %></option>
+                                        <% }) %>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Audience</label>
+                                    <select class="form-select" name="targetAudience">
+                                        <option value="all" <%= !notification || notification.targetAudience==='all' ? 'selected' : '' %>>All Users</option>
+                                        <option value="premium" <%= notification && notification.targetAudience==='premium' ? 'selected' : '' %>>Premium Only</option>
+                                        <option value="free" <%= notification && notification.targetAudience==='free' ? 'selected' : '' %>>Free Only</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Schedule At</label>
+                                    <input type="datetime-local" class="form-control" name="scheduledAt"
+                                           value="<%= notification && notification.scheduledAt ? new Date(notification.scheduledAt).toISOString().slice(0,16) : '' %>">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Expires At</label>
+                                    <input type="datetime-local" class="form-control" name="expiresAt"
+                                           value="<%= notification && notification.expiresAt ? new Date(notification.expiresAt).toISOString().slice(0,16) : '' %>">
+                                </div>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="isActive" id="isActive"
+                                       <%= !notification || notification.isActive !== false ? 'checked' : '' %>>
+                                <label class="form-check-label" for="isActive" style="font-weight:600">Active (visible to users)</label>
+                            </div>
+                        </div>
                     </div>
-                </form>
+
+                    <!-- Deep Link Section -->
+                    <div class="card">
+                        <div class="card-header-bar orange">
+                            <span class="icon">🔗</span>
+                            <div>
+                                <div>Content Deep Link</div>
+                                <div style="font-size:.75rem;font-weight:400;opacity:.85">Tap notification → opens exact content in app</div>
+                            </div>
+                            <% if (notification && notification.deepLink && notification.deepLink.contentType) { %>
+                                <span class="ms-auto section-badge" id="currentDlBadge">
+                                    <%= notification.deepLink.contentType %>
+                                </span>
+                            <% } %>
+                        </div>
+                        <div class="card-body">
+                            <!-- Section picker -->
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <label class="form-label mb-0">Select Content Section</label>
+                                <button type="button" class="btn-clear-dl" id="clearDlBtn" style="<%= notification && notification.deepLink && notification.deepLink.contentType ? '' : 'display:none' %>" onclick="clearDeepLink()">
+                                    ✕ Clear Link
+                                </button>
+                            </div>
+
+                            <div class="section-grid" id="sectionGrid">
+                                <!-- populated by JS -->
+                                <div style="color:#9CA3AF;font-size:.85rem;padding:.5rem">Loading sections...</div>
+                            </div>
+
+                            <!-- Cascading dropdowns -->
+                            <div id="cascadeContainer" style="<%= notification && notification.deepLink && notification.deepLink.contentType ? '' : 'display:none' %>">
+                                <div id="cascade1" class="cascade-row hidden">
+                                    <div class="cascade-label-row">
+                                        <span class="step-pill">1</span>
+                                        <span class="step-label" id="label1">Category</span>
+                                        <span class="loading-spinner" id="spin1" style="display:none"></span>
+                                    </div>
+                                    <select class="form-select" id="sel1" onchange="onSel1Change()">
+                                        <option value="">— select —</option>
+                                    </select>
+                                </div>
+                                <div id="cascade2" class="cascade-row hidden">
+                                    <div class="cascade-label-row">
+                                        <span class="step-pill">2</span>
+                                        <span class="step-label" id="label2">Sub Category</span>
+                                        <span class="loading-spinner" id="spin2" style="display:none"></span>
+                                    </div>
+                                    <select class="form-select" id="sel2" onchange="onSel2Change()">
+                                        <option value="">— select —</option>
+                                    </select>
+                                </div>
+                                <div id="cascade3" class="cascade-row hidden">
+                                    <div class="cascade-label-row">
+                                        <span class="step-pill">3</span>
+                                        <span class="step-label" id="label3">Content</span>
+                                        <span class="loading-spinner" id="spin3" style="display:none"></span>
+                                    </div>
+                                    <select class="form-select" id="sel3" onchange="onSel3Change()">
+                                        <option value="">— select —</option>
+                                    </select>
+                                </div>
+                                <div id="cascade4" class="cascade-row hidden">
+                                    <div class="cascade-label-row">
+                                        <span class="step-pill">4</span>
+                                        <span class="step-label" id="label4">Content Title</span>
+                                        <span class="loading-spinner" id="spin4" style="display:none"></span>
+                                    </div>
+                                    <select class="form-select" id="sel4" onchange="onSel4Change()">
+                                        <option value="">— select —</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Deep link preview -->
+                            <div class="deeplink-preview" id="dlPreview">
+                                <div class="dl-label">DEEP LINK URL (Flutter navigates here)</div>
+                                <div class="dl-url" id="dlUrl"></div>
+                                <div class="dl-screen">→ Screen: <span id="dlScreen"></span></div>
+                            </div>
+
+                            <div class="alert-section-tip" id="sectionTip" style="display:none">
+                                💡 Select a content section above to link this notification directly to a specific page in the app.
+                                When users tap the notification, they'll be taken straight to that content.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="d-flex gap-3 mt-2 pb-4">
+                        <button type="submit" class="btn-send">
+                            🚀 Send Notification
+                        </button>
+                        <a href="/notifications" class="btn-cancel">Cancel</a>
+                    </div>
+                </div>
+
+                <!-- ── RIGHT COLUMN — Phone Preview ──────────── -->
+                <div class="phone-wrap">
+                    <div style="font-family:'Playfair Display',serif;font-weight:600;color:var(--dark);margin-bottom:1rem;font-size:1rem;text-align:center;">
+                        Live Phone Preview
+                    </div>
+                    <div class="phone-frame">
+                        <div class="phone-screen">
+                            <div class="phone-status">
+                                <span class="phone-time">9:41</span>
+                                <span class="phone-icons">▶ 🔋</span>
+                            </div>
+                            <div class="phone-notif-area" id="phoneNotifArea">
+                                <div class="preview-placeholder" id="phonePlaceholder">
+                                    📱<br>Notification preview<br>will appear here<br>as you type
+                                </div>
+                                <div class="phone-notif" id="phoneNotif" style="display:none">
+                                    <div class="phone-notif-header">
+                                        <div class="phone-app-icon">🕉</div>
+                                        <span class="phone-app-name">Jyotish App</span>
+                                        <span class="phone-notif-time">now</span>
+                                    </div>
+                                    <div class="phone-notif-title" id="phoneTitle">—</div>
+                                    <div class="phone-notif-body" id="phoneBody">—</div>
+                                    <div id="phoneDeepLinkChip" style="display:none">
+                                        <div class="phone-deeplink-chip">🔗 <span id="phoneChipText">Opens in app</span></div>
+                                    </div>
+                                    <% /* Image preview if imageUrl present */ %>
+                                    <div id="phoneImageWrap" style="display:none;margin-top:8px">
+                                        <img id="phoneImage" src="" alt="" style="width:100%;border-radius:8px;max-height:80px;object-fit:cover">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="phone-home"><div class="phone-home-bar"></div></div>
+                        </div>
+                    </div>
+
+                    <!-- Stats card under phone -->
+                    <% if (notification && notification.sentCount !== undefined) { %>
+                    <div class="card mt-3">
+                        <div class="card-body" style="padding:1rem">
+                            <div style="font-weight:700;font-size:.85rem;margin-bottom:.75rem;color:var(--dark)">📊 Analytics</div>
+                            <div class="row g-2 text-center">
+                                <div class="col-4">
+                                    <div style="font-size:1.2rem;font-weight:700;color:var(--orange)"><%= notification.sentCount||0 %></div>
+                                    <div style="font-size:.7rem;color:#9CA3AF">Sent</div>
+                                </div>
+                                <div class="col-4">
+                                    <div style="font-size:1.2rem;font-weight:700;color:#2196F3"><%= notification.readCount||0 %></div>
+                                    <div style="font-size:.7rem;color:#9CA3AF">Read</div>
+                                </div>
+                                <div class="col-4">
+                                    <div style="font-size:1.2rem;font-weight:700;color:#22C55E"><%= notification.openCount||0 %></div>
+                                    <div style="font-size:.7rem;color:#9CA3AF">Opens</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <% } %>
+                </div>
             </div>
-        </div>
+        </form>
     </main>
 
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Live preview functionality
-        function updatePreview() {
-            const title = document.getElementById('title').value || 'Notification Title';
-            const message = document.getElementById('message').value || 'Notification message will appear here...';
-            const actionUrl = document.getElementById('actionUrl').value;
-            const actionText = document.getElementById('actionText').value;
+    // ─── State ───────────────────────────────────────────────────────────────
+    const SECTIONS = [];
+    let activeSection = null;
 
-            document.getElementById('preview-title').textContent = title;
-            document.getElementById('preview-message').textContent = message;
-            
-            // Update action button
-            const actionBtn = document.getElementById('preview-action');
-            if (actionUrl && actionText) {
-                actionBtn.textContent = actionText;
-                actionBtn.href = actionUrl;
-                actionBtn.style.display = 'inline-block';
-            } else {
-                actionBtn.style.display = 'none';
-            }
+    // Pre-loaded edit values (if editing an existing notification)
+    const EDIT_DATA = <%- JSON.stringify(notification && notification.deepLink ? notification.deepLink : null) %>;
+
+    // ─── Init ────────────────────────────────────────────────────────────────
+    async function init() {
+        await loadSections();
+        if (EDIT_DATA && EDIT_DATA.contentType) {
+            await restoreEditState();
+        } else {
+            showTip();
+        }
+        bindPreviewListeners();
+        updatePhonePreview();
+    }
+
+    // ─── Load sections from API ──────────────────────────────────────────────
+    async function loadSections() {
+        try {
+            const res = await fetch('/api/notification-content/sections');
+            const json = await res.json();
+            if (!json.success) return;
+            SECTIONS.push(...json.sections);
+            renderSectionGrid();
+        } catch (e) {
+            document.getElementById('sectionGrid').innerHTML = '<span style="color:red">Failed to load sections</span>';
+        }
+    }
+
+    function renderSectionGrid() {
+        const grid = document.getElementById('sectionGrid');
+        grid.innerHTML = SECTIONS.map(s => `
+            <div class="section-card ${activeSection === s.key ? 'active' : ''}"
+                 id="scard_${s.key}" onclick="selectSection('${s.key}')">
+                <span class="s-icon">${s.icon}</span>
+                <span class="s-label">${s.label}</span>
+                <div class="check-dot"></div>
+            </div>
+        `).join('');
+    }
+
+    // ─── Section selection ────────────────────────────────────────────────────
+    async function selectSection(key) {
+        if (activeSection === key) { clearDeepLink(); return; }
+
+        activeSection = key;
+        renderSectionGrid();
+        clearHiddenFields();
+        document.getElementById('dl_contentType').value = key;
+        document.getElementById('cascadeContainer').style.display = '';
+        document.getElementById('sectionTip').style.display = 'none';
+        document.getElementById('clearDlBtn').style.display = '';
+        document.getElementById('dlPreview').style.display = 'none';
+
+        // Reset all cascade dropdowns
+        resetCascade();
+
+        // Load level1 (category / date / flat content)
+        const section = SECTIONS.find(s => s.key === key);
+        await loadLevel1(section);
+    }
+
+    function resetCascade() {
+        ['1','2','3','4'].forEach(i => {
+            const row = document.getElementById('cascade' + i);
+            const sel  = document.getElementById('sel' + i);
+            row.classList.add('hidden');
+            sel.innerHTML = '<option value="">— select —</option>';
+        });
+    }
+
+    // ─── Level 1 ─────────────────────────────────────────────────────────────
+    async function loadLevel1(section) {
+        const levels = section.levels;
+        setLabel(1, levels[0]);
+        showSpin(1);
+
+        const data = await apiFetch(`/${section.key}/level1`);
+        hideSpin(1);
+
+        if (!data) return;
+        populateSelect('sel1', data, `— select ${levels[0]} —`);
+
+        if (section.key === 'festival') {
+            // Festival is flat — sel1 IS the content
+            setLabel(1, 'Festival Entry');
+            document.getElementById('cascade1').classList.remove('hidden');
+            return;
+        }
+        document.getElementById('cascade1').classList.remove('hidden');
+    }
+
+    // ─── Sel1 change ─────────────────────────────────────────────────────────
+    async function onSel1Change() {
+        const sel1 = document.getElementById('sel1');
+        const id   = sel1.value;
+        const name = sel1.options[sel1.selectedIndex]?.text || '';
+        document.getElementById('dl_categoryId').value   = id;
+        document.getElementById('dl_categoryName').value = name;
+
+        // Reset lower levels
+        resetFrom(2);
+
+        if (!id || !activeSection) return;
+
+        if (activeSection === 'festival') {
+            // Festival: sel1 = content
+            setDeepLinkContent(id, name);
+            updateDeepLinkPreview();
+            return;
         }
 
-        // Add event listeners
-        document.getElementById('title').addEventListener('input', updatePreview);
-        document.getElementById('message').addEventListener('input', updatePreview);
-        document.getElementById('actionUrl').addEventListener('input', updatePreview);
-        document.getElementById('actionText').addEventListener('input', updatePreview);
+        const section = SECTIONS.find(s => s.key === activeSection);
+        const levels  = section.levels;
 
-        // Initial preview update
-        updatePreview();
+        // For muhurat, rashifal_daily, numerology_daily: level2 = content
+        if (['muhurat', 'rashifal_daily', 'numerology_daily'].includes(activeSection)) {
+            setLabel(2, levels[1]);
+            showSpin(2);
+            const data = await apiFetch(`/${activeSection}/level2/${id}`);
+            hideSpin(2);
+            if (!data) return;
+            populateSelect('sel2', data, `— select ${levels[1]} —`);
+            document.getElementById('cascade2').classList.remove('hidden');
+            return;
+        }
+
+        // kosh, karmkand, book: level2 = subcategory/book
+        setLabel(2, levels[1]);
+        showSpin(2);
+        const data = await apiFetch(`/${activeSection}/level2/${id}`);
+        hideSpin(2);
+        if (!data) return;
+        populateSelect('sel2', data, `— select ${levels[1]} —`);
+        document.getElementById('cascade2').classList.remove('hidden');
+    }
+
+    // ─── Sel2 change ─────────────────────────────────────────────────────────
+    async function onSel2Change() {
+        const sel2 = document.getElementById('sel2');
+        const id   = sel2.value;
+        const name = sel2.options[sel2.selectedIndex]?.text || '';
+
+        resetFrom(3);
+
+        if (!id) return;
+
+        // muhurat / rashifal / numerology: sel2 = content (final)
+        if (['muhurat', 'rashifal_daily', 'numerology_daily'].includes(activeSection)) {
+            document.getElementById('dl_subCategoryId').value   = '';
+            document.getElementById('dl_subCategoryName').value = '';
+            setDeepLinkContent(id, name);
+            updateDeepLinkPreview();
+            return;
+        }
+
+        document.getElementById('dl_subCategoryId').value   = id;
+        document.getElementById('dl_subCategoryName').value = name;
+
+        const section = SECTIONS.find(s => s.key === activeSection);
+        const levels  = section.levels;
+
+        // kosh / karmkand: level3 = content titles
+        if (['kosh', 'karmkand'].includes(activeSection)) {
+            setLabel(3, levels[2]);
+            showSpin(3);
+            const data = await apiFetch(`/${activeSection}/level3/${id}`);
+            hideSpin(3);
+            if (!data) return;
+            populateSelect('sel3', data, `— select ${levels[2]} —`);
+            document.getElementById('cascade3').classList.remove('hidden');
+            return;
+        }
+
+        // book: level3 = chapters
+        if (activeSection === 'book') {
+            setLabel(3, levels[2]);
+            showSpin(3);
+            const data = await apiFetch(`/${activeSection}/level3/${id}`);
+            hideSpin(3);
+            if (!data) return;
+            populateSelect('sel3', data, `— select ${levels[2]} —`);
+            document.getElementById('cascade3').classList.remove('hidden');
+        }
+    }
+
+    // ─── Sel3 change ─────────────────────────────────────────────────────────
+    async function onSel3Change() {
+        const sel3 = document.getElementById('sel3');
+        const id   = sel3.value;
+        const name = sel3.options[sel3.selectedIndex]?.text || '';
+
+        resetFrom(4);
+
+        if (!id) return;
+
+        // kosh / karmkand: sel3 = final content
+        if (['kosh', 'karmkand'].includes(activeSection)) {
+            setDeepLinkContent(id, name);
+            updateDeepLinkPreview();
+            return;
+        }
+
+        // book: sel3 = chapter → load level4 content
+        if (activeSection === 'book') {
+            document.getElementById('dl_level3Id').value   = id;
+            document.getElementById('dl_level3Name').value = name;
+
+            const section = SECTIONS.find(s => s.key === activeSection);
+            setLabel(4, section.levels[3]);
+            showSpin(4);
+            const data = await apiFetch(`/book/level4/${id}`);
+            hideSpin(4);
+            if (!data) return;
+            populateSelect('sel4', data, `— select ${section.levels[3]} —`);
+            document.getElementById('cascade4').classList.remove('hidden');
+        }
+    }
+
+    // ─── Sel4 change (book only) ──────────────────────────────────────────────
+    function onSel4Change() {
+        const sel4 = document.getElementById('sel4');
+        const id   = sel4.value;
+        const name = sel4.options[sel4.selectedIndex]?.text || '';
+        if (!id) return;
+        setDeepLinkContent(id, name);
+        updateDeepLinkPreview();
+    }
+
+    // ─── Deep link helpers ────────────────────────────────────────────────────
+    function setDeepLinkContent(id, name) {
+        document.getElementById('dl_contentId').value    = id;
+        document.getElementById('dl_contentTitle').value = name;
+        // Auto-fill notification title if empty
+        const titleEl = document.getElementById('notifTitle');
+        if (!titleEl.value.trim()) titleEl.value = name;
+        updatePhonePreview();
+    }
+
+    function updateDeepLinkPreview() {
+        const type     = document.getElementById('dl_contentType').value;
+        const catId    = document.getElementById('dl_categoryId').value;
+        const subId    = document.getElementById('dl_subCategoryId').value;
+        const lvl3Id   = document.getElementById('dl_level3Id').value;
+        const conId    = document.getElementById('dl_contentId').value;
+        const section  = SECTIONS.find(s => s.key === type);
+        if (!conId || !section) return;
+
+        let url = '';
+        switch (type) {
+            case 'kosh': case 'karmkand':
+                url = `jyotishapp://${type}/${catId}/${subId}/${conId}`; break;
+            case 'book':
+                url = `jyotishapp://book/${catId}/${subId}/${lvl3Id}/${conId}`; break;
+            case 'muhurat':
+                url = `jyotishapp://muhurat/${catId}/${conId}`; break;
+            case 'rashifal_daily':
+                url = `jyotishapp://rashifal/daily/${catId}/${conId}`; break;
+            case 'numerology_daily':
+                url = `jyotishapp://numerology/daily/${catId}/${conId}`; break;
+            case 'festival':
+                url = `jyotishapp://festival/${conId}`; break;
+        }
+
+        document.getElementById('dlUrl').textContent    = url;
+        document.getElementById('dlScreen').textContent = section.screen;
+        document.getElementById('dlPreview').style.display = '';
+
+        // Update phone chip
+        document.getElementById('phoneDeepLinkChip').style.display = '';
+        document.getElementById('phoneChipText').textContent = section.screen.replace(/([A-Z])/g,' $1').trim();
+        updatePhonePreview();
+    }
+
+    function clearDeepLink() {
+        activeSection = null;
+        clearHiddenFields();
+        resetCascade();
+        renderSectionGrid();
+        document.getElementById('cascadeContainer').style.display = 'none';
+        document.getElementById('dlPreview').style.display = 'none';
+        document.getElementById('clearDlBtn').style.display = 'none';
+        document.getElementById('phoneDeepLinkChip').style.display = 'none';
+        showTip();
+        updatePhonePreview();
+    }
+
+    function clearHiddenFields() {
+        ['dl_contentType','dl_categoryId','dl_categoryName','dl_subCategoryId','dl_subCategoryName',
+         'dl_level3Id','dl_level3Name','dl_contentId','dl_contentTitle']
+            .forEach(id => { document.getElementById(id).value = ''; });
+    }
+
+    function showTip() {
+        document.getElementById('sectionTip').style.display = '';
+    }
+
+    // ─── Restore edit state ───────────────────────────────────────────────────
+    async function restoreEditState() {
+        if (!EDIT_DATA) return;
+        activeSection = EDIT_DATA.contentType;
+        renderSectionGrid();
+        document.getElementById('cascadeContainer').style.display = '';
+        document.getElementById('clearDlBtn').style.display = '';
+        document.getElementById('sectionTip').style.display = 'none';
+
+        // Restore hidden fields
+        document.getElementById('dl_contentType').value     = EDIT_DATA.contentType || '';
+        document.getElementById('dl_categoryId').value      = EDIT_DATA.categoryId   || '';
+        document.getElementById('dl_categoryName').value    = EDIT_DATA.categoryName  || '';
+        document.getElementById('dl_subCategoryId').value   = EDIT_DATA.subCategoryId || '';
+        document.getElementById('dl_subCategoryName').value = EDIT_DATA.subCategoryName || '';
+        document.getElementById('dl_level3Id').value        = EDIT_DATA.level3Id      || '';
+        document.getElementById('dl_level3Name').value      = EDIT_DATA.level3Name    || '';
+        document.getElementById('dl_contentId').value       = EDIT_DATA.contentId     || '';
+        document.getElementById('dl_contentTitle').value    = EDIT_DATA.contentTitle  || '';
+
+        // Load and pre-select level1
+        const section = SECTIONS.find(s => s.key === activeSection);
+        if (!section) return;
+        await loadLevel1(section);
+
+        if (EDIT_DATA.categoryId) {
+            const sel1 = document.getElementById('sel1');
+            sel1.value = EDIT_DATA.categoryId;
+            if (!sel1.value && EDIT_DATA.categoryId) {
+                addOptionIfMissing(sel1, EDIT_DATA.categoryId, EDIT_DATA.categoryName);
+            }
+            await onSel1Change();
+        }
+
+        if (EDIT_DATA.subCategoryId) {
+            const sel2 = document.getElementById('sel2');
+            sel2.value = EDIT_DATA.subCategoryId;
+            if (!sel2.value) addOptionIfMissing(sel2, EDIT_DATA.subCategoryId, EDIT_DATA.subCategoryName);
+            await onSel2Change();
+        }
+
+        if (EDIT_DATA.level3Id) {
+            const sel3 = document.getElementById('sel3');
+            sel3.value = EDIT_DATA.level3Id;
+            if (!sel3.value) addOptionIfMissing(sel3, EDIT_DATA.level3Id, EDIT_DATA.level3Name);
+            await onSel3Change();
+        }
+
+        if (EDIT_DATA.contentId) {
+            // Find the right final select
+            const finalSel = activeSection === 'book' ? document.getElementById('sel4') : document.getElementById('sel3');
+            const targetSel = ['kosh','karmkand'].includes(activeSection) ? document.getElementById('sel3')
+                            : activeSection === 'book' ? document.getElementById('sel4')
+                            : document.getElementById('sel2');
+            targetSel.value = EDIT_DATA.contentId;
+            if (!targetSel.value) addOptionIfMissing(targetSel, EDIT_DATA.contentId, EDIT_DATA.contentTitle);
+        }
+
+        updateDeepLinkPreview();
+    }
+
+    function addOptionIfMissing(sel, val, label) {
+        if (!Array.from(sel.options).some(o => o.value === val)) {
+            const opt = document.createElement('option');
+            opt.value = val; opt.textContent = label || val;
+            sel.appendChild(opt);
+        }
+        sel.value = val;
+    }
+
+    // ─── Phone preview ────────────────────────────────────────────────────────
+    function bindPreviewListeners() {
+        ['notifTitle','notifMessage','notifImage'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', updatePhonePreview);
+        });
+    }
+
+    function updatePhonePreview() {
+        const title   = document.getElementById('notifTitle').value.trim();
+        const message = document.getElementById('notifMessage').value.trim();
+        const imgUrl  = document.getElementById('notifImage')?.value.trim();
+
+        const notif = document.getElementById('phoneNotif');
+        const placeholder = document.getElementById('phonePlaceholder');
+
+        if (!title && !message) {
+            notif.style.display = 'none';
+            placeholder.style.display = '';
+            return;
+        }
+        notif.style.display = '';
+        placeholder.style.display = 'none';
+        document.getElementById('phoneTitle').textContent = title || 'Notification';
+        document.getElementById('phoneBody').textContent  = message || '';
+
+        if (imgUrl) {
+            document.getElementById('phoneImageWrap').style.display = '';
+            document.getElementById('phoneImage').src = imgUrl;
+        } else {
+            document.getElementById('phoneImageWrap').style.display = 'none';
+        }
+    }
+
+    // ─── Utility ──────────────────────────────────────────────────────────────
+    async function apiFetch(path) {
+        try {
+            const res = await fetch('/api/notification-content' + path);
+            const json = await res.json();
+            if (!json.success) { console.warn('API error:', json.error); return null; }
+            return json.data;
+        } catch (e) { console.error('fetch error', e); return null; }
+    }
+
+    function populateSelect(selId, items, placeholder) {
+        const sel = document.getElementById(selId);
+        sel.innerHTML = `<option value="">${placeholder}</option>` +
+            items.map(item => `<option value="${item._id}">${item.name}${item.date ? ' ('+item.date+')' : ''}</option>`).join('');
+    }
+
+    function setLabel(n, text) {
+        document.getElementById('label' + n).textContent = text;
+    }
+    function showSpin(n) { document.getElementById('spin' + n).style.display = ''; }
+    function hideSpin(n)  { document.getElementById('spin' + n).style.display = 'none'; }
+
+    function resetFrom(fromLevel) {
+        for (let i = fromLevel; i <= 4; i++) {
+            document.getElementById('cascade' + i).classList.add('hidden');
+            document.getElementById('sel' + i).innerHTML = '<option value="">— select —</option>';
+        }
+        // Clear deeper hidden fields
+        if (fromLevel <= 2) {
+            ['dl_subCategoryId','dl_subCategoryName'].forEach(id => document.getElementById(id).value = '');
+        }
+        if (fromLevel <= 3) {
+            ['dl_level3Id','dl_level3Name'].forEach(id => document.getElementById(id).value = '');
+        }
+        ['dl_contentId','dl_contentTitle'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('dlPreview').style.display = 'none';
+        document.getElementById('phoneDeepLinkChip').style.display = 'none';
+    }
+
+    // ─── Boot ─────────────────────────────────────────────────────────────────
+    init();
     </script>
 </body>
 </html>

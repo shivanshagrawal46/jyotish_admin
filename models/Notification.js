@@ -1,4 +1,32 @@
 const mongoose = require('mongoose');
+const { ObjectId } = mongoose.Schema.Types;
+
+const deepLinkSchema = new mongoose.Schema({
+    // Which content section this notification links to
+    contentType: {
+        type: String,
+        enum: ['kosh', 'karmkand', 'book', 'muhurat', 'rashifal_daily', 'numerology_daily', 'festival'],
+        default: null
+    },
+    // Level 1 — Category / Date
+    categoryId: { type: ObjectId, default: null },
+    categoryName: { type: String, default: null },
+    // Level 2 — SubCategory / Book / Content (for flat sections)
+    subCategoryId: { type: ObjectId, default: null },
+    subCategoryName: { type: String, default: null },
+    // Level 3 — Chapter (book only) / Content (kosh, karmkand)
+    level3Id: { type: ObjectId, default: null },
+    level3Name: { type: String, default: null },
+    // The actual content item
+    contentId: { type: ObjectId, default: null },
+    contentTitle: { type: String, default: null },
+    // Constructed deep link URL — Flutter app uses this for navigation
+    deepLinkUrl: { type: String, default: null },
+    // Flutter screen/route name
+    screen: { type: String, default: null },
+    // Full navigation params as JSON (for flexible future use)
+    navigationParams: { type: mongoose.Schema.Types.Mixed, default: {} }
+}, { _id: false });
 
 const notificationSchema = new mongoose.Schema({
     title: {
@@ -13,7 +41,7 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['info', 'warning', 'success', 'error', 'announcement'],
+        enum: ['info', 'warning', 'success', 'error', 'announcement', 'content'],
         default: 'info'
     },
     priority: {
@@ -36,22 +64,28 @@ const notificationSchema = new mongoose.Schema({
     },
     expiresAt: {
         type: Date,
-        default: null // null means never expires
+        default: null
     },
+    // Optional manual action URL (used when no deep link)
     actionUrl: {
         type: String,
-        default: null // Optional URL for action button
+        default: null
     },
     actionText: {
         type: String,
-        default: null // Optional text for action button
+        default: null
     },
     imageUrl: {
         type: String,
-        default: null // Optional image URL
+        default: null
+    },
+    // Deep link navigation data — the core of content-linked notifications
+    deepLink: {
+        type: deepLinkSchema,
+        default: null
     },
     createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: ObjectId,
         ref: 'User',
         required: false,
         default: null
@@ -63,14 +97,19 @@ const notificationSchema = new mongoose.Schema({
     readCount: {
         type: Number,
         default: 0
+    },
+    openCount: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true
 });
 
-// Index for efficient queries
 notificationSchema.index({ isActive: 1, scheduledAt: 1 });
 notificationSchema.index({ targetAudience: 1, isActive: 1 });
 notificationSchema.index({ expiresAt: 1 });
+notificationSchema.index({ 'deepLink.contentType': 1 });
+notificationSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

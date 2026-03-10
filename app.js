@@ -271,6 +271,9 @@ app.use('/e-magazine', eMagazineRouter);
 // Notification routes
 app.use('/notifications', notificationRouter);
 
+// Notification content API — cascading dropdowns for admin form
+app.use('/api/notification-content', require('./routes/api/notificationContent'));
+
 // Prashan Yantra routes
 app.use('/prashan-yantra', prashanYantraRouter);
 

@@ -4,33 +4,135 @@ const Notification = require('../models/Notification');
 const requireAuth = require('../middleware/requireAuth');
 const FCMService = require('../services/fcmService');
 
-// Get all notifications (admin view)
+// ─── Deep link builder ────────────────────────────────────────────────────────
+const SECTION_SCREENS = {
+    kosh:             'KoshContentDetail',
+    karmkand:         'KarmkandContentDetail',
+    book:             'BookContentDetail',
+    muhurat:          'MuhuratDetail',
+    rashifal_daily:   'RashifalDailyDetail',
+    numerology_daily: 'NumerologyDailyDetail',
+    festival:         'FestivalDetail'
+};
+
+function buildDeepLink(body) {
+    const {
+        dl_contentType,
+        dl_categoryId,   dl_categoryName,
+        dl_subCategoryId,dl_subCategoryName,
+        dl_level3Id,     dl_level3Name,
+        dl_contentId,    dl_contentTitle
+    } = body;
+
+    if (!dl_contentType || !dl_contentId) return null;
+
+    const screen = SECTION_SCREENS[dl_contentType] || null;
+    let deepLinkUrl = '';
+
+    switch (dl_contentType) {
+        case 'kosh':
+        case 'karmkand':
+            deepLinkUrl = `jyotishapp://${dl_contentType}/${dl_categoryId}/${dl_subCategoryId}/${dl_contentId}`;
+            break;
+        case 'book':
+            // category / book / chapter / content
+            deepLinkUrl = `jyotishapp://book/${dl_categoryId}/${dl_subCategoryId}/${dl_level3Id}/${dl_contentId}`;
+            break;
+        case 'muhurat':
+            deepLinkUrl = `jyotishapp://muhurat/${dl_categoryId}/${dl_contentId}`;
+            break;
+        case 'rashifal_daily':
+            deepLinkUrl = `jyotishapp://rashifal/daily/${dl_categoryId}/${dl_contentId}`;
+            break;
+        case 'numerology_daily':
+            deepLinkUrl = `jyotishapp://numerology/daily/${dl_categoryId}/${dl_contentId}`;
+            break;
+        case 'festival':
+            deepLinkUrl = `jyotishapp://festival/${dl_contentId}`;
+            break;
+    }
+
+    const navigationParams = {
+        section: dl_contentType,
+        screen,
+        contentId: dl_contentId,
+        contentTitle: dl_contentTitle || null
+    };
+    if (dl_categoryId)    navigationParams.categoryId    = dl_categoryId;
+    if (dl_categoryName)  navigationParams.categoryName  = dl_categoryName;
+    if (dl_subCategoryId) navigationParams.subCategoryId = dl_subCategoryId;
+    if (dl_subCategoryName) navigationParams.subCategoryName = dl_subCategoryName;
+    if (dl_level3Id)      navigationParams.level3Id      = dl_level3Id;
+    if (dl_level3Name)    navigationParams.level3Name    = dl_level3Name;
+
+    return {
+        contentType:     dl_contentType,
+        categoryId:      dl_categoryId    || null,
+        categoryName:    dl_categoryName  || null,
+        subCategoryId:   dl_subCategoryId || null,
+        subCategoryName: dl_subCategoryName || null,
+        level3Id:        dl_level3Id      || null,
+        level3Name:      dl_level3Name    || null,
+        contentId:       dl_contentId,
+        contentTitle:    dl_contentTitle  || null,
+        deepLinkUrl,
+        screen,
+        navigationParams
+    };
+}
+
+// ─── Shared render helper ─────────────────────────────────────────────────────
+function renderForm(res, { notification = null, formAction, formTitle, error = null, username }) {
+    res.render('notifications/form', {
+        notification,
+        username,
+        activePage: 'notifications',
+        activeCategory: null,
+        activeSubCategory: null,
+        koshCategories: [],
+        mcqCategories: [],
+        formAction,
+        formTitle,
+        error
+    });
+}
+
+// ─── Admin web routes ─────────────────────────────────────────────────────────
+
+// GET /notifications — paginated list
 router.get('/', requireAuth, async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
+        const page  = parseInt(req.query.page)  || 1;
+        const limit = parseInt(req.query.limit) || 15;
+        const skip  = (page - 1) * limit;
 
-        const notifications = await Notification.find()
-            .populate('createdBy', 'username')
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit);
+        // Filter by section if requested
+        const filter = {};
+        if (req.query.section) filter['deepLink.contentType'] = req.query.section;
 
-        const total = await Notification.countDocuments();
-        const totalPages = Math.ceil(total / limit);
+        const [notifications, total] = await Promise.all([
+            Notification.find(filter)
+                .populate('createdBy', 'username')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit),
+            Notification.countDocuments(filter)
+        ]);
 
         res.render('notifications/index', {
             notifications,
             currentPage: page,
-            totalPages,
+            totalPages: Math.ceil(total / limit),
             total,
+            filterSection: req.query.section || '',
             username: req.session.username,
             activePage: 'notifications',
             activeCategory: null,
             activeSubCategory: null,
             koshCategories: [],
-            mcqCategories: []
+            mcqCategories: [],
+            success: req.query.success || null,
+            error: req.query.error || null
         });
     } catch (err) {
         console.error('Error fetching notifications:', err);
@@ -39,370 +141,276 @@ router.get('/', requireAuth, async (req, res) => {
             currentPage: 1,
             totalPages: 0,
             total: 0,
+            filterSection: '',
             username: req.session.username,
             activePage: 'notifications',
             activeCategory: null,
             activeSubCategory: null,
             koshCategories: [],
             mcqCategories: [],
+            success: null,
             error: 'Error fetching notifications'
         });
     }
 });
 
-// Get notification form (add new)
+// GET /notifications/add
 router.get('/add', requireAuth, (req, res) => {
-    res.render('notifications/form', {
-        notification: null,
-        username: req.session.username,
-        activePage: 'notifications',
-        activeCategory: null,
-        activeSubCategory: null,
-        koshCategories: [],
-        mcqCategories: [],
+    renderForm(res, {
         formAction: '/notifications/add',
-        formTitle: 'Add New Notification'
+        formTitle: 'Send New Notification',
+        username: req.session.username
     });
 });
 
-// Get notification form (edit)
+// GET /notifications/edit/:id
 router.get('/edit/:id', requireAuth, async (req, res) => {
     try {
         const notification = await Notification.findById(req.params.id);
-        if (!notification) {
-            return res.redirect('/notifications?error=Notification not found');
-        }
-
-        res.render('notifications/form', {
+        if (!notification) return res.redirect('/notifications?error=Notification+not+found');
+        renderForm(res, {
             notification,
-            username: req.session.username,
-            activePage: 'notifications',
-            activeCategory: null,
-            activeSubCategory: null,
-            koshCategories: [],
-            mcqCategories: [],
             formAction: `/notifications/edit/${req.params.id}`,
-            formTitle: 'Edit Notification'
+            formTitle: 'Edit Notification',
+            username: req.session.username
         });
     } catch (err) {
         console.error('Error fetching notification:', err);
-        res.redirect('/notifications?error=Error fetching notification');
+        res.redirect('/notifications?error=Error+fetching+notification');
     }
 });
 
-// Create new notification
+// POST /notifications/add
 router.post('/add', requireAuth, async (req, res) => {
+    const { title, message, type, priority, targetAudience, isActive,
+            scheduledAt, expiresAt, actionUrl, actionText, imageUrl } = req.body;
+
+    if (!title || !message) {
+        return renderForm(res, {
+            notification: req.body,
+            formAction: '/notifications/add',
+            formTitle: 'Send New Notification',
+            username: req.session.username,
+            error: 'Title and message are required'
+        });
+    }
+
     try {
-        const {
+        const deepLink = buildDeepLink(req.body);
+
+        const notification = await Notification.create({
             title,
             message,
-            type,
-            priority,
-            targetAudience,
-            isActive,
-            scheduledAt,
-            expiresAt,
-            actionUrl,
-            actionText,
-            imageUrl
-        } = req.body;
-
-        // Validate required fields
-        if (!title || !message) {
-            return res.render('notifications/form', {
-                notification: null,
-                username: req.session.username,
-                activePage: 'notifications',
-                activeCategory: null,
-                activeSubCategory: null,
-                koshCategories: [],
-                mcqCategories: [],
-                formAction: '/notifications/add',
-                formTitle: 'Add New Notification',
-                error: 'Title and message are required'
-            });
-        }
-
-        const notification = new Notification({
-            title,
-            message,
-            type: type || 'info',
-            priority: priority || 'medium',
+            type:           type           || (deepLink ? 'content' : 'info'),
+            priority:       priority       || 'medium',
             targetAudience: targetAudience || 'all',
-            isActive: isActive === 'on' || isActive === true,
-            scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
-            expiresAt: expiresAt ? new Date(expiresAt) : null,
-            actionUrl: actionUrl || null,
-            actionText: actionText || null,
-            imageUrl: imageUrl || null,
-            createdBy: null // No user management in this backend
+            isActive:       isActive === 'on' || isActive === true,
+            scheduledAt:    scheduledAt ? new Date(scheduledAt) : new Date(),
+            expiresAt:      expiresAt   ? new Date(expiresAt)   : null,
+            actionUrl:      (!deepLink && actionUrl)  ? actionUrl  : null,
+            actionText:     (!deepLink && actionText) ? actionText : null,
+            imageUrl:       imageUrl || null,
+            deepLink,
+            createdBy: null
         });
 
-        await notification.save();
-        
-        // 🚀 INSTANT PUSH NOTIFICATION - Send immediately to all users!
         try {
-            console.log('🚀 Sending instant push notification...');
             await FCMService.sendToAll(notification);
-            console.log('✅ Push notification sent successfully!');
-        } catch (pushError) {
-            console.error('❌ Push notification failed:', pushError);
-            // Continue even if push fails - notification is still saved
+            console.log('✅ Push sent for notification:', notification._id);
+        } catch (pushErr) {
+            console.error('❌ Push failed:', pushErr);
         }
-        
-        res.redirect('/notifications?success=Notification created and sent instantly to all users!');
+
+        res.redirect('/notifications?success=Notification+created+and+sent+to+all+users');
     } catch (err) {
         console.error('Error creating notification:', err);
-        res.render('notifications/form', {
-            notification: null,
-            username: req.session.username,
-            activePage: 'notifications',
-            activeCategory: null,
-            activeSubCategory: null,
-            koshCategories: [],
-            mcqCategories: [],
+        renderForm(res, {
+            notification: req.body,
             formAction: '/notifications/add',
-            formTitle: 'Add New Notification',
-            error: 'Error creating notification'
+            formTitle: 'Send New Notification',
+            username: req.session.username,
+            error: 'Error creating notification: ' + err.message
         });
     }
 });
 
-// Update notification
+// POST /notifications/edit/:id
 router.post('/edit/:id', requireAuth, async (req, res) => {
-    try {
-        const {
-            title,
-            message,
-            type,
-            priority,
-            targetAudience,
-            isActive,
-            scheduledAt,
-            expiresAt,
-            actionUrl,
-            actionText,
-            imageUrl
-        } = req.body;
+    const { title, message, type, priority, targetAudience, isActive,
+            scheduledAt, expiresAt, actionUrl, actionText, imageUrl } = req.body;
 
-        // Validate required fields
-        if (!title || !message) {
-            return res.render('notifications/form', {
-                notification: { ...req.body, _id: req.params.id },
-                username: req.session.username,
-                activePage: 'notifications',
-                activeCategory: null,
-                activeSubCategory: null,
-                koshCategories: [],
-                mcqCategories: [],
-                formAction: `/notifications/edit/${req.params.id}`,
-                formTitle: 'Edit Notification',
-                error: 'Title and message are required'
-            });
-        }
+    if (!title || !message) {
+        return renderForm(res, {
+            notification: { ...req.body, _id: req.params.id },
+            formAction: `/notifications/edit/${req.params.id}`,
+            formTitle: 'Edit Notification',
+            username: req.session.username,
+            error: 'Title and message are required'
+        });
+    }
+
+    try {
+        const deepLink = buildDeepLink(req.body);
 
         const notification = await Notification.findByIdAndUpdate(
             req.params.id,
             {
                 title,
                 message,
-                type: type || 'info',
-                priority: priority || 'medium',
+                type:           type           || (deepLink ? 'content' : 'info'),
+                priority:       priority       || 'medium',
                 targetAudience: targetAudience || 'all',
-                isActive: isActive === 'on' || isActive === true,
-                scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
-                expiresAt: expiresAt ? new Date(expiresAt) : null,
-                actionUrl: actionUrl || null,
-                actionText: actionText || null,
-                imageUrl: imageUrl || null
+                isActive:       isActive === 'on' || isActive === true,
+                scheduledAt:    scheduledAt ? new Date(scheduledAt) : new Date(),
+                expiresAt:      expiresAt   ? new Date(expiresAt)   : null,
+                actionUrl:      (!deepLink && actionUrl)  ? actionUrl  : null,
+                actionText:     (!deepLink && actionText) ? actionText : null,
+                imageUrl:       imageUrl || null,
+                deepLink
             },
             { new: true }
         );
 
-        if (!notification) {
-            return res.redirect('/notifications?error=Notification not found');
-        }
+        if (!notification) return res.redirect('/notifications?error=Notification+not+found');
 
-        // 🚀 INSTANT PUSH NOTIFICATION - Send updated notification to all users!
         try {
-            console.log('🚀 Sending updated push notification...');
             await FCMService.sendToAll(notification);
-            console.log('✅ Updated push notification sent successfully!');
-        } catch (pushError) {
-            console.error('❌ Push notification failed:', pushError);
-            // Continue even if push fails - notification is still updated
+        } catch (pushErr) {
+            console.error('❌ Push failed:', pushErr);
         }
 
-        res.redirect('/notifications?success=Notification updated and sent instantly to all users!');
+        res.redirect('/notifications?success=Notification+updated+and+resent');
     } catch (err) {
         console.error('Error updating notification:', err);
-        res.redirect('/notifications?error=Error updating notification');
+        res.redirect('/notifications?error=Error+updating+notification');
     }
 });
 
-// Delete notification
+// POST /notifications/delete/:id
 router.post('/delete/:id', requireAuth, async (req, res) => {
     try {
-        const notification = await Notification.findByIdAndDelete(req.params.id);
-        if (!notification) {
-            return res.redirect('/notifications?error=Notification not found');
-        }
-        res.redirect('/notifications?success=Notification deleted successfully');
+        const n = await Notification.findByIdAndDelete(req.params.id);
+        if (!n) return res.redirect('/notifications?error=Notification+not+found');
+        res.redirect('/notifications?success=Notification+deleted');
     } catch (err) {
         console.error('Error deleting notification:', err);
-        res.redirect('/notifications?error=Error deleting notification');
+        res.redirect('/notifications?error=Error+deleting+notification');
     }
 });
 
-// Toggle notification status
+// POST /notifications/toggle/:id
 router.post('/toggle/:id', requireAuth, async (req, res) => {
     try {
-        const notification = await Notification.findById(req.params.id);
-        if (!notification) {
-            return res.redirect('/notifications?error=Notification not found');
-        }
-
-        notification.isActive = !notification.isActive;
-        await notification.save();
-        
-        const status = notification.isActive ? 'activated' : 'deactivated';
-        res.redirect(`/notifications?success=Notification ${status} successfully`);
+        const n = await Notification.findById(req.params.id);
+        if (!n) return res.redirect('/notifications?error=Notification+not+found');
+        n.isActive = !n.isActive;
+        await n.save();
+        res.redirect(`/notifications?success=Notification+${n.isActive ? 'activated' : 'deactivated'}`);
     } catch (err) {
         console.error('Error toggling notification:', err);
-        res.redirect('/notifications?error=Error toggling notification status');
+        res.redirect('/notifications?error=Error+toggling+notification');
     }
 });
 
-// API endpoint for Flutter app to fetch active notifications
+// POST /notifications/resend/:id  — resend existing notification
+router.post('/resend/:id', requireAuth, async (req, res) => {
+    try {
+        const n = await Notification.findById(req.params.id);
+        if (!n) return res.redirect('/notifications?error=Notification+not+found');
+        await FCMService.sendToAll(n);
+        res.redirect('/notifications?success=Notification+resent+to+all+users');
+    } catch (err) {
+        console.error('Error resending notification:', err);
+        res.redirect('/notifications?error=Error+resending+notification');
+    }
+});
+
+// ─── Public API for Flutter app ──────────────────────────────────────────────
+
+// GET /notifications/api/active — fetch active notifications for mobile
 router.get('/api/active', async (req, res) => {
     try {
-        const { targetAudience = 'all', limit = 50 } = req.query;
-        
+        const { targetAudience = 'all', limit = 50, section } = req.query;
+
         const query = {
             isActive: true,
-            scheduledAt: { $lte: new Date() }
+            scheduledAt: { $lte: new Date() },
+            $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }]
         };
 
-        // Add expiration filter
-        query.$or = [
-            { expiresAt: null },
-            { expiresAt: { $gt: new Date() } }
-        ];
-
-        // Filter by target audience
-        if (targetAudience !== 'all') {
-            query.targetAudience = { $in: ['all', targetAudience] };
-        }
+        if (targetAudience !== 'all') query.targetAudience = { $in: ['all', targetAudience] };
+        if (section) query['deepLink.contentType'] = section;
 
         const notifications = await Notification.find(query)
-            .select('title message type priority targetAudience actionUrl actionText imageUrl scheduledAt createdAt')
+            .select('title message type priority targetAudience actionUrl actionText imageUrl deepLink scheduledAt createdAt')
             .sort({ priority: -1, createdAt: -1 })
             .limit(parseInt(limit));
 
-        res.json({
-            success: true,
-            data: notifications,
-            count: notifications.length
-        });
+        res.json({ success: true, data: notifications, count: notifications.length });
     } catch (err) {
         console.error('Error fetching active notifications:', err);
-        res.status(500).json({
-            success: false,
-            error: 'Error fetching notifications'
-        });
+        res.status(500).json({ success: false, error: 'Error fetching notifications' });
     }
 });
 
-// API endpoint to mark notification as read (for analytics)
+// POST /notifications/api/read/:id — increment readCount
 router.post('/api/read/:id', async (req, res) => {
     try {
-        await Notification.findByIdAndUpdate(
-            req.params.id,
-            { $inc: { readCount: 1 } }
-        );
-        
+        await Notification.findByIdAndUpdate(req.params.id, { $inc: { readCount: 1 } });
         res.json({ success: true });
     } catch (err) {
-        console.error('Error marking notification as read:', err);
-        res.status(500).json({
-            success: false,
-            error: 'Error marking notification as read'
-        });
+        res.status(500).json({ success: false, error: 'Error marking as read' });
     }
 });
 
-// API endpoint for Flutter app to register FCM token
+// POST /notifications/api/open/:id — track notification opens (deep link taps)
+router.post('/api/open/:id', async (req, res) => {
+    try {
+        await Notification.findByIdAndUpdate(req.params.id, { $inc: { openCount: 1 } });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Error tracking open' });
+    }
+});
+
+// POST /notifications/api/register-token — subscribe device to FCM topic
 router.post('/api/register-token', async (req, res) => {
     try {
         const { fcmToken, platform = 'android', appVersion = '1.0.0', osVersion = '' } = req.body;
-        
-        if (!fcmToken) {
-            return res.status(400).json({
-                success: false,
-                error: 'fcmToken is required'
-            });
-        }
+        if (!fcmToken) return res.status(400).json({ success: false, error: 'fcmToken is required' });
 
-        // Subscribe device to general notifications topic
-        try {
-            await FCMService.subscribeToTopic([fcmToken], 'all_users');
-            console.log('✅ Device subscribed to all_users topic');
-        } catch (topicError) {
-            console.error('❌ Error subscribing to topic:', topicError);
-            return res.status(500).json({
-                success: false,
-                error: 'Failed to register for notifications'
-            });
-        }
+        await FCMService.subscribeToTopic([fcmToken], 'all_users');
 
         res.json({
             success: true,
-            message: 'FCM token registered successfully - device will receive all notifications',
-            deviceInfo: {
-                platform: platform,
-                appVersion: appVersion,
-                osVersion: osVersion
-            }
+            message: 'Device registered for push notifications',
+            deviceInfo: { platform, appVersion, osVersion }
         });
     } catch (err) {
         console.error('Error registering FCM token:', err);
-        res.status(500).json({
-            success: false,
-            error: 'Error registering FCM token'
-        });
+        res.status(500).json({ success: false, error: 'Failed to register device' });
     }
 });
 
-// API endpoint to send test notification (public for testing)
+// POST /notifications/api/send-test
 router.post('/api/send-test', async (req, res) => {
     try {
-        const { message } = req.body;
-        
         const testNotification = {
             _id: 'test-' + Date.now(),
             title: 'Test Notification',
-            message: message || 'This is a test notification from admin panel',
+            message: req.body.message || 'Test push from admin panel',
             type: 'info',
             priority: 'medium',
             targetAudience: 'all',
             scheduledAt: new Date(),
-            actionUrl: '',
-            actionText: '',
-            imageUrl: ''
+            actionUrl: '', actionText: '', imageUrl: '',
+            deepLink: null
         };
-
-        // Send to all users via topic
         await FCMService.sendToAll(testNotification);
-        res.json({ 
-            success: true, 
-            message: 'Test notification sent to all users successfully' 
-        });
+        res.json({ success: true, message: 'Test notification sent' });
     } catch (err) {
-        console.error('Error sending test notification:', err);
-        res.status(500).json({
-            success: false,
-            error: 'Error sending test notification'
-        });
+        console.error('Error sending test:', err);
+        res.status(500).json({ success: false, error: 'Error sending test notification' });
     }
 });
 
