@@ -709,6 +709,40 @@ router.post('/content/edit/:id', upload.array('images', 10), async (req, res) =>
     }
 });
 
+// Bulk delete content
+router.post('/content/delete-bulk', async (req, res) => {
+    try {
+        const { ids } = req.body;
+        const chapterId = req.body.chapter;
+        const categoryId = req.body.category;
+        const bookId = req.body.book;
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            if (chapterId && categoryId && bookId) {
+                return res.redirect(`/book/category/${categoryId}/book/${bookId}/chapter/${chapterId}?error=No+items+selected`);
+            }
+            return res.redirect('/book/content?error=No+items+selected');
+        }
+
+        const result = await BookContent.deleteMany({ _id: { $in: ids } });
+        const deletedCount = result.deletedCount;
+
+        if (chapterId && categoryId && bookId) {
+            return res.redirect(`/book/category/${categoryId}/book/${bookId}/chapter/${chapterId}?success=${encodeURIComponent(deletedCount + ' item(s) deleted.')}`);
+        }
+        res.redirect('/book/content?success=' + encodeURIComponent(deletedCount + ' item(s) deleted.'));
+    } catch (err) {
+        console.error('Error bulk deleting content:', err);
+        const chapterId = req.body.chapter;
+        const categoryId = req.body.category;
+        const bookId = req.body.book;
+        if (chapterId && categoryId && bookId) {
+            return res.redirect(`/book/category/${categoryId}/book/${bookId}/chapter/${chapterId}?error=Error+deleting+items`);
+        }
+        res.redirect('/book/content?error=Error+deleting+items');
+    }
+});
+
 // Delete Content
 router.post('/content/delete/:id', async (req, res) => {
     try {
@@ -1114,6 +1148,7 @@ router.get('/content/export-excel', async (req, res) => {
         
         // ALWAYS export simplified template (since this is only called from chapter page)
         const dataToExport = [{
+            'Sequence': 1,
             'Title (Hindi)': 'यहाँ हिंदी शीर्षक लिखें',
             'Title (English)': 'Enter English title here',
             'Title (Hinglish)': 'Enter Hinglish title here',
