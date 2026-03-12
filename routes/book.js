@@ -712,12 +712,13 @@ router.post('/content/edit/:id', upload.array('images', 10), async (req, res) =>
 // Bulk delete content
 router.post('/content/delete-bulk', async (req, res) => {
     try {
-        const { ids } = req.body;
+        const rawIds = req.body.ids;
+        const ids = Array.isArray(rawIds) ? rawIds : (rawIds ? [rawIds] : []);
         const chapterId = req.body.chapter;
         const categoryId = req.body.category;
         const bookId = req.body.book;
 
-        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        if (ids.length === 0) {
             if (chapterId && categoryId && bookId) {
                 return res.redirect(`/book/category/${categoryId}/book/${bookId}/chapter/${chapterId}?error=No+items+selected`);
             }
