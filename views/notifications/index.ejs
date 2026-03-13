@@ -234,6 +234,8 @@
                 <a href="/notifications?section=rashifal_daily"   class="chip <%= filterSection==='rashifal_daily'   ? 'active':'' %>">♈ Rashifal</a>
                 <a href="/notifications?section=numerology_daily" class="chip <%= filterSection==='numerology_daily' ? 'active':'' %>">🔢 Numerology</a>
                 <a href="/notifications?section=festival"         class="chip <%= filterSection==='festival'         ? 'active':'' %>">🎉 Festival</a>
+                <a href="/notifications?section=emagazine"        class="chip <%= filterSection==='emagazine'        ? 'active':'' %>">📰 E-Magazine</a>
+                <a href="/notifications?section=youtube"         class="chip <%= filterSection==='youtube'         ? 'active':'' %>">▶️ YouTube</a>
             </div>
         </div>
 
@@ -267,7 +269,8 @@
                                     const sectionIcons = {
                                         kosh:'📚', karmkand:'🪔', book:'📖',
                                         muhurat:'🌟', rashifal_daily:'♈',
-                                        numerology_daily:'🔢', festival:'🎉'
+                                        numerology_daily:'🔢', festival:'🎉',
+                                        emagazine:'📰', youtube:'▶️'
                                     };
                                 %>
                                 <%= sectionIcons[n.deepLink.contentType] || '🔗' %>

@@ -5,7 +5,7 @@ const deepLinkSchema = new mongoose.Schema({
     // Which content section this notification links to
     contentType: {
         type: String,
-        enum: ['kosh', 'karmkand', 'book', 'muhurat', 'rashifal_daily', 'numerology_daily', 'festival'],
+        enum: ['kosh', 'karmkand', 'book', 'muhurat', 'rashifal_daily', 'numerology_daily', 'festival', 'emagazine', 'youtube'],
         default: null
     },
     // Level 1 — Category / Date

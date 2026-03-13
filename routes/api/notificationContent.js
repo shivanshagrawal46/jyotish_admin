@@ -35,6 +35,8 @@ const RashifalDailyContent = require('../../models/RashifalDailyContent');
 const NumerologyDailyDate    = require('../../models/NumerologyDailyDate');
 const NumerologyDailyContent = require('../../models/NumerologyDailyContent');
 const Festival = require('../../models/Festival');
+const EMagazine = require('../../models/EMagazine');
+const YouTube = require('../../models/YouTube');
 
 // ─── Section registry ────────────────────────────────────────────────────────
 const SECTIONS = [
@@ -93,6 +95,22 @@ const SECTIONS = [
         screen: 'FestivalDetail',
         levels: ['Festival Entry'],
         deepLinkBase: 'jyotishapp://festival'
+    },
+    {
+        key: 'emagazine',
+        label: 'E-Magazine',
+        icon: '📰',
+        screen: 'EMagazineDetail',
+        levels: ['Magazine Article'],
+        deepLinkBase: 'jyotishapp://emagazine'
+    },
+    {
+        key: 'youtube',
+        label: 'YouTube',
+        icon: '▶️',
+        screen: 'YouTubeDetail',
+        levels: ['Video'],
+        deepLinkBase: 'jyotishapp://youtube'
     }
 ];
 
@@ -141,6 +159,19 @@ router.get('/:section/level1', async (req, res) => {
                         date: d.date ? new Date(d.date).toLocaleDateString('en-IN') : null
                     }));
                 break;
+            case 'emagazine':
+                // E-Magazine is flat — level1 IS the content
+                data = (await EMagazine.find().sort({ createdAt: -1 }).limit(500).lean())
+                    .map(d => ({
+                        _id: d._id,
+                        name: (d.title || 'Magazine') + (d.month && d.year ? ` (${d.month} ${d.year})` : '')
+                    }));
+                break;
+            case 'youtube':
+                // YouTube is flat — level1 IS the content
+                data = (await YouTube.find().sort({ createdAt: -1 }).limit(500).lean())
+                    .map(d => ({ _id: d._id, name: d.title || 'Video' }));
+                break;
             default:
                 return res.status(400).json({ success: false, error: 'Invalid section' });
         }
@@ -187,6 +218,11 @@ router.get('/:section/level2/:id', async (req, res) => {
                 data = (await NumerologyDailyContent.find({ dateRef: id }).sort({ sequence: 1 }).lean())
                     .map(d => ({ _id: d._id, name: d.title_hn || d.title_en }));
                 break;
+            case 'festival':
+            case 'emagazine':
+            case 'youtube':
+                // Flat sections — level1 selection IS the content, no level2
+                return res.status(400).json({ success: false, error: `Section "${section}" has no level2` });
             default:
                 return res.status(400).json({ success: false, error: `Section "${section}" has no level2` });
         }

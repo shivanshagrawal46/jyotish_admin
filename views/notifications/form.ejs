@@ -558,8 +558,17 @@
         populateSelect('sel1', data, `— select ${levels[0]} —`);
 
         if (section.key === 'festival') {
-            // Festival is flat — sel1 IS the content
             setLabel(1, 'Festival Entry');
+            document.getElementById('cascade1').classList.remove('hidden');
+            return;
+        }
+        if (section.key === 'emagazine') {
+            setLabel(1, 'Magazine Article');
+            document.getElementById('cascade1').classList.remove('hidden');
+            return;
+        }
+        if (section.key === 'youtube') {
+            setLabel(1, 'Video');
             document.getElementById('cascade1').classList.remove('hidden');
             return;
         }
@@ -579,8 +588,8 @@
 
         if (!id || !activeSection) return;
 
-        if (activeSection === 'festival') {
-            // Festival: sel1 = content
+        if (['festival', 'emagazine', 'youtube'].includes(activeSection)) {
+            // Flat sections: sel1 = content
             setDeepLinkContent(id, name);
             updateDeepLinkPreview();
             return;
@@ -736,6 +745,10 @@
                 url = `jyotishapp://numerology/daily/${catId}/${conId}`; break;
             case 'festival':
                 url = `jyotishapp://festival/${conId}`; break;
+            case 'emagazine':
+                url = `jyotishapp://emagazine/${conId}`; break;
+            case 'youtube':
+                url = `jyotishapp://youtube/${conId}`; break;
         }
 
         document.getElementById('dlUrl').textContent    = url;
@@ -796,11 +809,12 @@
         if (!section) return;
         await loadLevel1(section);
 
-        if (EDIT_DATA.categoryId) {
+        const level1Id = EDIT_DATA.categoryId || (['festival','emagazine','youtube'].includes(activeSection) ? EDIT_DATA.contentId : null);
+        if (level1Id) {
             const sel1 = document.getElementById('sel1');
-            sel1.value = EDIT_DATA.categoryId;
-            if (!sel1.value && EDIT_DATA.categoryId) {
-                addOptionIfMissing(sel1, EDIT_DATA.categoryId, EDIT_DATA.categoryName);
+            sel1.value = level1Id;
+            if (!sel1.value && level1Id) {
+                addOptionIfMissing(sel1, level1Id, EDIT_DATA.categoryName || EDIT_DATA.contentTitle);
             }
             await onSel1Change();
         }

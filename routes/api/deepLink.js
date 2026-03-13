@@ -49,6 +49,8 @@ const RashifalDailyDate     = require('../../models/RashifalDailyDate');
 const NumerologyDailyContent= require('../../models/NumerologyDailyContent');
 const NumerologyDailyDate   = require('../../models/NumerologyDailyDate');
 const Festival           = require('../../models/Festival');
+const EMagazine          = require('../../models/EMagazine');
+const YouTube            = require('../../models/YouTube');
 
 const SCREENS = {
     kosh:             'KoshContentDetail',
@@ -57,7 +59,9 @@ const SCREENS = {
     muhurat:          'MuhuratDetail',
     rashifal_daily:   'RashifalDailyDetail',
     numerology_daily: 'NumerologyDailyDetail',
-    festival:         'FestivalDetail'
+    festival:         'FestivalDetail',
+    emagazine:        'EMagazineDetail',
+    youtube:          'YouTubeDetail'
 };
 
 // ─── GET /api/deep-link/resolve ───────────────────────────────────────────────
@@ -88,6 +92,8 @@ router.get('/resolve', async (req, res) => {
             case 'rashifal_daily':   result = await resolveRashifalDaily(contentId); break;
             case 'numerology_daily': result = await resolveNumerologyDaily(contentId); break;
             case 'festival':      result = await resolveFestival(contentId);       break;
+            case 'emagazine':     result = await resolveEmagazine(contentId);      break;
+            case 'youtube':      result = await resolveYouTube(contentId);        break;
         }
 
         if (!result) {
@@ -347,6 +353,50 @@ async function resolveFestival(contentId) {
             jyanti:        content.jyanti        || '',
             vishesh:       content.vishesh        || '',
             sequence:      content.sequence
+        },
+        hierarchy: null,
+        navigationIds: {}
+    };
+}
+
+async function resolveEmagazine(contentId) {
+    const content = await EMagazine.findById(contentId).lean();
+    if (!content) return null;
+
+    return {
+        content: {
+            _id:         content._id,
+            id:          content.id,
+            language:    content.language    || '',
+            category:    content.category,
+            subject:     content.subject,
+            writer:      content.writer,
+            month:       content.month      || '',
+            year:        content.year,
+            title:       content.title     || '',
+            introduction: content.introduction || '',
+            subPoints:   content.subPoints || '',
+            importance:  content.importance || '',
+            explain:     content.explain  || '',
+            summary:     content.summary   || '',
+            reference:   content.reference || '',
+            images:      content.images    || []
+        },
+        hierarchy: null,
+        navigationIds: {}
+    };
+}
+
+async function resolveYouTube(contentId) {
+    const content = await YouTube.findById(contentId).lean();
+    if (!content) return null;
+
+    return {
+        content: {
+            _id:      content._id,
+            title:    content.title || '',
+            link:     content.link  || '',
+            category: content.category || ''
         },
         hierarchy: null,
         navigationIds: {}

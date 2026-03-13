@@ -12,7 +12,9 @@ const SECTION_SCREENS = {
     muhurat:          'MuhuratDetail',
     rashifal_daily:   'RashifalDailyDetail',
     numerology_daily: 'NumerologyDailyDetail',
-    festival:         'FestivalDetail'
+    festival:         'FestivalDetail',
+    emagazine:        'EMagazineDetail',
+    youtube:          'YouTubeDetail'
 };
 
 function buildDeepLink(body) {
@@ -49,6 +51,12 @@ function buildDeepLink(body) {
             break;
         case 'festival':
             deepLinkUrl = `jyotishapp://festival/${dl_contentId}`;
+            break;
+        case 'emagazine':
+            deepLinkUrl = `jyotishapp://emagazine/${dl_contentId}`;
+            break;
+        case 'youtube':
+            deepLinkUrl = `jyotishapp://youtube/${dl_contentId}`;
             break;
     }
 
