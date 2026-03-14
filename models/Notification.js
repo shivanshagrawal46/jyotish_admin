@@ -25,7 +25,11 @@ const deepLinkSchema = new mongoose.Schema({
     // Flutter screen/route name
     screen: { type: String, default: null },
     // Full navigation params as JSON (for flexible future use)
-    navigationParams: { type: mongoose.Schema.Types.Mixed, default: {} }
+    navigationParams: { type: mongoose.Schema.Types.Mixed, default: {} },
+    // E-Magazine specific (categoryName = category, subCategoryName = subject)
+    writerName:  { type: String, default: null },
+    writerImage: { type: String, default: null },
+    subjectName: { type: String, default: null }
 }, { _id: false });
 
 const notificationSchema = new mongoose.Schema({

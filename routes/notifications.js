@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
+const EMagazine = require('../models/EMagazine');
 const requireAuth = require('../middleware/requireAuth');
 const FCMService = require('../services/fcmService');
 
@@ -17,7 +18,7 @@ const SECTION_SCREENS = {
     youtube:          'YouTubeDetail'
 };
 
-function buildDeepLink(body) {
+async function buildDeepLink(body) {
     const {
         dl_contentType,
         dl_categoryId,   dl_categoryName,
@@ -30,6 +31,24 @@ function buildDeepLink(body) {
 
     const screen = SECTION_SCREENS[dl_contentType] || null;
     let deepLinkUrl = '';
+    let writerName = null, writerImage = null, subjectName = null;
+    let categoryName = dl_categoryName || null;
+    let subCategoryName = dl_subCategoryName || null;
+
+    // E-Magazine: fetch category, subject, writer from DB
+    if (dl_contentType === 'emagazine' && dl_contentId) {
+        const mag = await EMagazine.findById(dl_contentId)
+            .populate('category', 'name')
+            .populate('subject', 'name')
+            .populate('writer', 'name image')
+            .lean();
+        if (mag) {
+            categoryName   = mag.category?.name   || null;
+            subjectName    = mag.subject?.name    || null;
+            writerName     = mag.writer?.name     || null;
+            writerImage    = mag.writer?.image    || null;
+        }
+    }
 
     switch (dl_contentType) {
         case 'kosh':
@@ -67,18 +86,21 @@ function buildDeepLink(body) {
         contentTitle: dl_contentTitle || null
     };
     if (dl_categoryId)    navigationParams.categoryId    = dl_categoryId;
-    if (dl_categoryName)  navigationParams.categoryName  = dl_categoryName;
+    if (categoryName)     navigationParams.categoryName   = categoryName;
     if (dl_subCategoryId) navigationParams.subCategoryId = dl_subCategoryId;
-    if (dl_subCategoryName) navigationParams.subCategoryName = dl_subCategoryName;
+    if (subCategoryName)  navigationParams.subCategoryName = subCategoryName;
     if (dl_level3Id)      navigationParams.level3Id      = dl_level3Id;
     if (dl_level3Name)    navigationParams.level3Name    = dl_level3Name;
+    if (writerName)       navigationParams.writerName     = writerName;
+    if (writerImage)      navigationParams.writerImage    = writerImage;
+    if (subjectName)      navigationParams.subjectName   = subjectName;
 
-    return {
+    const result = {
         contentType:     dl_contentType,
         categoryId:      dl_categoryId    || null,
-        categoryName:    dl_categoryName  || null,
+        categoryName:    categoryName,
         subCategoryId:   dl_subCategoryId || null,
-        subCategoryName: dl_subCategoryName || null,
+        subCategoryName: subCategoryName,
         level3Id:        dl_level3Id      || null,
         level3Name:      dl_level3Name    || null,
         contentId:       dl_contentId,
@@ -87,6 +109,10 @@ function buildDeepLink(body) {
         screen,
         navigationParams
     };
+    if (writerName)  result.writerName  = writerName;
+    if (writerImage) result.writerImage = writerImage;
+    if (subjectName) result.subjectName = subjectName;
+    return result;
 }
 
 // ─── Shared render helper ─────────────────────────────────────────────────────
@@ -204,7 +230,7 @@ router.post('/add', requireAuth, async (req, res) => {
     }
 
     try {
-        const deepLink = buildDeepLink(req.body);
+        const deepLink = await buildDeepLink(req.body);
 
         const notification = await Notification.create({
             title,
@@ -258,7 +284,7 @@ router.post('/edit/:id', requireAuth, async (req, res) => {
     }
 
     try {
-        const deepLink = buildDeepLink(req.body);
+        const deepLink = await buildDeepLink(req.body);
 
         const notification = await Notification.findByIdAndUpdate(
             req.params.id,

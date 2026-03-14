@@ -50,7 +50,10 @@ const NumerologyDailyContent= require('../../models/NumerologyDailyContent');
 const NumerologyDailyDate   = require('../../models/NumerologyDailyDate');
 const Festival           = require('../../models/Festival');
 const EMagazine          = require('../../models/EMagazine');
-const YouTube            = require('../../models/YouTube');
+const EMagazineCategory   = require('../../models/EMagazineCategory');
+const EMagazineSubject    = require('../../models/EMagazineSubject');
+const EMagazineWriter     = require('../../models/EMagazineWriter');
+const YouTube             = require('../../models/YouTube');
 
 const SCREENS = {
     kosh:             'KoshContentDetail',
@@ -360,17 +363,29 @@ async function resolveFestival(contentId) {
 }
 
 async function resolveEmagazine(contentId) {
-    const content = await EMagazine.findById(contentId).lean();
+    const content = await EMagazine.findById(contentId)
+        .populate('category', 'id name')
+        .populate('subject', 'id name')
+        .populate('writer', 'id name image designation')
+        .lean();
     if (!content) return null;
+
+    const cat = content.category;
+    const subj = content.subject;
+    const wr = content.writer;
 
     return {
         content: {
             _id:         content._id,
             id:          content.id,
             language:    content.language    || '',
-            category:    content.category,
-            subject:     content.subject,
-            writer:      content.writer,
+            category:    cat ? { _id: cat._id, id: cat.id, name: cat.name } : null,
+            subject:     subj ? { _id: subj._id, id: subj.id, name: subj.name } : null,
+            writer:      wr ? { _id: wr._id, id: wr.id, name: wr.name, image: wr.image || '', designation: wr.designation || '' } : null,
+            categoryName:  cat?.name || '',
+            subjectName:   subj?.name || '',
+            writerName:    wr?.name || '',
+            writerImage:   wr?.image || '',
             month:       content.month      || '',
             year:        content.year,
             title:       content.title     || '',
@@ -382,8 +397,16 @@ async function resolveEmagazine(contentId) {
             reference:   content.reference || '',
             images:      content.images    || []
         },
-        hierarchy: null,
-        navigationIds: {}
+        hierarchy: {
+            category: cat ? { _id: cat._id, id: cat.id, name: cat.name } : null,
+            subject:  subj ? { _id: subj._id, id: subj.id, name: subj.name } : null,
+            writer:   wr ? { _id: wr._id, id: wr.id, name: wr.name, image: wr.image } : null
+        },
+        navigationIds: {
+            categoryId: cat?._id?.toString() || null,
+            subjectId:  subj?._id?.toString() || null,
+            writerId:   wr?._id?.toString() || null
+        }
     };
 }
 

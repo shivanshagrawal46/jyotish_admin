@@ -60,6 +60,10 @@ function buildDataPayload(notification) {
         base.subCategoryName     = dl.subCategoryName     || '';
         base.level3Id            = String(dl.level3Id    || '');
         base.level3Name          = dl.level3Name          || '';
+        // E-Magazine specific
+        base.writerName          = dl.writerName          || '';
+        base.writerImage         = dl.writerImage         || '';
+        base.subjectName         = dl.subjectName        || '';
         // Full navigation params as JSON string for Flutter to parse
         base.navigationParams    = JSON.stringify(dl.navigationParams || {});
         base.clickAction         = 'FLUTTER_NOTIFICATION_CLICK';
