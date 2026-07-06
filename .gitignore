@@ -69,3 +69,7 @@ Thumbs.db
 
 # Uploads (if you want to ignore uploaded files)
 # uploads/
+
+# React admin build output (built on the server by deploy.sh)
+admin-react/dist/
+admin-react/node_modules/

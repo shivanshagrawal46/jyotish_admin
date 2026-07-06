@@ -1,0 +1,805 @@
+// Single source of truth describing every admin module. The ResourceManager and
+// the sidebar are both generated from this config. `name` matches the backend
+// resource registered at /api/admin/resources/<name>.
+
+const f = (name, label, type = 'text', extra = {}) => ({ name, label, type, ...extra });
+
+const ORDER_STATUS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+const PAY_STATUS = ['pending', 'paid', 'failed', 'refunded'];
+const NOTIF_TYPE = ['info', 'warning', 'success', 'error', 'announcement', 'content'];
+const PRIORITY = ['low', 'medium', 'high', 'urgent'];
+const AUDIENCE = ['all', 'premium', 'free', 'specific'];
+
+export const resources = {
+  // ============ CONTENT ============
+  festivals: {
+    label: 'Festivals',
+    singularLabel: 'Festival',
+    columns: ['date', 'festival_name', 'vrat', 'sequence'],
+    fields: [
+      f('date', 'Date', 'date'),
+      f('festival_name', 'Festival Name'),
+      f('vrat', 'Vrat'),
+      f('jyanti', 'Jyanti'),
+      f('vishesh', 'Vishesh'),
+      f('sequence', 'Sequence', 'number'),
+    ],
+  },
+
+  mcqCategories: {
+    label: 'MCQ Categories',
+    singularLabel: 'Category',
+    children: [{ resource: 'mcqMasters', label: 'Masters' }],
+    columns: ['position', 'name'],
+    fields: [f('name', 'Name', 'text', { required: true }), f('position', 'Position', 'number'), f('introduction', 'Introduction', 'textarea')],
+  },
+  mcqMasters: {
+    label: 'MCQ Masters',
+    singularLabel: 'Master',
+    parent: { field: 'category' },
+    children: [{ resource: 'mcqContent', label: 'Questions' }],
+    columns: ['position', 'name'],
+    fields: [f('name', 'Name', 'text', { required: true }), f('position', 'Position', 'number'), f('introduction', 'Introduction', 'textarea')],
+  },
+  mcqContent: {
+    label: 'MCQ Questions',
+    singularLabel: 'Question',
+    parent: { field: 'master' },
+    columns: ['question', 'isActive'],
+    expandFields: ['explanation'],
+    fields: [
+      f('question', 'Question', 'textarea', { required: true }),
+      f('option1', 'Option 1', 'text', { required: true, col: 12 }),
+      f('option2', 'Option 2', 'text', { required: true, col: 12 }),
+      f('option3', 'Option 3', 'text', { col: 12 }),
+      f('option4', 'Option 4', 'text', { col: 12 }),
+      f('correctAnswers', 'Correct Answers', 'multiselect', {
+        options: [
+          { value: 1, label: 'Option 1' },
+          { value: 2, label: 'Option 2' },
+          { value: 3, label: 'Option 3' },
+          { value: 4, label: 'Option 4' },
+        ],
+      }),
+      f('explanation', 'Explanation', 'richtext'),
+      f('references', 'References', 'tags'),
+      f('image', 'Image', 'image'),
+      f('isActive', 'Active', 'boolean', { default: true }),
+    ],
+  },
+
+  karmkandCategories: {
+    label: 'Karmkand Categories',
+    singularLabel: 'Category',
+    children: [{ resource: 'karmkandSubCategories', label: 'Sub-categories' }],
+    columns: ['position', { name: 'cover_image', title: 'Cover', type: 'image' }, 'name'],
+    fields: [f('name', 'Name', 'text', { required: true }), f('position', 'Position', 'number'), f('introduction', 'Introduction', 'textarea'), f('cover_image', 'Cover Image', 'image')],
+  },
+  karmkandSubCategories: {
+    label: 'Karmkand Sub-categories',
+    singularLabel: 'Sub-category',
+    parent: { field: 'parentCategory' },
+    children: [{ resource: 'karmkandContent', label: 'Content' }],
+    columns: ['position', { name: 'cover_image', title: 'Cover', type: 'image' }, 'name'],
+    fields: [f('name', 'Name', 'text', { required: true }), f('position', 'Position', 'number'), f('introduction', 'Introduction', 'textarea'), f('cover_image', 'Cover Image', 'image')],
+  },
+  karmkandContent: {
+    label: 'Karmkand Content',
+    singularLabel: 'Content',
+    parent: { field: 'subCategory' },
+    columns: ['sequenceNo', 'hindiWord', 'englishWord'],
+    expandFields: ['meaning', 'extra', 'structure'],
+    fields: [
+      f('sequenceNo', 'Sequence No', 'number', { required: true, col: 12 }),
+      f('hindiWord', 'Hindi Word', 'text', { col: 12 }),
+      f('englishWord', 'English Word', 'text', { col: 12 }),
+      f('hinglishWord', 'Hinglish Word', 'text', { col: 12 }),
+      f('meaning', 'Meaning', 'richtext'),
+      f('extra', 'Extra', 'richtext'),
+      f('structure', 'Structure', 'richtext'),
+      f('search', 'Search Terms', 'text'),
+      f('youtubeLink', 'YouTube Link', 'text'),
+      f('image', 'Image', 'image'),
+    ],
+  },
+
+  learningCategories: {
+    label: 'Learning Courses',
+    singularLabel: 'Course',
+    children: [{ resource: 'learningChapters', label: 'Chapters' }],
+    columns: ['position', 'name', 'fee', 'isActive'],
+    fields: [
+      f('name', 'Name', 'text', { required: true }),
+      f('fee', 'Fee', 'number', { required: true, col: 12 }),
+      f('plan', 'Plan', 'text', { required: true, col: 12 }),
+      f('demo', 'Demo', 'text', { required: true }),
+      f('introduction', 'Introduction', 'richtext', { required: true }),
+      f('position', 'Position', 'number', { col: 12 }),
+      f('isActive', 'Active', 'boolean', { default: true, col: 12 }),
+    ],
+  },
+  learningChapters: {
+    label: 'Learning Chapters',
+    singularLabel: 'Chapter',
+    parent: { field: 'category' },
+    children: [{ resource: 'learningContent', label: 'Content' }],
+    columns: ['position', 'name', 'isActive'],
+    fields: [f('name', 'Name', 'text', { required: true }), f('position', 'Position', 'number'), f('isActive', 'Active', 'boolean', { default: true })],
+  },
+  learningContent: {
+    label: 'Learning Content',
+    singularLabel: 'Content',
+    parent: { field: 'chapter' },
+    columns: ['position', 'title', 'isActive'],
+    expandFields: ['content'],
+    fields: [f('title', 'Title', 'text', { required: true }), f('content', 'Content', 'richtext', { required: true }), f('position', 'Position', 'number'), f('isActive', 'Active', 'boolean', { default: true })],
+  },
+
+  bookCategories: {
+    label: 'Book Categories',
+    singularLabel: 'Category',
+    children: [{ resource: 'bookNames', label: 'Books' }],
+    columns: [{ name: 'cover_image', title: 'Cover', type: 'image' }, 'name'],
+    fields: [f('name', 'Name', 'text', { required: true }), f('cover_image', 'Cover Image', 'image')],
+  },
+  bookNames: {
+    label: 'Books',
+    singularLabel: 'Book',
+    parent: { field: 'category' },
+    children: [{ resource: 'bookChapters', label: 'Chapters' }],
+    columns: [{ name: 'book_image', title: 'Image', type: 'image' }, 'name'],
+    fields: [f('name', 'Name', 'text', { required: true }), f('book_image', 'Book Image', 'image')],
+  },
+  bookChapters: {
+    label: 'Book Chapters',
+    singularLabel: 'Chapter',
+    parent: { field: 'book' },
+    children: [{ resource: 'bookContent', label: 'Content' }],
+    columns: ['name'],
+    fields: [f('name', 'Name', 'text', { required: true })],
+  },
+  bookContent: {
+    label: 'Book Content',
+    singularLabel: 'Content',
+    parent: { field: 'chapter' },
+    columns: ['sequence', 'title_hn', 'title_en'],
+    expandFields: ['meaning', 'details', 'extra'],
+    fields: [
+      f('sequence', 'Sequence', 'number', { col: 12 }),
+      f('title_hn', 'Title (Hindi)', 'text', { col: 12 }),
+      f('title_en', 'Title (English)', 'text', { col: 12 }),
+      f('title_hinglish', 'Title (Hinglish)', 'text', { col: 12 }),
+      f('meaning', 'Meaning', 'richtext'),
+      f('details', 'Details', 'richtext'),
+      f('extra', 'Extra', 'richtext'),
+      f('images', 'Images', 'images'),
+      f('video_links', 'Video Links', 'tags'),
+    ],
+  },
+
+  granthCategories: {
+    label: 'Granth Categories',
+    singularLabel: 'Category',
+    children: [{ resource: 'granthNames', label: 'Granths' }],
+    columns: [{ name: 'cover_image', title: 'Cover', type: 'image' }, 'name'],
+    fields: [f('name', 'Name', 'text', { required: true }), f('cover_image', 'Cover Image', 'image')],
+  },
+  granthNames: {
+    label: 'Granths',
+    singularLabel: 'Granth',
+    parent: { field: 'category' },
+    children: [{ resource: 'granthChapters', label: 'Chapters' }],
+    columns: [{ name: 'book_image', title: 'Image', type: 'image' }, 'name'],
+    fields: [f('name', 'Name', 'text', { required: true }), f('book_image', 'Granth Image', 'image')],
+  },
+  granthChapters: {
+    label: 'Granth Chapters',
+    singularLabel: 'Chapter',
+    parent: { field: 'book' },
+    children: [{ resource: 'granthContent', label: 'Content' }],
+    columns: ['name'],
+    fields: [f('name', 'Name', 'text', { required: true })],
+  },
+  granthContent: {
+    label: 'Granth Content',
+    singularLabel: 'Content',
+    parent: { field: 'chapter' },
+    columns: ['sequence', 'title_hn', 'title_en'],
+    expandFields: ['meaning', 'details', 'extra'],
+    fields: [
+      f('sequence', 'Sequence', 'number', { col: 12 }),
+      f('title_hn', 'Title (Hindi)', 'text', { col: 12 }),
+      f('title_en', 'Title (English)', 'text', { col: 12 }),
+      f('title_hinglish', 'Title (Hinglish)', 'text', { col: 12 }),
+      f('meaning', 'Meaning', 'richtext'),
+      f('details', 'Details', 'richtext'),
+      f('extra', 'Extra', 'richtext'),
+      f('images', 'Images', 'images'),
+      f('video_links', 'Video Links', 'tags'),
+    ],
+  },
+
+  muhuratCategories: {
+    label: 'Muhurat Categories',
+    singularLabel: 'Category',
+    childLabelField: 'categoryName',
+    children: [{ resource: 'muhuratContent', label: 'Content' }],
+    columns: [{ name: 'imageUrl', title: 'Image', type: 'image' }, 'categoryName'],
+    fields: [f('categoryName', 'Category Name', 'text', { required: true }), f('imageUrl', 'Image', 'image')],
+  },
+  muhuratContent: {
+    label: 'Muhurat Content',
+    singularLabel: 'Content',
+    parent: { field: 'categoryId' },
+    columns: ['year', 'date'],
+    expandFields: ['detail'],
+    fields: [f('year', 'Year', 'number', { col: 12 }), f('date', 'Date', 'text', { col: 12 }), f('detail', 'Detail', 'richtext')],
+  },
+
+  celebrityCategories: {
+    label: 'Celebrity Categories',
+    singularLabel: 'Category',
+    children: [{ resource: 'celebrityKundli', label: 'Kundlis' }],
+    columns: ['id', 'name'],
+    fields: [f('id', 'ID (unique)', 'text', { required: true, help: 'A unique identifier you choose' }), f('name', 'Name', 'text', { required: true })],
+  },
+  celebrityKundli: {
+    label: 'Celebrity Kundlis',
+    singularLabel: 'Kundli',
+    parent: { field: 'category' },
+    columns: ['name', 'place', 'dob'],
+    expandFields: ['about'],
+    fields: [
+      f('name', 'Name', 'text', { required: true, col: 12 }),
+      f('dob', 'Date of Birth', 'date', { required: true, col: 12 }),
+      f('time', 'Time', 'text', { required: true, col: 12 }),
+      f('place', 'Place', 'text', { required: true, col: 12 }),
+      f('about', 'About', 'richtext'),
+    ],
+  },
+
+  // ============ HOROSCOPE ============
+  rashifalDailyDates: {
+    label: 'Rashifal — Daily Dates',
+    singularLabel: 'Date',
+    childLabelField: 'dateLabel',
+    children: [{ resource: 'rashifalDailyContent', label: 'Rashis' }],
+    columns: ['sequence', 'dateLabel'],
+    fields: [f('dateLabel', 'Date Label', 'text', { required: true }), f('dateISO', 'Date', 'date'), f('notes', 'Notes', 'textarea'), f('sequence', 'Sequence', 'number')],
+  },
+  rashifalDailyContent: {
+    label: 'Rashifal — Daily',
+    singularLabel: 'Entry',
+    parent: { field: 'dateRef' },
+    columns: ['sequence', 'title_hn', 'title_en'],
+    expandFields: ['details_hn', 'details_en'],
+    fields: horoscopeContentFields(),
+  },
+  rashifalMonthlyYears: {
+    label: 'Rashifal — Monthly Years',
+    singularLabel: 'Year',
+    childLabelField: 'year',
+    children: [{ resource: 'rashifalMonthly', label: 'Months' }],
+    columns: ['year', 'description'],
+    fields: [f('year', 'Year', 'number', { required: true }), f('description', 'Description', 'textarea')],
+  },
+  rashifalMonthly: {
+    label: 'Rashifal — Monthly',
+    singularLabel: 'Entry',
+    parent: { field: 'yearRef' },
+    columns: ['sequence', 'month', 'title_hn'],
+    expandFields: ['details_hn', 'details_en'],
+    fields: [f('month', 'Month', 'text', { required: true }), ...horoscopeContentFields()],
+  },
+  rashifalYearlyYears: {
+    label: 'Rashifal — Yearly Years',
+    singularLabel: 'Year',
+    childLabelField: 'year',
+    children: [{ resource: 'rashifalYearly', label: 'Entries' }],
+    columns: ['year', 'description'],
+    fields: [f('year', 'Year', 'number', { required: true }), f('description', 'Description', 'textarea')],
+  },
+  rashifalYearly: {
+    label: 'Rashifal — Yearly',
+    singularLabel: 'Entry',
+    parent: { field: 'yearRef' },
+    columns: ['sequence', 'title_hn', 'date'],
+    expandFields: ['details_hn', 'details_en'],
+    fields: [f('date', 'Date', 'text', { required: true }), ...horoscopeContentFields()],
+  },
+
+  numerologyDailyDates: {
+    label: 'Numerology — Daily Dates',
+    singularLabel: 'Date',
+    childLabelField: 'dateLabel',
+    children: [{ resource: 'numerologyDailyContent', label: 'Numbers' }],
+    columns: ['sequence', 'dateLabel'],
+    fields: [f('dateLabel', 'Date Label', 'text', { required: true }), f('dateISO', 'Date', 'date'), f('notes', 'Notes', 'textarea'), f('sequence', 'Sequence', 'number')],
+  },
+  numerologyDailyContent: {
+    label: 'Numerology — Daily',
+    singularLabel: 'Entry',
+    parent: { field: 'dateRef' },
+    columns: ['sequence', 'title_hn', 'title_en'],
+    expandFields: ['details_hn', 'details_en'],
+    fields: horoscopeContentFields(),
+  },
+  numerologyMonthlyYears: {
+    label: 'Numerology — Monthly Years',
+    singularLabel: 'Year',
+    childLabelField: 'year',
+    children: [{ resource: 'numerologyMonthly', label: 'Months' }],
+    columns: ['year', 'description'],
+    fields: [f('year', 'Year', 'number', { required: true }), f('description', 'Description', 'textarea')],
+  },
+  numerologyMonthly: {
+    label: 'Numerology — Monthly',
+    singularLabel: 'Entry',
+    parent: { field: 'yearRef' },
+    columns: ['sequence', 'month', 'title_hn'],
+    expandFields: ['details_hn', 'details_en'],
+    fields: [f('month', 'Month', 'text', { required: true }), ...horoscopeContentFields()],
+  },
+  numerologyYearlyYears: {
+    label: 'Numerology — Yearly Years',
+    singularLabel: 'Year',
+    childLabelField: 'year',
+    children: [{ resource: 'numerologyYearly', label: 'Entries' }],
+    columns: ['year', 'description'],
+    fields: [f('year', 'Year', 'number', { required: true }), f('description', 'Description', 'textarea')],
+  },
+  numerologyYearly: {
+    label: 'Numerology — Yearly',
+    singularLabel: 'Entry',
+    parent: { field: 'yearRef' },
+    columns: ['sequence', 'title_hn', 'date'],
+    expandFields: ['details_hn', 'details_en'],
+    fields: [f('date', 'Date', 'text', { required: true }), ...horoscopeContentFields()],
+  },
+
+  // ============ SHOP & ORDERS ============
+  astroCategories: {
+    label: 'Shop Categories',
+    singularLabel: 'Category',
+    children: [{ resource: 'products', label: 'Products' }],
+    columns: [{ name: 'image', title: 'Image', type: 'image' }, 'name'],
+    fields: [f('name', 'Name', 'text', { required: true }), f('image', 'Image', 'image')],
+  },
+  products: {
+    label: 'Products',
+    singularLabel: 'Product',
+    parent: { field: 'category' },
+    columns: ['title', 'price', 'stock_quantity', 'is_active'],
+    fields: [
+      f('title', 'Title', 'text', { required: true }),
+      f('price', 'Price', 'number', { required: true, col: 12 }),
+      f('original_price', 'Original Price', 'number', { col: 12 }),
+      f('discount_percentage', 'Discount %', 'number', { col: 12 }),
+      f('stock_quantity', 'Stock', 'number', { col: 12 }),
+      f('short_description', 'Short Description', 'richtext'),
+      f('full_description', 'Full Description', 'richtext'),
+      f('images', 'Images', 'images'),
+      f('promo_note', 'Promo Note', 'text'),
+      f('is_active', 'Active', 'boolean', { default: true }),
+      f('offers', 'Offers', 'array', {
+        addLabel: 'Add offer',
+        itemFields: [
+          { name: 'title', label: 'Title', type: 'text' },
+          { name: 'description', label: 'Description', type: 'text' },
+          { name: 'code', label: 'Code', type: 'text' },
+          { name: 'type', label: 'Type', type: 'select', options: ['percentage', 'bogo', 'flat', 'custom'] },
+        ],
+      }),
+    ],
+  },
+  puja: {
+    label: 'Puja',
+    singularLabel: 'Puja',
+    columns: ['title', 'temple_name', 'price', 'is_active'],
+    fields: [
+      f('title', 'Title', 'text', { required: true }),
+      f('tagline', 'Tagline', 'text'),
+      f('temple_name', 'Temple Name', 'text', { col: 12 }),
+      f('temple_location', 'Temple Location', 'text', { col: 12 }),
+      f('puja_date', 'Puja Date', 'date', { col: 12 }),
+      f('puja_day', 'Puja Day', 'text', { col: 12 }),
+      f('description', 'Description', 'richtext'),
+      f('image_url', 'Image', 'image'),
+      f('banner_text', 'Banner Text', 'text'),
+      f('price', 'Price', 'number', { col: 12 }),
+      f('total_slots', 'Total Slots', 'number', { col: 12 }),
+      f('booked_count', 'Booked Count', 'number', { col: 12 }),
+      f('countdown_time', 'Countdown Time', 'datetime', { col: 12 }),
+      f('whatsapp_link', 'WhatsApp Link', 'text'),
+      f('is_last_day', 'Last Day', 'boolean', { col: 12 }),
+      f('is_active', 'Active', 'boolean', { default: true, col: 12 }),
+    ],
+  },
+  orders: {
+    label: 'Orders',
+    singularLabel: 'Order',
+    allowCreate: false,
+    columns: ['customerName', 'productName', 'totalAmount', { name: 'status', type: 'select' }, { name: 'paymentStatus', type: 'select' }, { name: 'orderDate', type: 'datetime' }],
+    fields: [
+      f('customerName', 'Customer', 'text', { required: true, col: 12 }),
+      f('email', 'Email', 'text', { required: true, col: 12 }),
+      f('phoneNumber', 'Phone', 'text', { required: true, col: 12 }),
+      f('productName', 'Product', 'text', { required: true, col: 12 }),
+      f('category', 'Category', 'select', { options: ['astroshop', 'pooja'], col: 12 }),
+      f('totalAmount', 'Total Amount', 'number', { required: true, col: 12 }),
+      f('status', 'Status', 'select', { options: ORDER_STATUS, col: 12 }),
+      f('paymentStatus', 'Payment Status', 'select', { options: PAY_STATUS, col: 12 }),
+      f('address', 'Address', 'textarea'),
+      f('city', 'City', 'text', { col: 8 }),
+      f('state', 'State', 'text', { col: 8 }),
+      f('pincode', 'Pincode', 'text', { col: 8 }),
+      f('notes', 'Notes', 'textarea'),
+    ],
+  },
+
+  // ============ ENGAGEMENT ============
+  // Notifications are handled by a dedicated page (pages/Notifications.jsx) with a
+  // cascading deep-link builder + FCM push, so they are intentionally NOT a generic resource.
+  comments: {
+    label: 'Comments',
+    singularLabel: 'Comment',
+    allowCreate: false,
+    columns: ['name', 'mobile', 'comment', { name: 'status', type: 'select' }],
+    fields: [
+      f('name', 'Name', 'text', { col: 12 }),
+      f('mobile', 'Mobile', 'text', { col: 12 }),
+      f('comment', 'Comment', 'textarea'),
+      f('status', 'Status', 'select', { options: ['pending', 'approved', 'rejected'] }),
+    ],
+  },
+  divineQuotes: {
+    label: 'Divine Quotes',
+    singularLabel: 'Quote',
+    columns: ['quote', 'meaning'],
+    fields: [f('quote', 'Quote', 'textarea', { required: true }), f('meaning', 'Meaning', 'textarea', { required: true })],
+  },
+  divineSanskrit: {
+    label: 'Divine Sanskrit',
+    singularLabel: 'Quote',
+    columns: ['quote', 'meaning'],
+    fields: [f('quote', 'Quote', 'textarea', { required: true }), f('meaning', 'Meaning', 'textarea', { required: true })],
+  },
+  youtube: {
+    label: 'YouTube',
+    singularLabel: 'Video',
+    columns: ['title', 'category', 'link'],
+    fields: [f('title', 'Title', 'text', { required: true }), f('link', 'Link', 'text', { required: true }), f('category', 'Category', 'text')],
+  },
+
+  emagCategories: {
+    label: 'E-Mag Categories',
+    singularLabel: 'Category',
+    columns: ['position', { name: 'coverImage', title: 'Cover', type: 'image' }, 'name'],
+    fields: [f('name', 'Name', 'text', { required: true }), f('position', 'Position', 'number'), f('description', 'Description', 'textarea'), f('coverImage', 'Cover Image', 'image')],
+  },
+  emagSubjects: {
+    label: 'E-Mag Subjects',
+    singularLabel: 'Subject',
+    columns: ['name'],
+    fields: [f('name', 'Name', 'text', { required: true })],
+  },
+  emagWriters: {
+    label: 'E-Mag Writers',
+    singularLabel: 'Writer',
+    columns: [{ name: 'image', title: 'Image', type: 'image' }, 'name', 'designation', 'phone'],
+    fields: [f('name', 'Name', 'text', { required: true }), f('designation', 'Designation', 'text'), f('phone', 'Phone', 'text'), f('image', 'Image', 'image')],
+  },
+  emagazines: {
+    label: 'E-Magazines',
+    singularLabel: 'Magazine',
+    columns: ['title', 'month', 'year', { name: 'language', type: 'select' }],
+    expandFields: ['introduction', 'summary'],
+    fields: [
+      f('title', 'Title', 'text', { required: true }),
+      f('language', 'Language', 'select', { options: ['Hindi', 'English', 'Sanskrit'], required: true, col: 8 }),
+      f('month', 'Month', 'text', { required: true, col: 8 }),
+      f('year', 'Year', 'number', { required: true, col: 8 }),
+      f('category', 'Category', 'ref', { ref: 'emagCategories', refLabel: 'name', required: true, col: 8 }),
+      f('subject', 'Subject', 'ref', { ref: 'emagSubjects', refLabel: 'name', required: true, col: 8 }),
+      f('writer', 'Writer', 'ref', { ref: 'emagWriters', refLabel: 'name', required: true, col: 8 }),
+      f('introduction', 'Introduction', 'richtext'),
+      f('subPoints', 'Sub Points', 'richtext'),
+      f('importance', 'Importance', 'richtext'),
+      f('explain', 'Explain', 'richtext'),
+      f('summary', 'Summary', 'richtext'),
+      f('reference', 'Reference', 'textarea'),
+      f('images', 'Images', 'images'),
+    ],
+  },
+
+  // ============ PRASHAN ============
+  prashanCategories: {
+    label: 'Prashan Categories',
+    singularLabel: 'Category',
+    columns: ['position', { name: 'cover_image', title: 'Cover', type: 'image' }, 'name'],
+    fields: [f('name', 'Name', 'text', { required: true }), f('description', 'Description', 'textarea'), f('cover_image', 'Cover Image', 'image'), f('position', 'Position', 'number', { required: true })],
+  },
+  ankPrashan: { label: 'Ank Prashan', singleton: true, description: 'Edit all number entries', fields: [prashanEntries()] },
+  hanumatPrashanwali: { label: 'Hanumat Prashanwali', singleton: true, description: 'Edit all entries', fields: [prashanEntries()] },
+  karyaPrashan: { label: 'Karya Prashan Yantra', singleton: true, description: 'Edit all entries', fields: [prashanEntries()] },
+  twentyPrashan: { label: 'Twenty Prashan Yantra', singleton: true, description: 'Edit all entries', fields: [prashanEntries()] },
+  sixtyFourPrashan: { label: 'Sixty-Four Prashan Yantra', singleton: true, description: 'Edit all entries', fields: [prashanEntries()] },
+  beejPrashan: {
+    label: 'Beej Prashan Yantra',
+    singleton: true,
+    description: 'Edit all letter entries',
+    fields: [
+      {
+        name: 'entries',
+        label: 'Entries',
+        type: 'array',
+        full: true,
+        addLabel: 'Add entry',
+        itemFields: [
+          { name: 'name', label: 'Letter', type: 'text', span: 6 },
+          { name: 'content', label: 'Content', type: 'textarea', span: 18 },
+        ],
+      },
+    ],
+  },
+  hanumatQuestions: {
+    label: 'Hanumat Jyotish Questions',
+    singularLabel: 'Question',
+    children: [{ resource: 'hanumatResponses', label: 'Responses' }],
+    childLabelField: 'question',
+    columns: ['position', 'question'],
+    fields: [f('question', 'Question', 'text', { required: true }), f('description', 'Description', 'textarea'), f('position', 'Position', 'number', { required: true })],
+  },
+  hanumatResponses: {
+    label: 'Hanumat Responses',
+    singularLabel: 'Response set',
+    parent: { field: 'question' },
+    columns: [{ name: 'id', title: 'ID' }],
+    fields: [
+      {
+        name: 'responses',
+        label: 'Responses (fields 1–10)',
+        type: 'array',
+        full: true,
+        addLabel: 'Add response',
+        itemFields: [
+          { name: 'field_number', label: 'Field #', type: 'number', span: 6 },
+          { name: 'content', label: 'Content', type: 'richtext', span: 18 },
+        ],
+      },
+    ],
+  },
+
+  // ============ PANCHANG (CSU) ============
+  csu: {
+    label: 'CSU (Panchang)',
+    singularLabel: 'Row',
+    columns: ['pageNo', 'sequence', 'heading_hn'],
+    fields: [
+      f('pageNo', 'Page No', 'number', { col: 12 }),
+      f('sequence', 'Sequence', 'number', { col: 12 }),
+      f('heading_hn', 'Heading', 'text'),
+      f('di_hn', 'Din', 'text', { col: 12 }),
+      f('var_hn', 'Var', 'text', { col: 12 }),
+      f('tithi_hn', 'Tithi', 'tags'),
+      f('tithi_time_hn', 'Tithi Time', 'tags'),
+      f('nakshatra_hn', 'Nakshatra', 'tags'),
+      f('nakshatra_time_hn', 'Nakshatra Time', 'tags'),
+      f('chara_rashi_pravesh_hn', 'Chara Rashi Pravesh', 'text'),
+      f('chara_rashi_time_hn', 'Chara Rashi Time', 'text'),
+      f('vrat_parvadi_vivaran_hn', 'Vrat / Parvadi Vivaran', 'richtext'),
+    ],
+  },
+  csu2: {
+    label: 'CSU 2',
+    singularLabel: 'Row',
+    columns: ['pageNo', 'sequence', 'heading'],
+    fields: [
+      f('pageNo', 'Page No', 'number', { col: 12 }),
+      f('sequence', 'Sequence', 'number', { col: 12 }),
+      f('heading', 'Heading', 'text'),
+      f('items', 'Items', 'array', {
+        addLabel: 'Add item',
+        itemFields: [
+          { name: 'date', label: 'Date', type: 'text' },
+          { name: 'lagna', label: 'Lagna', type: 'text' },
+          { name: 'sequence', label: 'Seq', type: 'number' },
+        ],
+      }),
+    ],
+  },
+  csu3: {
+    label: 'CSU 3',
+    singularLabel: 'Row',
+    columns: ['pageNo', 'sequence', 'heading'],
+    fields: [
+      f('pageNo', 'Page No', 'number', { col: 12 }),
+      f('sequence', 'Sequence', 'number', { col: 12 }),
+      f('heading', 'Heading', 'text'),
+      f('content', 'Content', 'richtext'),
+    ],
+  },
+
+  // ============ APP ============
+  users: {
+    label: 'Users',
+    singularLabel: 'User',
+    columns: ['username', { name: 'createdAt', title: 'Created', type: 'datetime' }],
+    fields: [f('username', 'Username', 'text', { required: true }), f('password', 'Password', 'text', { help: 'Set on create; leave blank when editing to keep current' })],
+  },
+  media: {
+    label: 'Media Library',
+    singularLabel: 'File',
+    allowCreate: false,
+    allowEdit: false,
+    columns: [{ name: 'url', title: 'Preview', type: 'image' }, 'originalname', 'mimetype', { name: 'size', type: 'number' }],
+    fields: [f('originalname', 'Name', 'text'), f('url', 'Image', 'image')],
+  },
+  savedKundli: {
+    label: 'Saved Kundlis',
+    singularLabel: 'Kundli',
+    allowCreate: false,
+    allowEdit: false,
+    columns: ['name', 'place', { name: 'gender', type: 'select' }, { name: 'dateOfBirth', type: 'date' }],
+    fields: [f('name', 'Name', 'text'), f('place', 'Place', 'text'), f('gender', 'Gender', 'select', { options: ['male', 'female', 'other'] })],
+  },
+  aboutTeam: {
+    label: 'About — Team',
+    singularLabel: 'Member',
+    columns: [{ name: 'image', title: 'Photo', type: 'image' }, 'name', 'designation', 'team_name', { name: 'isActive', type: 'boolean' }],
+    expandFields: ['details'],
+    fields: [
+      f('name', 'Name', 'text', { required: true, col: 12 }),
+      f('designation', 'Designation', 'text', { required: true, col: 12 }),
+      f('team_name', 'Team Name', 'text', { required: true }),
+      f('details', 'Details', 'richtext', { required: true }),
+      f('image', 'Photo', 'image', { required: true }),
+      f('isActive', 'Active', 'boolean', { default: true }),
+    ],
+  },
+  aboutUs: {
+    label: 'About Us',
+    singleton: true,
+    description: 'The single About Us page shown in the app',
+    fields: [
+      f('about_app', 'About App', 'richtext', { required: true }),
+      f('inspiration', 'Inspiration', 'richtext', { required: true }),
+      f('objective', 'Objective', 'richtext', { required: true }),
+      f('work_ethics', 'Work Ethics', 'richtext', { required: true }),
+      f('address', 'Address', 'textarea', { required: true }),
+      f('screen_cover_image', 'Cover Image', 'image', { required: true }),
+      f('images', 'Images', 'images'),
+      f('isActive', 'Active', 'boolean', { default: true }),
+    ],
+  },
+};
+
+// Shared field set for horoscope (rashifal/numerology) content entries.
+function horoscopeContentFields() {
+  return [
+    f('sequence', 'Sequence', 'number', { col: 12 }),
+    f('title_hn', 'Title (Hindi)', 'text', { required: true, col: 12 }),
+    f('title_en', 'Title (English)', 'text', { required: true, col: 12 }),
+    f('details_hn', 'Details (Hindi)', 'richtext', { required: true }),
+    f('details_en', 'Details (English)', 'richtext', { required: true }),
+    f('images', 'Images', 'images'),
+  ];
+}
+
+// Array field for number-based Prashan Yantra grids.
+function prashanEntries() {
+  return {
+    name: 'entries',
+    label: 'Entries',
+    type: 'array',
+    full: true,
+    addLabel: 'Add entry',
+    itemFields: [
+      { name: 'number', label: 'No.', type: 'number', span: 6 },
+      { name: 'content', label: 'Content', type: 'textarea', span: 18 },
+    ],
+  };
+}
+
+export function getResourceConfig(name) {
+  return resources[name] || null;
+}
+
+// ---- Sidebar menu (only "top" modules are listed; children open via drill-down) ----
+export const menuGroups = [
+  {
+    key: 'kosh',
+    label: 'Kosh',
+    items: [{ key: 'koshCategories', label: 'Kosh Categories', to: '/categories' }],
+  },
+  {
+    key: 'content',
+    label: 'Content',
+    items: [
+      { key: 'mcqCategories', label: 'MCQ', to: '/r/mcqCategories' },
+      { key: 'karmkandCategories', label: 'Karmkand', to: '/r/karmkandCategories' },
+      { key: 'learningCategories', label: 'Learning', to: '/r/learningCategories' },
+      { key: 'bookCategories', label: 'Books', to: '/r/bookCategories' },
+      { key: 'granthCategories', label: 'Granth', to: '/r/granthCategories' },
+      { key: 'muhuratCategories', label: 'Muhurat', to: '/r/muhuratCategories' },
+      { key: 'festivals', label: 'Festivals', to: '/r/festivals' },
+      { key: 'celebrityCategories', label: 'Celebrity Kundli', to: '/r/celebrityCategories' },
+    ],
+  },
+  {
+    key: 'horoscope',
+    label: 'Horoscope',
+    items: [
+      { key: 'rashifalDailyDates', label: 'Rashifal Daily', to: '/r/rashifalDailyDates' },
+      { key: 'rashifalMonthlyYears', label: 'Rashifal Monthly', to: '/r/rashifalMonthlyYears' },
+      { key: 'rashifalYearlyYears', label: 'Rashifal Yearly', to: '/r/rashifalYearlyYears' },
+      { key: 'numerologyDailyDates', label: 'Numerology Daily', to: '/r/numerologyDailyDates' },
+      { key: 'numerologyMonthlyYears', label: 'Numerology Monthly', to: '/r/numerologyMonthlyYears' },
+      { key: 'numerologyYearlyYears', label: 'Numerology Yearly', to: '/r/numerologyYearlyYears' },
+    ],
+  },
+  {
+    key: 'shop',
+    label: 'Shop & Orders',
+    items: [
+      { key: 'astroCategories', label: 'Shop Categories', to: '/r/astroCategories' },
+      { key: 'puja', label: 'Puja', to: '/r/puja' },
+      { key: 'orders', label: 'Orders', to: '/r/orders' },
+    ],
+  },
+  {
+    key: 'engagement',
+    label: 'Engagement',
+    items: [
+      { key: 'notifications', label: 'Notifications', to: '/notifications' },
+      { key: 'comments', label: 'Comments', to: '/r/comments' },
+      { key: 'divineQuotes', label: 'Divine Quotes', to: '/r/divineQuotes' },
+      { key: 'divineSanskrit', label: 'Divine Sanskrit', to: '/r/divineSanskrit' },
+      { key: 'youtube', label: 'YouTube', to: '/r/youtube' },
+    ],
+  },
+  {
+    key: 'emag',
+    label: 'E-Magazine',
+    items: [
+      { key: 'emagazines', label: 'Magazines', to: '/r/emagazines' },
+      { key: 'emagCategories', label: 'Categories', to: '/r/emagCategories' },
+      { key: 'emagSubjects', label: 'Subjects', to: '/r/emagSubjects' },
+      { key: 'emagWriters', label: 'Writers', to: '/r/emagWriters' },
+    ],
+  },
+  {
+    key: 'prashan',
+    label: 'Prashan Yantra',
+    items: [
+      { key: 'prashanCategories', label: 'Categories', to: '/r/prashanCategories' },
+      { key: 'ankPrashan', label: 'Ank Prashan', to: '/r/ankPrashan' },
+      { key: 'hanumatPrashanwali', label: 'Hanumat Prashanwali', to: '/r/hanumatPrashanwali' },
+      { key: 'karyaPrashan', label: 'Karya Prashan', to: '/r/karyaPrashan' },
+      { key: 'twentyPrashan', label: 'Twenty Prashan', to: '/r/twentyPrashan' },
+      { key: 'sixtyFourPrashan', label: 'Sixty-Four Prashan', to: '/r/sixtyFourPrashan' },
+      { key: 'beejPrashan', label: 'Beej Prashan', to: '/r/beejPrashan' },
+      { key: 'hanumatQuestions', label: 'Hanumat Jyotish', to: '/r/hanumatQuestions' },
+    ],
+  },
+  {
+    key: 'panchang',
+    label: 'Panchang (CSU)',
+    items: [
+      { key: 'csu', label: 'CSU', to: '/r/csu' },
+      { key: 'csu2', label: 'CSU 2', to: '/r/csu2' },
+      { key: 'csu3', label: 'CSU 3', to: '/r/csu3' },
+    ],
+  },
+  {
+    key: 'app',
+    label: 'App',
+    items: [
+      { key: 'users', label: 'Users', to: '/r/users' },
+      { key: 'media', label: 'Media', to: '/r/media' },
+      { key: 'savedKundli', label: 'Saved Kundlis', to: '/r/savedKundli' },
+      { key: 'aboutTeam', label: 'About — Team', to: '/r/aboutTeam' },
+      { key: 'aboutUs', label: 'About Us', to: '/r/aboutUs' },
+    ],
+  },
+];

@@ -62,9 +62,10 @@ router.get('/kosh-subcategory/:subId/add-content', requireAuth, async (req, res)
 
 // Add content (POST)
 router.post('/kosh-subcategory/:subId/add-content', requireAuth, upload.single('image'), async (req, res) => {
-  const { sequenceNo, hindiWord, englishWord, hinglishWord, meaning, extra, structure, search, youtubeLink } = req.body;
+  const { sequenceNo, hindiWord, englishWord, hinglishWord, meaning, extra, structure, search, youtubeLink, payment, amount } = req.body;
   let image = '';
   if (req.file) image = '/images/' + req.file.filename;
+  const paymentValue = payment === 'yes' || payment === 'on' || payment === 'true' || payment === true;
   try {
     await KoshContent.create({
       subCategory: req.params.subId,
@@ -77,7 +78,9 @@ router.post('/kosh-subcategory/:subId/add-content', requireAuth, upload.single('
       structure,
       search,
       youtubeLink,
-      image
+      image,
+      payment: paymentValue,
+      amount: paymentValue ? Number(amount) || 0 : 0
     });
     const subcategory = await KoshSubCategory.findById(req.params.subId);
     res.redirect(`/kosh-subcategories/${subcategory.parentCategory}?sub=${subcategory._id}`);
@@ -104,7 +107,8 @@ router.get('/kosh-content/:id/edit', requireAuth, async (req, res) => {
 
 // Edit content (POST)
 router.post('/kosh-content/:id/edit', requireAuth, upload.single('image'), async (req, res) => {
-  const { sequenceNo, hindiWord, englishWord, hinglishWord, meaning, extra, structure, search, youtubeLink } = req.body;
+  const { sequenceNo, hindiWord, englishWord, hinglishWord, meaning, extra, structure, search, youtubeLink, payment, amount } = req.body;
+  const paymentValue = payment === 'yes' || payment === 'on' || payment === 'true' || payment === true;
   let update = {
     sequenceNo,
     hindiWord,
@@ -114,7 +118,9 @@ router.post('/kosh-content/:id/edit', requireAuth, upload.single('image'), async
     extra,
     structure,
     search,
-    youtubeLink
+    youtubeLink,
+    payment: paymentValue,
+    amount: paymentValue ? Number(amount) || 0 : 0
   };
   if (req.file) update.image = '/images/' + req.file.filename;
   try {
@@ -173,7 +179,9 @@ router.get('/kosh-subcategory/:subId/export-excel', requireAuth, async (req, res
       structure: entry.structure || '',
       search: entry.search || '',
       youtubeLink: entry.youtubeLink || '',
-      image: entry.image || ''
+      image: entry.image || '',
+      payment: entry.payment ? 'yes' : 'no',
+      amount: entry.amount || 0
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -271,7 +279,20 @@ router.post('/kosh-subcategory/:subId/import-excel', requireAuth, upload.single(
         structure: row.structure || row.Structure || '',
         search: row.search || row.Search || '',
         youtubeLink: row.youtubeLink || row.YouTubeLink || '',
-        image: row.image || row.Image || ''
+        image: row.image || row.Image || '',
+        payment: (() => {
+          const p = row.payment || row.Payment;
+          if (p === undefined || p === null || p === '') return false;
+          const s = String(p).trim().toLowerCase();
+          return s === 'yes' || s === 'true' || s === '1' || s === 'y';
+        })(),
+        amount: (() => {
+          const p = row.payment || row.Payment;
+          const paid = p !== undefined && p !== null && p !== '' &&
+            ['yes', 'true', '1', 'y'].includes(String(p).trim().toLowerCase());
+          if (!paid) return 0;
+          return Number(row.amount || row.Amount) || 0;
+        })()
       });
     }
 
@@ -339,7 +360,9 @@ router.get('/kosh-subcategory/:subId/export-excel', requireAuth, async (req, res
         'structure': 'Word structure (optional)',
         'search': 'Search keywords (optional)',
         'youtubeLink': 'https://youtube.com/video1',
-        'image': 'image_url_here (optional)'
+        'image': 'image_url_here (optional)',
+        'payment': 'no',
+        'amount': 0
       },
       {
         'sequenceNo': 2,
@@ -351,7 +374,9 @@ router.get('/kosh-subcategory/:subId/export-excel', requireAuth, async (req, res
         'structure': 'Word structure (optional)',
         'search': 'Search keywords (optional)',
         'youtubeLink': 'https://youtube.com/video2',
-        'image': 'image_url_here (optional)'
+        'image': 'image_url_here (optional)',
+        'payment': 'yes',
+        'amount': 51
       }
     ];
 

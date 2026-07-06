@@ -206,6 +206,23 @@
                         <input type="text" class="form-control" id="youtubeLink" name="youtubeLink">
                     </div>
                     <div class="mb-3">
+                        <label for="payment" class="form-label">Payment</label>
+                        <select class="form-control" id="payment" name="payment" onchange="togglePaymentAmount()">
+                            <option value="no" selected>No</option>
+                            <option value="yes">Yes</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="amountGroup" style="display:none;">
+                        <label for="amount" class="form-label">Amount (₹)</label>
+                        <input type="number" min="0" class="form-control" id="amount" name="amount" value="0">
+                    </div>
+                    <script>
+                        function togglePaymentAmount() {
+                            var pay = document.getElementById('payment').value;
+                            document.getElementById('amountGroup').style.display = pay === 'yes' ? 'block' : 'none';
+                        }
+                    </script>
+                    <div class="mb-3">
                         <label for="image" class="form-label">Image</label>
                         <input type="file" class="form-control" id="image" name="image" accept="image/*">
                     </div>

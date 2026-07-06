@@ -309,7 +309,7 @@ router.get('/:categoryId/:subCategoryId', async (req, res) => {
         let contents;
         try {
             contents = await KoshContent.find({ subCategory: subcategory._id })
-                .select('-_id id sequenceNo hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image createdAt')
+                .select('-_id id sequenceNo hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image payment amount createdAt')
                 .collation({ locale: 'hi', strength: 1 })
                 .sort({ hindiWord: 1 })
                 .skip(skip)
@@ -320,7 +320,7 @@ router.get('/:categoryId/:subCategoryId', async (req, res) => {
             // Get slightly more than needed, sort in memory, then slice
             const batchSize = Math.min(total, 500); // Get max 500 for sorting
             const allContentsForSort = await KoshContent.find({ subCategory: subcategory._id })
-                .select('-_id id sequenceNo hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image createdAt')
+                .select('-_id id sequenceNo hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image payment amount createdAt')
                 .lean();
             
             // Sort using custom Hindi sorting
@@ -328,6 +328,32 @@ router.get('/:categoryId/:subCategoryId', async (req, res) => {
             contents = sortedContents.slice(skip, skip + limit);
         }
         
+        // ============================================
+        // Paid-content gating: hide the body of paid entries the user hasn't bought.
+        // The app passes ?email=... and/or ?phone=... to identify the user.
+        // ============================================
+        const email = (req.query.email || '').trim().toLowerCase();
+        const phone = (req.query.phone || '').trim();
+        let purchasedIds = new Set();
+        const hasPaidContent = contents.some((c) => c.payment);
+        if (hasPaidContent && (email || phone)) {
+            const KoshPurchase = require('../../models/KoshPurchase');
+            const or = [];
+            if (email) or.push({ email });
+            if (phone) or.push({ phone });
+            const rows = await KoshPurchase.find({ status: 'paid', $or: or })
+                .select('contentId -_id')
+                .lean();
+            purchasedIds = new Set(rows.map((r) => r.contentId));
+        }
+        contents = contents.map((c) => {
+            if (!c.payment) return { ...c, locked: false, purchased: true };
+            if (purchasedIds.has(c.id)) return { ...c, locked: false, purchased: true };
+            // Locked preview: keep word/image, hide the paid body.
+            const { meaning, extra, structure, ...preview } = c;
+            return { ...preview, locked: true, purchased: false };
+        });
+
         res.json({
             contents,
             vishesh_suchi: vishesh_suchi,

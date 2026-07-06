@@ -100,9 +100,22 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/bootstrap', express.static(path.join(__dirname, 'node_modules/bootstrap/dist')));
 
+// Asset fallback: if an uploaded file (/images/* or /uploads/*) isn't present
+// locally, redirect to the production server where the files live. This helps
+// local development where the DB references images that only exist on the server.
+// Guarded by hostname so it never loops when running on production itself.
+const ASSET_FALLBACK_HOST = process.env.ASSET_FALLBACK_HOST || 'https://www.jyotishvishwakosh.in';
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  if (!/^\/(images|uploads)\//.test(req.path)) return next();
+  const host = req.hostname || '';
+  if (host.includes('jyotishvishwakosh.in')) return next(); // already on prod
+  return res.redirect(302, ASSET_FALLBACK_HOST + req.originalUrl);
+});
+
 // Body parser
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // CORS - Allow all origins
 app.use(cors({
@@ -231,7 +244,27 @@ app.use('/api/numerology', numerologyApiRouter);
 app.use('/api/kosh-category', koshCategoryApi);
 app.use('/api/kosh-subcategory', koshSubCategoryApi);
 app.use('/api/kosh-content', koshContentApi);
+app.use('/api/kosh-purchase', require('./routes/api/koshPurchase'));
 app.use('/api/mcq', mcqApiRouter);
+
+// React admin (JWT-authenticated) API + static hosting
+app.use('/api/admin', require('./routes/api/adminAuth'));
+app.use('/api/admin/kosh', require('./routes/api/adminKosh'));
+// Notifications get a dedicated API (deep-link builder + FCM push)
+app.use('/api/admin/notifications', require('./routes/api/adminNotifications'));
+// Generic config-driven CRUD for all other modules (upload, media, /resources/*)
+app.use('/api/admin', require('./routes/api/admin'));
+
+// Serve the React admin (Vite build) at /admin with SPA fallback
+const adminDist = path.join(__dirname, 'admin-react', 'dist');
+app.use('/admin', express.static(adminDist));
+app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
+  res.sendFile(path.join(adminDist, 'index.html'), (err) => {
+    if (err) {
+      res.status(404).send('Admin build not found. Run the build step (see deploy.sh).');
+    }
+  });
+});
 
 app.use('/astro-shop', astroshopRouter);
 app.use('/api/astro-shop', astroshopApiRouter);
