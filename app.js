@@ -192,8 +192,9 @@ app.use(async (req, res, next) => {
 });
 
 // Routes
+// Root now lands on the new React admin. The legacy EJS admin is still at /login.
 app.get('/', (req, res) => {
-  res.redirect('/login');
+  res.redirect('/admin');
 });
 
 // Placeholder for login route
