@@ -46,7 +46,7 @@ export const resources = {
     singularLabel: 'Question',
     parent: { field: 'master' },
     columns: ['question', 'isActive'],
-    expandFields: ['explanation'],
+    expandFields: ['question', 'explanation'],
     fields: [
       f('question', 'Question', 'textarea', { required: true }),
       f('option1', 'Option 1', 'text', { required: true, col: 12 }),

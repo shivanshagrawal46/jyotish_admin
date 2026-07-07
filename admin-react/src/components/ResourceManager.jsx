@@ -251,11 +251,13 @@ export default function ResourceManager() {
       case 'multiselect':
         return Array.isArray(value) ? value.map((t) => <Tag key={t}>{String(t)}</Tag>) : String(value);
       case 'richtext':
+      case 'textarea':
         return truncate(stripHtml(value), 60);
       case 'tags':
         return Array.isArray(value) ? value.slice(0, 3).map((t) => <Tag key={t}>{t}</Tag>) : String(value);
       default:
-        return truncate(value, 60);
+        // Values may contain HTML markup (e.g. MCQ questions with <table>); show clean text.
+        return truncate(stripHtml(value), 60);
     }
   }
 
