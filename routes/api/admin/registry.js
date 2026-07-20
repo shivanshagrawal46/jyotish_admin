@@ -27,6 +27,7 @@ const Media = safe('../../../models/Media');
 const AboutTeam = safe('../../../models/AboutTeam');
 const AboutUs = safe('../../../models/AboutUs');
 const Notification = safe('../../../models/Notification');
+const KoshPurchase = safe('../../../models/KoshPurchase');
 const Csu = safe('../../../models/Csu');
 const Csu2 = safe('../../../models/Csu2');
 const Csu3 = safe('../../../models/Csu3');
@@ -69,6 +70,8 @@ const GranthContent = safe('../../../models/GranthContent');
 
 const RashifalDailyDate = safe('../../../models/RashifalDailyDate');
 const RashifalDailyContent = safe('../../../models/RashifalDailyContent');
+const RashifalWeeklyDate = safe('../../../models/RashifalWeeklyDate');
+const RashifalWeeklyContent = safe('../../../models/RashifalWeeklyContent');
 const RashifalMonthlyYear = safe('../../../models/RashifalMonthlyYear');
 const RashifalMonthly = safe('../../../models/RashifalMonthly');
 const RashifalYearlyYear = safe('../../../models/RashifalYearlyYear');
@@ -76,6 +79,8 @@ const RashifalYearly = safe('../../../models/RashifalYearly');
 
 const NumerologyDailyDate = safe('../../../models/NumerologyDailyDate');
 const NumerologyDailyContent = safe('../../../models/NumerologyDailyContent');
+const NumerologyWeeklyDate = safe('../../../models/NumerologyWeeklyDate');
+const NumerologyWeeklyContent = safe('../../../models/NumerologyWeeklyContent');
 const NumerologyMonthlyYear = safe('../../../models/NumerologyMonthlyYear');
 const NumerologyMonthly = safe('../../../models/NumerologyMonthly');
 const NumerologyYearlyYear = safe('../../../models/NumerologyYearlyYear');
@@ -138,6 +143,14 @@ add('aboutUs', AboutUs, { singleton: true });
 add('csu', Csu, { searchFields: ['heading_hn'], defaultSort: { pageNo: 1, sequence: 1 } });
 add('csu2', Csu2, { searchFields: ['heading'], defaultSort: { pageNo: 1, sequence: 1 } });
 add('csu3', Csu3, { searchFields: ['heading'], defaultSort: { pageNo: 1, sequence: 1 } });
+
+// Kosh paid-content purchase records (who paid for which content). The Flutter app
+// writes these via the public /api/kosh-purchase endpoint; admins view/manage here.
+// Setting status to 'refunded' re-locks the content for that user automatically.
+add('koshPurchases', KoshPurchase, {
+  searchFields: ['email', 'phone', 'reference'],
+  defaultSort: { createdAt: -1 },
+});
 
 // Notifications are handled by a dedicated API (routes/api/adminNotifications.js)
 // because they need the cascading deep-link builder + FCM push, so they are NOT
@@ -264,6 +277,8 @@ add('granthContent', GranthContent, { parentField: 'chapter', searchFields: ['ti
 // ---- Rashifal ----
 add('rashifalDailyDates', RashifalDailyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: RashifalDailyContent ? [{ model: RashifalDailyContent, field: 'dateRef' }] : [] });
 add('rashifalDailyContent', RashifalDailyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 } });
+add('rashifalWeeklyDates', RashifalWeeklyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: RashifalWeeklyContent ? [{ model: RashifalWeeklyContent, field: 'dateRef' }] : [] });
+add('rashifalWeeklyContent', RashifalWeeklyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 } });
 add('rashifalMonthlyYears', RashifalMonthlyYear, { searchFields: ['description'], defaultSort: { year: -1 }, cascades: RashifalMonthly ? [{ model: RashifalMonthly, field: 'yearRef' }] : [] });
 add('rashifalMonthly', RashifalMonthly, { parentField: 'yearRef', searchFields: ['month', 'title_hn', 'title_en'], defaultSort: { sequence: 1 } });
 add('rashifalYearlyYears', RashifalYearlyYear, { searchFields: ['description'], defaultSort: { year: -1 }, cascades: RashifalYearly ? [{ model: RashifalYearly, field: 'yearRef' }] : [] });
@@ -272,6 +287,8 @@ add('rashifalYearly', RashifalYearly, { parentField: 'yearRef', searchFields: ['
 // ---- Numerology ----
 add('numerologyDailyDates', NumerologyDailyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: NumerologyDailyContent ? [{ model: NumerologyDailyContent, field: 'dateRef' }] : [] });
 add('numerologyDailyContent', NumerologyDailyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 } });
+add('numerologyWeeklyDates', NumerologyWeeklyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: NumerologyWeeklyContent ? [{ model: NumerologyWeeklyContent, field: 'dateRef' }] : [] });
+add('numerologyWeeklyContent', NumerologyWeeklyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 } });
 add('numerologyMonthlyYears', NumerologyMonthlyYear, { searchFields: ['description'], defaultSort: { year: -1 }, cascades: NumerologyMonthly ? [{ model: NumerologyMonthly, field: 'yearRef' }] : [] });
 add('numerologyMonthly', NumerologyMonthly, { parentField: 'yearRef', searchFields: ['month', 'title_hn', 'title_en'], defaultSort: { sequence: 1 } });
 add('numerologyYearlyYears', NumerologyYearlyYear, { searchFields: ['description'], defaultSort: { year: -1 }, cascades: NumerologyYearly ? [{ model: NumerologyYearly, field: 'yearRef' }] : [] });

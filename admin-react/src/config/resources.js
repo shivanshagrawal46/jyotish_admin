@@ -275,6 +275,22 @@ export const resources = {
     expandFields: ['details_hn', 'details_en'],
     fields: horoscopeContentFields(),
   },
+  rashifalWeeklyDates: {
+    label: 'Rashifal — Weekly Dates',
+    singularLabel: 'Date',
+    childLabelField: 'dateLabel',
+    children: [{ resource: 'rashifalWeeklyContent', label: 'Rashis' }],
+    columns: ['sequence', 'dateLabel'],
+    fields: [f('dateLabel', 'Date Label', 'text', { required: true }), f('dateISO', 'Date', 'date'), f('notes', 'Notes', 'textarea'), f('sequence', 'Sequence', 'number')],
+  },
+  rashifalWeeklyContent: {
+    label: 'Rashifal — Weekly',
+    singularLabel: 'Entry',
+    parent: { field: 'dateRef' },
+    columns: ['sequence', 'title_hn', 'title_en'],
+    expandFields: ['details_hn', 'details_en'],
+    fields: horoscopeContentFields(),
+  },
   rashifalMonthlyYears: {
     label: 'Rashifal — Monthly Years',
     singularLabel: 'Year',
@@ -324,6 +340,22 @@ export const resources = {
     expandFields: ['details_hn', 'details_en'],
     fields: horoscopeContentFields(),
   },
+  numerologyWeeklyDates: {
+    label: 'Numerology — Weekly Dates',
+    singularLabel: 'Date',
+    childLabelField: 'dateLabel',
+    children: [{ resource: 'numerologyWeeklyContent', label: 'Numbers' }],
+    columns: ['sequence', 'dateLabel'],
+    fields: [f('dateLabel', 'Date Label', 'text', { required: true }), f('dateISO', 'Date', 'date'), f('notes', 'Notes', 'textarea'), f('sequence', 'Sequence', 'number')],
+  },
+  numerologyWeeklyContent: {
+    label: 'Numerology — Weekly',
+    singularLabel: 'Entry',
+    parent: { field: 'dateRef' },
+    columns: ['sequence', 'title_hn', 'title_en'],
+    expandFields: ['details_hn', 'details_en'],
+    fields: horoscopeContentFields(),
+  },
   numerologyMonthlyYears: {
     label: 'Numerology — Monthly Years',
     singularLabel: 'Year',
@@ -355,6 +387,29 @@ export const resources = {
     columns: ['sequence', 'title_hn', 'date'],
     expandFields: ['details_hn', 'details_en'],
     fields: [f('date', 'Date', 'text', { required: true }), ...horoscopeContentFields()],
+  },
+
+  // ============ KOSH PAID PURCHASES ============
+  koshPurchases: {
+    label: 'Kosh Purchases',
+    singularLabel: 'Purchase',
+    itemNoun: 'purchases',
+    columns: [
+      'email',
+      'phone',
+      'contentId',
+      'amount',
+      { name: 'status', type: 'select' },
+      { name: 'createdAt', title: 'Date', type: 'datetime' },
+    ],
+    fields: [
+      f('email', 'Email', 'text', { col: 12 }),
+      f('phone', 'Phone', 'text', { col: 12 }),
+      f('contentId', 'Content ID', 'number', { required: true, col: 12 }),
+      f('amount', 'Amount (₹)', 'number', { col: 12 }),
+      f('reference', 'Payment Reference', 'text', { col: 12 }),
+      f('status', 'Status', 'select', { options: ['paid', 'refunded'], default: 'paid', col: 12 }),
+    ],
   },
 
   // ============ SHOP & ORDERS ============
@@ -710,7 +765,10 @@ export const menuGroups = [
   {
     key: 'kosh',
     label: 'Kosh',
-    items: [{ key: 'koshCategories', label: 'Kosh Categories', to: '/categories' }],
+    items: [
+      { key: 'koshCategories', label: 'Kosh Categories', to: '/categories' },
+      { key: 'koshPurchases', label: 'Kosh Purchases', to: '/r/koshPurchases' },
+    ],
   },
   {
     key: 'content',
@@ -731,9 +789,11 @@ export const menuGroups = [
     label: 'Horoscope',
     items: [
       { key: 'rashifalDailyDates', label: 'Rashifal Daily', to: '/r/rashifalDailyDates' },
+      { key: 'rashifalWeeklyDates', label: 'Rashifal Weekly', to: '/r/rashifalWeeklyDates' },
       { key: 'rashifalMonthlyYears', label: 'Rashifal Monthly', to: '/r/rashifalMonthlyYears' },
       { key: 'rashifalYearlyYears', label: 'Rashifal Yearly', to: '/r/rashifalYearlyYears' },
       { key: 'numerologyDailyDates', label: 'Numerology Daily', to: '/r/numerologyDailyDates' },
+      { key: 'numerologyWeeklyDates', label: 'Numerology Weekly', to: '/r/numerologyWeeklyDates' },
       { key: 'numerologyMonthlyYears', label: 'Numerology Monthly', to: '/r/numerologyMonthlyYears' },
       { key: 'numerologyYearlyYears', label: 'Numerology Yearly', to: '/r/numerologyYearlyYears' },
     ],

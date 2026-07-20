@@ -6,6 +6,12 @@ const NumerologyYearly = require('../../models/NumerologyYearly');
 const NumerologyYearlyYear = require('../../models/NumerologyYearlyYear');
 const NumerologyDailyDate = require('../../models/NumerologyDailyDate');
 const NumerologyDailyContent = require('../../models/NumerologyDailyContent');
+const NumerologyWeeklyDate = require('../../models/NumerologyWeeklyDate');
+const NumerologyWeeklyContent = require('../../models/NumerologyWeeklyContent');
+const createDateContentRoutes = require('./horoscopeDateContent');
+
+// Weekly numerology: one date -> 9 number entries (same shape as /daily).
+router.use('/weekly', createDateContentRoutes({ DateModel: NumerologyWeeklyDate, ContentModel: NumerologyWeeklyContent }));
 
 // Helper: resolve numeric dateId (1-based) to actual date document (_id)
 async function resolveDateByParam(dateIdParam) {

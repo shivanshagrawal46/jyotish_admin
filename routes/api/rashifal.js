@@ -8,6 +8,12 @@ const RashifalYearly = require('../../models/RashifalYearly');
 const RashifalYearlyYear = require('../../models/RashifalYearlyYear');
 const RashifalDailyDate = require('../../models/RashifalDailyDate');
 const RashifalDailyContent = require('../../models/RashifalDailyContent');
+const RashifalWeeklyDate = require('../../models/RashifalWeeklyDate');
+const RashifalWeeklyContent = require('../../models/RashifalWeeklyContent');
+const createDateContentRoutes = require('./horoscopeDateContent');
+
+// Weekly rashifal: one date -> 12 rashi entries (same shape as /daily).
+router.use('/weekly', createDateContentRoutes({ DateModel: RashifalWeeklyDate, ContentModel: RashifalWeeklyContent }));
 
 // Helper: resolve numeric dateId (1-based) to actual date document (_id)
 async function resolveDateByParam(dateIdParam) {
