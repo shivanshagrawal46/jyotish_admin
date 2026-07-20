@@ -16,6 +16,7 @@ import {
   Input,
   Row,
   Col,
+  Upload,
 } from 'antd';
 import {
   PlusOutlined,
@@ -25,6 +26,9 @@ import {
   ArrowLeftOutlined,
   FolderOpenOutlined,
   SendOutlined,
+  DownloadOutlined,
+  UploadOutlined,
+  FileExcelOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
@@ -35,6 +39,9 @@ import {
   getSingleton,
   saveSingleton,
   runAction,
+  downloadResourceTemplate,
+  exportResourceExcel,
+  importResourceExcel,
 } from '../api/resources';
 import { apiErrorMessage } from '../api/client';
 import { getResourceConfig } from '../config/resources.js';
@@ -226,6 +233,36 @@ export default function ResourceManager() {
     }
   };
 
+  // ---------- Excel: template / export / import ----------
+  const canImport = !parentField || !!parent; // need a parent context for hierarchical resources
+  const handleTemplate = async () => {
+    try {
+      await downloadResourceTemplate(resource, parent);
+    } catch (err) {
+      message.error(apiErrorMessage(err, 'Template download failed'));
+    }
+  };
+  const handleExport = async () => {
+    try {
+      await exportResourceExcel(resource, parent);
+    } catch (err) {
+      message.error(apiErrorMessage(err, 'Export failed'));
+    }
+  };
+  const handleImport = async (file) => {
+    try {
+      const res = await importResourceExcel(resource, parent, file);
+      message.success(`Imported ${res.imported} row(s)${res.skipped ? `, skipped ${res.skipped}` : ''}`);
+      if (res.errors && res.errors.length) {
+        message.warning(res.errors.slice(0, 3).join(' | '));
+      }
+      loadList(1, '');
+    } catch (err) {
+      message.error(apiErrorMessage(err, 'Import failed'));
+    }
+    return false; // prevent antd Upload auto-post
+  };
+
   // ---------- Cell rendering ----------
   function renderCell(field, value, record) {
     if (value === undefined || value === null || value === '') return <Text type="secondary">—</Text>;
@@ -407,6 +444,27 @@ export default function ResourceManager() {
               <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
                 Back
               </Button>
+            )}
+            {config.excel && (
+              <>
+                <Tooltip title="Download a blank Excel template">
+                  <Button icon={<FileExcelOutlined />} onClick={handleTemplate}>
+                    Template
+                  </Button>
+                </Tooltip>
+                <Tooltip title="Export current rows to Excel">
+                  <Button icon={<DownloadOutlined />} onClick={handleExport}>
+                    Export
+                  </Button>
+                </Tooltip>
+                <Upload accept=".xlsx,.xls" showUploadList={false} beforeUpload={handleImport} disabled={!canImport}>
+                  <Tooltip title={canImport ? 'Import rows from Excel' : 'Open a specific parent to import'}>
+                    <Button icon={<UploadOutlined />} disabled={!canImport}>
+                      Import
+                    </Button>
+                  </Tooltip>
+                </Upload>
+              </>
             )}
             <Button icon={<ReloadOutlined />} onClick={() => loadList(pagination.current)} />
             {config.allowCreate !== false && (

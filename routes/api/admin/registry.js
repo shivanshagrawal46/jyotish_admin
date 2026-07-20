@@ -117,6 +117,12 @@ function add(name, model, opts = {}) {
   registry[name] = { model, opts };
 }
 
+// ---- Shared Excel column sets for content-type resources ----
+// Rashifal/Numerology daily & weekly content (one row per rashi/number).
+const HOROSCOPE_COLS = ['sequence', 'title_hn', 'title_en', 'details_hn', 'details_en', 'images'];
+// Book/Granth content (chapter entries).
+const BOOKISH_COLS = ['sequence', 'title_hn', 'title_en', 'title_hinglish', 'meaning', 'details', 'extra', 'images', 'video_links'];
+
 // ---- Flat modules ----
 add('festivals', Festival, {
   searchFields: ['festival_name', 'vrat', 'jyanti', 'vishesh'],
@@ -168,7 +174,19 @@ add('mcqMasters', McqMaster, {
   defaultSort: { position: 1 },
   cascades: McqContent ? [{ model: McqContent, field: 'master' }] : [],
 });
-add('mcqContent', McqContent, { parentField: 'master', searchFields: ['question'], defaultSort: { createdAt: 1 } });
+add('mcqContent', McqContent, {
+  parentField: 'master',
+  searchFields: ['question'],
+  defaultSort: { createdAt: 1 },
+  excel: {
+    label: 'MCQ Questions',
+    columns: ['question', 'option1', 'option2', 'option3', 'option4', 'correctAnswers', 'explanation', 'references', 'image', 'isActive'],
+    bool: ['isActive'],
+    sample: [
+      { question: 'Question text?', option1: 'A', option2: 'B', option3: 'C', option4: 'D', correctAnswers: '1', explanation: 'Why', references: '', image: '', isActive: 'yes' },
+    ],
+  },
+});
 
 // ---- Karmkand (Category -> SubCategory -> Content) ----
 add('karmkandCategories', KarmkandCategory, {
@@ -187,12 +205,29 @@ add('karmkandContent', KarmkandContent, {
   searchFields: ['hindiWord', 'englishWord', 'meaning', 'search'],
   defaultSort: { hindiWord: 1 }, // Hindi alphabetical order (matches the app)
   collation: { locale: 'hi', strength: 1 },
+  excel: {
+    label: 'Karmkand Content',
+    columns: ['sequenceNo', 'hindiWord', 'englishWord', 'hinglishWord', 'meaning', 'extra', 'structure', 'search', 'youtubeLink', 'image'],
+    sample: [
+      { sequenceNo: 1, hindiWord: 'शब्द', englishWord: 'word', hinglishWord: 'shabd', meaning: 'Meaning', extra: '', structure: '', search: 'keywords', youtubeLink: '', image: '' },
+    ],
+  },
 });
 
 // ---- Learning (Category -> Chapter -> Content) ----
 add('learningCategories', LearningCategory, { searchFields: ['name'], defaultSort: { position: 1 }, cascades: LearningChapter ? [{ model: LearningChapter, field: 'category' }] : [] });
 add('learningChapters', LearningChapter, { parentField: 'category', searchFields: ['name'], defaultSort: { position: 1 }, cascades: LearningContent ? [{ model: LearningContent, field: 'chapter' }] : [] });
-add('learningContent', LearningContent, { parentField: 'chapter', searchFields: ['title'], defaultSort: { position: 1 } });
+add('learningContent', LearningContent, {
+  parentField: 'chapter',
+  searchFields: ['title'],
+  defaultSort: { position: 1 },
+  excel: {
+    label: 'Learning Content',
+    columns: ['position', 'title', 'content', 'isActive'],
+    bool: ['isActive'],
+    sample: [{ position: 1, title: 'Title', content: 'Body text', isActive: 'yes' }],
+  },
+});
 
 // ---- Celebrity Kundli (Category -> Kundli) ----
 add('celebrityCategories', CelebrityKundliCategory, {
@@ -211,7 +246,16 @@ add('muhuratCategories', MuhuratCategory, {
   searchFields: ['categoryName'],
   cascades: MuhuratContent ? [{ model: MuhuratContent, field: 'categoryId' }] : [],
 });
-add('muhuratContent', MuhuratContent, { parentField: 'categoryId', searchFields: ['date', 'detail'], defaultSort: { year: -1 } });
+add('muhuratContent', MuhuratContent, {
+  parentField: 'categoryId',
+  searchFields: ['date', 'detail'],
+  defaultSort: { year: -1 },
+  excel: {
+    label: 'Muhurat Content',
+    columns: ['year', 'date', 'detail'],
+    sample: [{ year: 2026, date: '15 August 2026', detail: 'Muhurat details' }],
+  },
+});
 
 // ---- E-Magazine ----
 add('emagCategories', EMagazineCategory, { searchFields: ['name'], defaultSort: { position: 1 } });
@@ -266,33 +310,33 @@ function deriveContentAncestors(ChapterModel) {
 add('bookCategories', BookCategory, { searchFields: ['name'], cascades: BookName ? [{ model: BookName, field: 'category' }] : [] });
 add('bookNames', BookName, { parentField: 'category', searchFields: ['name'], cascades: BookChapter ? [{ model: BookChapter, field: 'book' }] : [] });
 add('bookChapters', BookChapter, { parentField: 'book', searchFields: ['name'], transform: deriveChapterAncestors(BookName), cascades: BookContent ? [{ model: BookContent, field: 'chapter' }] : [] });
-add('bookContent', BookContent, { parentField: 'chapter', searchFields: ['title_hn', 'title_en', 'title_hinglish'], defaultSort: { sequence: 1 }, transform: deriveContentAncestors(BookChapter) });
+add('bookContent', BookContent, { parentField: 'chapter', searchFields: ['title_hn', 'title_en', 'title_hinglish'], defaultSort: { sequence: 1 }, transform: deriveContentAncestors(BookChapter), excel: { label: 'Book Content', columns: BOOKISH_COLS } });
 
 // ---- Granth (Category -> Name -> Chapter -> Content) ----
 add('granthCategories', GranthCategory, { searchFields: ['name'], cascades: GranthName ? [{ model: GranthName, field: 'category' }] : [] });
 add('granthNames', GranthName, { parentField: 'category', searchFields: ['name'], cascades: GranthChapter ? [{ model: GranthChapter, field: 'book' }] : [] });
 add('granthChapters', GranthChapter, { parentField: 'book', searchFields: ['name'], transform: deriveChapterAncestors(GranthName), cascades: GranthContent ? [{ model: GranthContent, field: 'chapter' }] : [] });
-add('granthContent', GranthContent, { parentField: 'chapter', searchFields: ['title_hn', 'title_en', 'title_hinglish'], defaultSort: { sequence: 1 }, transform: deriveContentAncestors(GranthChapter) });
+add('granthContent', GranthContent, { parentField: 'chapter', searchFields: ['title_hn', 'title_en', 'title_hinglish'], defaultSort: { sequence: 1 }, transform: deriveContentAncestors(GranthChapter), excel: { label: 'Granth Content', columns: BOOKISH_COLS } });
 
 // ---- Rashifal ----
 add('rashifalDailyDates', RashifalDailyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: RashifalDailyContent ? [{ model: RashifalDailyContent, field: 'dateRef' }] : [] });
-add('rashifalDailyContent', RashifalDailyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 } });
+add('rashifalDailyContent', RashifalDailyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Rashifal Daily', columns: HOROSCOPE_COLS } });
 add('rashifalWeeklyDates', RashifalWeeklyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: RashifalWeeklyContent ? [{ model: RashifalWeeklyContent, field: 'dateRef' }] : [] });
-add('rashifalWeeklyContent', RashifalWeeklyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 } });
+add('rashifalWeeklyContent', RashifalWeeklyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Rashifal Weekly', columns: HOROSCOPE_COLS } });
 add('rashifalMonthlyYears', RashifalMonthlyYear, { searchFields: ['description'], defaultSort: { year: -1 }, cascades: RashifalMonthly ? [{ model: RashifalMonthly, field: 'yearRef' }] : [] });
-add('rashifalMonthly', RashifalMonthly, { parentField: 'yearRef', searchFields: ['month', 'title_hn', 'title_en'], defaultSort: { sequence: 1 } });
+add('rashifalMonthly', RashifalMonthly, { parentField: 'yearRef', searchFields: ['month', 'title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Rashifal Monthly', columns: ['month', ...HOROSCOPE_COLS] } });
 add('rashifalYearlyYears', RashifalYearlyYear, { searchFields: ['description'], defaultSort: { year: -1 }, cascades: RashifalYearly ? [{ model: RashifalYearly, field: 'yearRef' }] : [] });
-add('rashifalYearly', RashifalYearly, { parentField: 'yearRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 } });
+add('rashifalYearly', RashifalYearly, { parentField: 'yearRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Rashifal Yearly', columns: ['date', ...HOROSCOPE_COLS] } });
 
 // ---- Numerology ----
 add('numerologyDailyDates', NumerologyDailyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: NumerologyDailyContent ? [{ model: NumerologyDailyContent, field: 'dateRef' }] : [] });
-add('numerologyDailyContent', NumerologyDailyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 } });
+add('numerologyDailyContent', NumerologyDailyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Numerology Daily', columns: HOROSCOPE_COLS } });
 add('numerologyWeeklyDates', NumerologyWeeklyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: NumerologyWeeklyContent ? [{ model: NumerologyWeeklyContent, field: 'dateRef' }] : [] });
-add('numerologyWeeklyContent', NumerologyWeeklyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 } });
+add('numerologyWeeklyContent', NumerologyWeeklyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Numerology Weekly', columns: HOROSCOPE_COLS } });
 add('numerologyMonthlyYears', NumerologyMonthlyYear, { searchFields: ['description'], defaultSort: { year: -1 }, cascades: NumerologyMonthly ? [{ model: NumerologyMonthly, field: 'yearRef' }] : [] });
-add('numerologyMonthly', NumerologyMonthly, { parentField: 'yearRef', searchFields: ['month', 'title_hn', 'title_en'], defaultSort: { sequence: 1 } });
+add('numerologyMonthly', NumerologyMonthly, { parentField: 'yearRef', searchFields: ['month', 'title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Numerology Monthly', columns: ['month', ...HOROSCOPE_COLS] } });
 add('numerologyYearlyYears', NumerologyYearlyYear, { searchFields: ['description'], defaultSort: { year: -1 }, cascades: NumerologyYearly ? [{ model: NumerologyYearly, field: 'yearRef' }] : [] });
-add('numerologyYearly', NumerologyYearly, { parentField: 'yearRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 } });
+add('numerologyYearly', NumerologyYearly, { parentField: 'yearRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Numerology Yearly', columns: ['date', ...HOROSCOPE_COLS] } });
 
 // ---- Prashan Yantra family ----
 add('prashanCategories', PrashanYantraCategory, { searchFields: ['name', 'description'], defaultSort: { position: 1 } });

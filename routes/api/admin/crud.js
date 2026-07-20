@@ -1,10 +1,60 @@
 const express = require('express');
+const multer = require('multer');
+const XLSX = require('xlsx');
+
+// Excel uploads are parsed in memory.
+const excelUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
 // Fields that must never be written directly from the client.
 const PROTECTED = new Set(['_id', '__v', 'createdAt', 'updatedAt', 'created_at', 'updated_at', 'slug']);
 
 function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// ---- Excel helpers (shared by every resource that declares an `excel` config) ----
+function toBool(v) {
+  if (typeof v === 'boolean') return v;
+  if (v === undefined || v === null) return false;
+  const s = String(v).trim().toLowerCase();
+  return s === 'yes' || s === 'true' || s === '1' || s === 'y' || s === 'on';
+}
+
+function isArrayPath(Model, field) {
+  const p = Model.schema.paths[field];
+  return !!p && p.instance === 'Array';
+}
+
+// Excel cell value -> a value suitable for the model on import.
+function excelCellIn(Model, field, raw, boolFields) {
+  if (boolFields.includes(field)) return toBool(raw);
+  if (isArrayPath(Model, field)) {
+    if (Array.isArray(raw)) return raw;
+    const s = raw == null ? '' : String(raw).trim();
+    if (!s) return [];
+    const parts = s.split(/[,\n]/).map((x) => x.trim()).filter(Boolean);
+    const caster = Model.schema.paths[field].caster;
+    if (caster && caster.instance === 'Number') return parts.map(Number).filter((n) => !Number.isNaN(n));
+    return parts;
+  }
+  return raw;
+}
+
+// Model value -> a plain cell value for export.
+function excelCellOut(Model, field, val, boolFields) {
+  if (boolFields.includes(field)) return val ? 'yes' : 'no';
+  if (Array.isArray(val)) return val.join(', ');
+  return val == null ? '' : val;
+}
+
+function sendWorkbook(res, rows, sheetName, fileName) {
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, String(sheetName).slice(0, 31));
+  const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+  res.send(buffer);
 }
 
 // Keep only body keys that are real (top-level) schema paths and not protected.
@@ -48,6 +98,7 @@ module.exports = function createCrudRouter(Model, opts = {}) {
     customActions = {}, // { send: async (doc, req) => ({...}) }
     transform = null, // async (writable, req, existingDoc|null) => writable
     select = null, // e.g. '-password' to hide fields from responses
+    excel = null, // { columns: [...], bool: [...], sample: {...}|[...], label: 'Xxx' }
   } = opts;
 
   const withSelect = (query) => (select ? query.select(select) : query);
@@ -132,6 +183,104 @@ module.exports = function createCrudRouter(Model, opts = {}) {
       res.status(500).json({ message: e.message });
     }
   });
+
+  // ---- Excel: template / export / import ----
+  // Registered before "/:id" so the literal paths aren't captured as an id.
+  if (excel && Array.isArray(excel.columns) && excel.columns.length) {
+    const cols = excel.columns;
+    const boolFields = excel.bool || [];
+    const label = excel.label || Model.modelName;
+
+    // Blank/sample template
+    router.get('/template-excel', (req, res) => {
+      try {
+        let rows;
+        if (excel.sample) {
+          rows = Array.isArray(excel.sample) ? excel.sample : [excel.sample];
+        } else {
+          rows = [Object.fromEntries(cols.map((c) => [c, '']))];
+        }
+        sendWorkbook(res, rows, `${label} Template`, `${label.replace(/\s+/g, '_')}_template.xlsx`);
+      } catch (e) {
+        res.status(500).json({ message: e.message });
+      }
+    });
+
+    // Export existing rows (respects parent filter + search + collation)
+    router.get('/export-excel', async (req, res) => {
+      try {
+        const filter = {};
+        if (parentField && req.query.parent) filter[parentField] = req.query.parent;
+        const search = (req.query.search || '').trim();
+        if (search && searchFields.length) {
+          const rx = new RegExp(escapeRegex(search), 'i');
+          filter.$or = searchFields.map((f) => ({ [f]: rx }));
+        }
+        let docs;
+        try {
+          let q = Model.find(filter).sort(defaultSort);
+          if (collation) q = q.collation(collation);
+          docs = await q.lean();
+        } catch (collationErr) {
+          docs = await Model.find(filter).sort(defaultSort).lean();
+        }
+        const rows = docs.map((d) => {
+          const o = {};
+          cols.forEach((c) => {
+            o[c] = excelCellOut(Model, c, d[c], boolFields);
+          });
+          return o;
+        });
+        sendWorkbook(res, rows, label, `${label.replace(/\s+/g, '_')}.xlsx`);
+      } catch (e) {
+        res.status(500).json({ message: e.message });
+      }
+    });
+
+    // Import rows from an uploaded .xlsx
+    router.post('/import-excel', excelUpload.single('excel'), async (req, res) => {
+      try {
+        if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+        if (parentField && !req.query.parent) {
+          return res.status(400).json({ message: 'Missing parent context for import' });
+        }
+        const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+        if (!rows.length) return res.status(400).json({ message: 'Excel file is empty' });
+
+        const pick = (row, key) => row[key] ?? row[key.charAt(0).toUpperCase() + key.slice(1)] ?? '';
+
+        let imported = 0;
+        const errors = [];
+        for (let i = 0; i < rows.length; i += 1) {
+          const row = rows[i];
+          const rowNo = i + 2;
+          const doc = {};
+          cols.forEach((c) => {
+            const raw = pick(row, c);
+            if (boolFields.includes(c) || (raw !== '' && raw !== null && raw !== undefined)) {
+              doc[c] = excelCellIn(Model, c, raw, boolFields);
+            }
+          });
+          if (parentField && req.query.parent) doc[parentField] = req.query.parent;
+          try {
+            let writable = doc;
+            if (transform) writable = await transform(writable, req, null);
+            // create() (not insertMany) so auto-increment id plugins/hooks run per row
+            // eslint-disable-next-line no-await-in-loop
+            await Model.create(writable);
+            imported += 1;
+          } catch (err) {
+            errors.push(`Row ${rowNo}: ${err.message}`);
+          }
+        }
+        res.json({ imported, skipped: errors.length, errors: errors.slice(0, 10), total: rows.length });
+      } catch (e) {
+        res.status(400).json({ message: e.message });
+      }
+    });
+  }
 
   // ---- Get one ----
   router.get('/:id', async (req, res) => {

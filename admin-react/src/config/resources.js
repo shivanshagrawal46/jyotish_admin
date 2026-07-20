@@ -44,6 +44,7 @@ export const resources = {
   mcqContent: {
     label: 'MCQ Questions',
     singularLabel: 'Question',
+    excel: true,
     parent: { field: 'master' },
     columns: ['question', 'isActive'],
     expandFields: ['question', 'explanation'],
@@ -86,6 +87,7 @@ export const resources = {
   karmkandContent: {
     label: 'Karmkand Content',
     singularLabel: 'Content',
+    excel: true,
     parent: { field: 'subCategory' },
     columns: ['sequenceNo', 'hindiWord', 'englishWord'],
     expandFields: ['meaning', 'extra', 'structure'],
@@ -129,6 +131,7 @@ export const resources = {
   learningContent: {
     label: 'Learning Content',
     singularLabel: 'Content',
+    excel: true,
     parent: { field: 'chapter' },
     columns: ['position', 'title', 'isActive'],
     expandFields: ['content'],
@@ -161,6 +164,7 @@ export const resources = {
   bookContent: {
     label: 'Book Content',
     singularLabel: 'Content',
+    excel: true,
     parent: { field: 'chapter' },
     columns: ['sequence', 'title_hn', 'title_en'],
     expandFields: ['meaning', 'details', 'extra'],
@@ -203,6 +207,7 @@ export const resources = {
   granthContent: {
     label: 'Granth Content',
     singularLabel: 'Content',
+    excel: true,
     parent: { field: 'chapter' },
     columns: ['sequence', 'title_hn', 'title_en'],
     expandFields: ['meaning', 'details', 'extra'],
@@ -230,6 +235,7 @@ export const resources = {
   muhuratContent: {
     label: 'Muhurat Content',
     singularLabel: 'Content',
+    excel: true,
     parent: { field: 'categoryId' },
     columns: ['year', 'date'],
     expandFields: ['detail'],
@@ -270,6 +276,7 @@ export const resources = {
   rashifalDailyContent: {
     label: 'Rashifal — Daily',
     singularLabel: 'Entry',
+    excel: true,
     parent: { field: 'dateRef' },
     columns: ['sequence', 'title_hn', 'title_en'],
     expandFields: ['details_hn', 'details_en'],
@@ -286,6 +293,7 @@ export const resources = {
   rashifalWeeklyContent: {
     label: 'Rashifal — Weekly',
     singularLabel: 'Entry',
+    excel: true,
     parent: { field: 'dateRef' },
     columns: ['sequence', 'title_hn', 'title_en'],
     expandFields: ['details_hn', 'details_en'],
@@ -302,6 +310,7 @@ export const resources = {
   rashifalMonthly: {
     label: 'Rashifal — Monthly',
     singularLabel: 'Entry',
+    excel: true,
     parent: { field: 'yearRef' },
     columns: ['sequence', 'month', 'title_hn'],
     expandFields: ['details_hn', 'details_en'],
@@ -318,6 +327,7 @@ export const resources = {
   rashifalYearly: {
     label: 'Rashifal — Yearly',
     singularLabel: 'Entry',
+    excel: true,
     parent: { field: 'yearRef' },
     columns: ['sequence', 'title_hn', 'date'],
     expandFields: ['details_hn', 'details_en'],
@@ -335,6 +345,7 @@ export const resources = {
   numerologyDailyContent: {
     label: 'Numerology — Daily',
     singularLabel: 'Entry',
+    excel: true,
     parent: { field: 'dateRef' },
     columns: ['sequence', 'title_hn', 'title_en'],
     expandFields: ['details_hn', 'details_en'],
@@ -351,6 +362,7 @@ export const resources = {
   numerologyWeeklyContent: {
     label: 'Numerology — Weekly',
     singularLabel: 'Entry',
+    excel: true,
     parent: { field: 'dateRef' },
     columns: ['sequence', 'title_hn', 'title_en'],
     expandFields: ['details_hn', 'details_en'],
@@ -367,6 +379,7 @@ export const resources = {
   numerologyMonthly: {
     label: 'Numerology — Monthly',
     singularLabel: 'Entry',
+    excel: true,
     parent: { field: 'yearRef' },
     columns: ['sequence', 'month', 'title_hn'],
     expandFields: ['details_hn', 'details_en'],
@@ -383,6 +396,7 @@ export const resources = {
   numerologyYearly: {
     label: 'Numerology — Yearly',
     singularLabel: 'Entry',
+    excel: true,
     parent: { field: 'yearRef' },
     columns: ['sequence', 'title_hn', 'date'],
     expandFields: ['details_hn', 'details_en'],
