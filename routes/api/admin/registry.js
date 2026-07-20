@@ -122,6 +122,9 @@ function add(name, model, opts = {}) {
 const HOROSCOPE_COLS = ['sequence', 'title_hn', 'title_en', 'details_hn', 'details_en', 'images'];
 // Book/Granth content (chapter entries).
 const BOOKISH_COLS = ['sequence', 'title_hn', 'title_en', 'title_hinglish', 'meaning', 'details', 'extra', 'images', 'video_links'];
+// Rashifal/Numerology daily & weekly parent "date" rows.
+const DATE_COLS = ['dateLabel', 'dateISO', 'notes', 'sequence'];
+const DATE_SAMPLE = [{ dateLabel: '7-13 July 2026', dateISO: '', notes: '', sequence: 1 }];
 
 // ---- Flat modules ----
 add('festivals', Festival, {
@@ -319,9 +322,9 @@ add('granthChapters', GranthChapter, { parentField: 'book', searchFields: ['name
 add('granthContent', GranthContent, { parentField: 'chapter', searchFields: ['title_hn', 'title_en', 'title_hinglish'], defaultSort: { sequence: 1 }, transform: deriveContentAncestors(GranthChapter), excel: { label: 'Granth Content', columns: BOOKISH_COLS } });
 
 // ---- Rashifal ----
-add('rashifalDailyDates', RashifalDailyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: RashifalDailyContent ? [{ model: RashifalDailyContent, field: 'dateRef' }] : [] });
+add('rashifalDailyDates', RashifalDailyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: RashifalDailyContent ? [{ model: RashifalDailyContent, field: 'dateRef' }] : [], excel: { label: 'Rashifal Daily Dates', columns: DATE_COLS, sample: DATE_SAMPLE } });
 add('rashifalDailyContent', RashifalDailyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Rashifal Daily', columns: HOROSCOPE_COLS } });
-add('rashifalWeeklyDates', RashifalWeeklyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: RashifalWeeklyContent ? [{ model: RashifalWeeklyContent, field: 'dateRef' }] : [] });
+add('rashifalWeeklyDates', RashifalWeeklyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: RashifalWeeklyContent ? [{ model: RashifalWeeklyContent, field: 'dateRef' }] : [], excel: { label: 'Rashifal Weekly Dates', columns: DATE_COLS, sample: DATE_SAMPLE } });
 add('rashifalWeeklyContent', RashifalWeeklyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Rashifal Weekly', columns: HOROSCOPE_COLS } });
 add('rashifalMonthlyYears', RashifalMonthlyYear, { searchFields: ['description'], defaultSort: { year: -1 }, cascades: RashifalMonthly ? [{ model: RashifalMonthly, field: 'yearRef' }] : [] });
 add('rashifalMonthly', RashifalMonthly, { parentField: 'yearRef', searchFields: ['month', 'title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Rashifal Monthly', columns: ['month', ...HOROSCOPE_COLS] } });
@@ -329,9 +332,9 @@ add('rashifalYearlyYears', RashifalYearlyYear, { searchFields: ['description'], 
 add('rashifalYearly', RashifalYearly, { parentField: 'yearRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Rashifal Yearly', columns: ['date', ...HOROSCOPE_COLS] } });
 
 // ---- Numerology ----
-add('numerologyDailyDates', NumerologyDailyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: NumerologyDailyContent ? [{ model: NumerologyDailyContent, field: 'dateRef' }] : [] });
+add('numerologyDailyDates', NumerologyDailyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: NumerologyDailyContent ? [{ model: NumerologyDailyContent, field: 'dateRef' }] : [], excel: { label: 'Numerology Daily Dates', columns: DATE_COLS, sample: DATE_SAMPLE } });
 add('numerologyDailyContent', NumerologyDailyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Numerology Daily', columns: HOROSCOPE_COLS } });
-add('numerologyWeeklyDates', NumerologyWeeklyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: NumerologyWeeklyContent ? [{ model: NumerologyWeeklyContent, field: 'dateRef' }] : [] });
+add('numerologyWeeklyDates', NumerologyWeeklyDate, { searchFields: ['dateLabel', 'notes'], defaultSort: { sequence: 1 }, cascades: NumerologyWeeklyContent ? [{ model: NumerologyWeeklyContent, field: 'dateRef' }] : [], excel: { label: 'Numerology Weekly Dates', columns: DATE_COLS, sample: DATE_SAMPLE } });
 add('numerologyWeeklyContent', NumerologyWeeklyContent, { parentField: 'dateRef', searchFields: ['title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Numerology Weekly', columns: HOROSCOPE_COLS } });
 add('numerologyMonthlyYears', NumerologyMonthlyYear, { searchFields: ['description'], defaultSort: { year: -1 }, cascades: NumerologyMonthly ? [{ model: NumerologyMonthly, field: 'yearRef' }] : [] });
 add('numerologyMonthly', NumerologyMonthly, { parentField: 'yearRef', searchFields: ['month', 'title_hn', 'title_en'], defaultSort: { sequence: 1 }, excel: { label: 'Numerology Monthly', columns: ['month', ...HOROSCOPE_COLS] } });

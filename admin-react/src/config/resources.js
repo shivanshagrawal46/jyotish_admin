@@ -268,6 +268,7 @@ export const resources = {
   rashifalDailyDates: {
     label: 'Rashifal — Daily Dates',
     singularLabel: 'Date',
+    excel: true,
     childLabelField: 'dateLabel',
     children: [{ resource: 'rashifalDailyContent', label: 'Rashis' }],
     columns: ['sequence', 'dateLabel'],
@@ -285,6 +286,7 @@ export const resources = {
   rashifalWeeklyDates: {
     label: 'Rashifal — Weekly Dates',
     singularLabel: 'Date',
+    excel: true,
     childLabelField: 'dateLabel',
     children: [{ resource: 'rashifalWeeklyContent', label: 'Rashis' }],
     columns: ['sequence', 'dateLabel'],
@@ -337,6 +339,7 @@ export const resources = {
   numerologyDailyDates: {
     label: 'Numerology — Daily Dates',
     singularLabel: 'Date',
+    excel: true,
     childLabelField: 'dateLabel',
     children: [{ resource: 'numerologyDailyContent', label: 'Numbers' }],
     columns: ['sequence', 'dateLabel'],
@@ -354,6 +357,7 @@ export const resources = {
   numerologyWeeklyDates: {
     label: 'Numerology — Weekly Dates',
     singularLabel: 'Date',
+    excel: true,
     childLabelField: 'dateLabel',
     children: [{ resource: 'numerologyWeeklyContent', label: 'Numbers' }],
     columns: ['sequence', 'dateLabel'],
