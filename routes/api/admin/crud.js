@@ -43,6 +43,10 @@ function excelCellIn(Model, field, raw, boolFields) {
 // Model value -> a plain cell value for export.
 function excelCellOut(Model, field, val, boolFields) {
   if (boolFields.includes(field)) return val ? 'yes' : 'no';
+  // Populated ref (from .populate()) -> export its human-readable name/title.
+  if (val && typeof val === 'object' && !Array.isArray(val) && (val.name || val.title)) {
+    return val.name || val.title;
+  }
   if (Array.isArray(val)) return val.join(', ');
   return val == null ? '' : val;
 }
@@ -220,9 +224,9 @@ module.exports = function createCrudRouter(Model, opts = {}) {
         try {
           let q = Model.find(filter).sort(defaultSort);
           if (collation) q = q.collation(collation);
-          docs = await q.lean();
+          docs = await applyPopulate(q, populate).lean();
         } catch (collationErr) {
-          docs = await Model.find(filter).sort(defaultSort).lean();
+          docs = await applyPopulate(Model.find(filter).sort(defaultSort), populate).lean();
         }
         const rows = docs.map((d) => {
           const o = {};

@@ -89,7 +89,7 @@ export const resources = {
     singularLabel: 'Content',
     excel: true,
     parent: { field: 'subCategory' },
-    columns: ['sequenceNo', 'hindiWord', 'englishWord'],
+    columns: ['sequenceNo', 'hindiWord', 'englishWord', { name: 'payment', title: 'Paid', type: 'payment' }],
     expandFields: ['meaning', 'extra', 'structure'],
     fields: [
       f('sequenceNo', 'Sequence No', 'number', { required: true, col: 12 }),
@@ -102,6 +102,8 @@ export const resources = {
       f('search', 'Search Terms', 'text'),
       f('youtubeLink', 'YouTube Link', 'text'),
       f('image', 'Image', 'image'),
+      f('payment', 'Paid Content', 'boolean', { col: 12 }),
+      f('amount', 'Amount (₹)', 'number', { col: 12, min: 0, showIf: { field: 'payment' } }),
     ],
   },
 
@@ -166,7 +168,7 @@ export const resources = {
     singularLabel: 'Content',
     excel: true,
     parent: { field: 'chapter' },
-    columns: ['sequence', 'title_hn', 'title_en'],
+    columns: ['sequence', 'title_hn', 'title_en', { name: 'payment', title: 'Paid', type: 'payment' }],
     expandFields: ['meaning', 'details', 'extra'],
     fields: [
       f('sequence', 'Sequence', 'number', { col: 12 }),
@@ -178,6 +180,8 @@ export const resources = {
       f('extra', 'Extra', 'richtext'),
       f('images', 'Images', 'images'),
       f('video_links', 'Video Links', 'tags'),
+      f('payment', 'Paid Content', 'boolean', { col: 12 }),
+      f('amount', 'Amount (₹)', 'number', { col: 12, min: 0, showIf: { field: 'payment' } }),
     ],
   },
 
@@ -430,6 +434,31 @@ export const resources = {
     ],
   },
 
+  // Generic purchases for Karmkand / Book / E-Magazine paid content.
+  purchases: {
+    label: 'Content Purchases',
+    singularLabel: 'Purchase',
+    itemNoun: 'purchases',
+    columns: [
+      { name: 'module', type: 'select' },
+      'email',
+      'phone',
+      'contentId',
+      'amount',
+      { name: 'status', type: 'select' },
+      { name: 'createdAt', title: 'Date', type: 'datetime' },
+    ],
+    fields: [
+      f('module', 'Module', 'select', { options: ['karmkand', 'book', 'emagazine'], required: true, col: 12 }),
+      f('email', 'Email', 'text', { col: 12 }),
+      f('phone', 'Phone', 'text', { col: 12 }),
+      f('contentId', 'Content ID', 'text', { required: true, col: 12 }),
+      f('amount', 'Amount (₹)', 'number', { col: 12 }),
+      f('reference', 'Payment Reference', 'text', { col: 12 }),
+      f('status', 'Status', 'select', { options: ['paid', 'refunded'], default: 'paid', col: 12 }),
+    ],
+  },
+
   // ============ SHOP & ORDERS ============
   astroCategories: {
     label: 'Shop Categories',
@@ -565,7 +594,8 @@ export const resources = {
   emagazines: {
     label: 'E-Magazines',
     singularLabel: 'Magazine',
-    columns: ['title', 'month', 'year', { name: 'language', type: 'select' }],
+    excel: true,
+    columns: ['title', 'month', 'year', { name: 'language', type: 'select' }, { name: 'payment', title: 'Paid', type: 'payment' }],
     expandFields: ['introduction', 'summary'],
     fields: [
       f('title', 'Title', 'text', { required: true }),
@@ -582,6 +612,8 @@ export const resources = {
       f('summary', 'Summary', 'richtext'),
       f('reference', 'Reference', 'textarea'),
       f('images', 'Images', 'images'),
+      f('payment', 'Paid Content', 'boolean', { col: 12 }),
+      f('amount', 'Amount (₹)', 'number', { col: 12, min: 0, showIf: { field: 'payment' } }),
     ],
   },
 
@@ -800,6 +832,7 @@ export const menuGroups = [
       { key: 'muhuratCategories', label: 'Muhurat', to: '/r/muhuratCategories' },
       { key: 'festivals', label: 'Festivals', to: '/r/festivals' },
       { key: 'celebrityCategories', label: 'Celebrity Kundli', to: '/r/celebrityCategories' },
+      { key: 'purchases', label: 'Content Purchases', to: '/r/purchases' },
     ],
   },
   {

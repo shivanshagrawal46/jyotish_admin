@@ -96,7 +96,10 @@ const BeejPrashanYantra = safe('../../../models/BeejPrashanYantra');
 const HanumatJyotishQuestion = safe('../../../models/HanumatJyotishQuestion');
 const HanumatJyotishResponse = safe('../../../models/HanumatJyotishResponse');
 
+const Purchase = safe('../../../models/Purchase');
+
 const bcrypt = safe('bcryptjs');
+const mongoose = safe('mongoose');
 const FCMService = safe('../../../services/fcmService');
 
 // Hash a plaintext password for the Users resource; drop empty passwords on edit.
@@ -161,6 +164,14 @@ add('koshPurchases', KoshPurchase, {
   defaultSort: { createdAt: -1 },
 });
 
+// Generic paid-content purchase records for karmkand / book / emagazine.
+// The Flutter app writes these via the public /api/purchase endpoint.
+// Setting status to 'refunded' re-locks the content for that user automatically.
+add('purchases', Purchase, {
+  searchFields: ['email', 'phone', 'reference', 'contentId', 'module'],
+  defaultSort: { createdAt: -1 },
+});
+
 // Notifications are handled by a dedicated API (routes/api/adminNotifications.js)
 // because they need the cascading deep-link builder + FCM push, so they are NOT
 // registered as a generic CRUD resource here.
@@ -210,9 +221,10 @@ add('karmkandContent', KarmkandContent, {
   collation: { locale: 'hi', strength: 1 },
   excel: {
     label: 'Karmkand Content',
-    columns: ['sequenceNo', 'hindiWord', 'englishWord', 'hinglishWord', 'meaning', 'extra', 'structure', 'search', 'youtubeLink', 'image'],
+    columns: ['sequenceNo', 'hindiWord', 'englishWord', 'hinglishWord', 'meaning', 'extra', 'structure', 'search', 'youtubeLink', 'image', 'payment', 'amount'],
+    bool: ['payment'],
     sample: [
-      { sequenceNo: 1, hindiWord: 'शब्द', englishWord: 'word', hinglishWord: 'shabd', meaning: 'Meaning', extra: '', structure: '', search: 'keywords', youtubeLink: '', image: '' },
+      { sequenceNo: 1, hindiWord: 'शब्द', englishWord: 'word', hinglishWord: 'shabd', meaning: 'Meaning', extra: '', structure: '', search: 'keywords', youtubeLink: '', image: '', payment: 'no', amount: 0 },
     ],
   },
 });
@@ -264,6 +276,27 @@ add('muhuratContent', MuhuratContent, {
 add('emagCategories', EMagazineCategory, { searchFields: ['name'], defaultSort: { position: 1 } });
 add('emagSubjects', EMagazineSubject, { searchFields: ['name'] });
 add('emagWriters', EMagazineWriter, { searchFields: ['name', 'designation'] });
+// Resolve category/subject/writer that may arrive as a NAME (Excel import) or an
+// ObjectId (admin form). Leaves valid ObjectIds untouched.
+function resolveEmagRefs() {
+  const map = [
+    ['category', EMagazineCategory],
+    ['subject', EMagazineSubject],
+    ['writer', EMagazineWriter],
+  ];
+  return async (writable) => {
+    for (const [field, Mdl] of map) {
+      const v = writable[field];
+      if (!v || !Mdl) continue;
+      const s = String(v).trim();
+      if (mongoose && mongoose.Types.ObjectId.isValid(s) && String(new mongoose.Types.ObjectId(s)) === s) continue;
+      // eslint-disable-next-line no-await-in-loop
+      const found = await Mdl.findOne({ name: s }).lean();
+      if (found) writable[field] = found._id;
+    }
+    return writable;
+  };
+}
 add('emagazines', EMagazine, {
   searchFields: ['title', 'month'],
   defaultSort: { createdAt: -1 },
@@ -272,6 +305,15 @@ add('emagazines', EMagazine, {
     { path: 'subject', select: 'name' },
     { path: 'writer', select: 'name' },
   ],
+  transform: resolveEmagRefs(),
+  excel: {
+    label: 'E-Magazine',
+    columns: ['language', 'category', 'subject', 'writer', 'month', 'year', 'title', 'introduction', 'subPoints', 'importance', 'explain', 'summary', 'reference', 'images', 'payment', 'amount'],
+    bool: ['payment'],
+    sample: [
+      { language: 'Hindi', category: 'Category name', subject: 'Subject name', writer: 'Writer name', month: 'July', year: 2026, title: 'Title', introduction: '', subPoints: '', importance: '', explain: '', summary: '', reference: '', images: '', payment: 'no', amount: 0 },
+    ],
+  },
 });
 
 // ---- Astro Shop (Category -> Product) ----
@@ -313,7 +355,7 @@ function deriveContentAncestors(ChapterModel) {
 add('bookCategories', BookCategory, { searchFields: ['name'], cascades: BookName ? [{ model: BookName, field: 'category' }] : [] });
 add('bookNames', BookName, { parentField: 'category', searchFields: ['name'], cascades: BookChapter ? [{ model: BookChapter, field: 'book' }] : [] });
 add('bookChapters', BookChapter, { parentField: 'book', searchFields: ['name'], transform: deriveChapterAncestors(BookName), cascades: BookContent ? [{ model: BookContent, field: 'chapter' }] : [] });
-add('bookContent', BookContent, { parentField: 'chapter', searchFields: ['title_hn', 'title_en', 'title_hinglish'], defaultSort: { sequence: 1 }, transform: deriveContentAncestors(BookChapter), excel: { label: 'Book Content', columns: BOOKISH_COLS } });
+add('bookContent', BookContent, { parentField: 'chapter', searchFields: ['title_hn', 'title_en', 'title_hinglish'], defaultSort: { sequence: 1 }, transform: deriveContentAncestors(BookChapter), excel: { label: 'Book Content', columns: [...BOOKISH_COLS, 'payment', 'amount'], bool: ['payment'] } });
 
 // ---- Granth (Category -> Name -> Chapter -> Content) ----
 add('granthCategories', GranthCategory, { searchFields: ['name'], cascades: GranthName ? [{ model: GranthName, field: 'category' }] : [] });

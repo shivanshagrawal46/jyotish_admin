@@ -61,6 +61,23 @@ function stripHtml(html) {
   return String(html ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+// A form field wrapped in a grid column that can conditionally hide itself
+// based on another field's value (config: showIf: { field, equals? }).
+function DrawerField({ field, form }) {
+  const dep = field.showIf?.field;
+  const depValue = Form.useWatch(dep, form);
+  if (field.showIf) {
+    const target = Object.prototype.hasOwnProperty.call(field.showIf, 'equals') ? field.showIf.equals : true;
+    const matches = target === true ? !!depValue : depValue === target;
+    if (!matches) return null;
+  }
+  return (
+    <Col xs={24} md={field.col || 24}>
+      <DynamicField field={field} />
+    </Col>
+  );
+}
+
 export default function ResourceManager() {
   const { resource } = useParams();
   const config = getResourceConfig(resource);
@@ -265,6 +282,10 @@ export default function ResourceManager() {
 
   // ---------- Cell rendering ----------
   function renderCell(field, value, record) {
+    // Paid-content indicator: show ₹amount when the row is paid, else "Free".
+    if (field.type === 'payment') {
+      return record?.payment ? <Tag color="gold">₹{record.amount ?? 0}</Tag> : <Tag>Free</Tag>;
+    }
     if (value === undefined || value === null || value === '') return <Text type="secondary">—</Text>;
     switch (field.type) {
       case 'boolean':
@@ -306,7 +327,9 @@ export default function ResourceManager() {
       : (config.fields || []).filter((f) => !HEAVY_TYPES.has(f.type)).slice(0, 5).map((f) => ({ name: f.name }));
 
     const cols = colDefs.map((c) => {
-      const field = fieldByName[c.name] || { name: c.name, type: c.type || 'text', label: c.title || c.name };
+      const base = fieldByName[c.name] || {};
+      // An explicit column `type` (e.g. 'payment') overrides the form field's type.
+      const field = { ...base, name: c.name, type: c.type || base.type || 'text', label: c.title || base.label || c.name };
       return {
         title: c.title || field.label || c.name,
         dataIndex: c.name,
@@ -536,9 +559,7 @@ export default function ResourceManager() {
         <Form form={form} layout="vertical">
           <Row gutter={16}>
             {visibleFields.map((f) => (
-              <Col key={f.name} xs={24} md={f.col || 24}>
-                <DynamicField field={f} />
-              </Col>
+              <DrawerField key={f.name} field={f} form={form} />
             ))}
           </Row>
         </Form>

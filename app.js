@@ -246,6 +246,7 @@ app.use('/api/kosh-category', koshCategoryApi);
 app.use('/api/kosh-subcategory', koshSubCategoryApi);
 app.use('/api/kosh-content', koshContentApi);
 app.use('/api/kosh-purchase', require('./routes/api/koshPurchase'));
+app.use('/api/purchase', require('./routes/api/purchase'));
 app.use('/api/mcq', mcqApiRouter);
 
 // React admin (JWT-authenticated) API + static hosting

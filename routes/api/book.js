@@ -150,15 +150,26 @@ router.get('/category/:categoryId/:nameId/:chapterId', async (req, res) => {
             });
         }
 
-        const content = await BookContent.find({
+        let content = await BookContent.find({
             category: category._id,
             book: book._id,
             chapter: chapter._id
         })
-        .select('id title_hn title_en title_hinglish meaning details extra images video_links')
+        .select('id title_hn title_en title_hinglish meaning details extra images video_links payment amount')
         .sort({ sequence: 1 })
         .skip(skip)
-        .limit(limit);
+        .limit(limit)
+        .lean();
+
+        // Paid-content gating (books are keyed by _id since they have no numeric id)
+        const { gateItems } = require('../../services/purchaseGating');
+        content = await gateItems(content, {
+            module: 'book',
+            email: req.query.email,
+            phone: req.query.phone,
+            idField: '_id',
+            bodyFields: ['meaning', 'details', 'extra', 'video_links'],
+        });
 
         const total = await BookContent.countDocuments({
             category: category._id,
@@ -208,20 +219,30 @@ router.get('/category/:categoryId/:nameId/:chapterId/:contentId', async (req, re
             contentFilters.push({ _id: req.params.contentId });
         }
 
-        const content = await BookContent.findOne({
+        const contentDoc = await BookContent.findOne({
             category: category._id,
             book: book._id,
             chapter: chapter._id,
             $or: contentFilters
         })
-        .select('id title_hn title_en title_hinglish meaning details extra images video_links');
+        .select('id title_hn title_en title_hinglish meaning details extra images video_links payment amount')
+        .lean();
 
-        if (!content) {
+        if (!contentDoc) {
             return res.status(404).json({
                 success: false,
                 message: 'Content not found'
             });
         }
+
+        const { gateItems } = require('../../services/purchaseGating');
+        const [content] = await gateItems([contentDoc], {
+            module: 'book',
+            email: req.query.email,
+            phone: req.query.phone,
+            idField: '_id',
+            bodyFields: ['meaning', 'details', 'extra', 'video_links'],
+        });
 
         res.json({
             success: true,

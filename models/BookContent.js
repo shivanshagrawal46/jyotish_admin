@@ -40,6 +40,14 @@ const bookContentSchema = new mongoose.Schema({
     video_links: [{
         type: String
     }],
+    payment: {
+        type: Boolean,
+        default: false
+    },
+    amount: {
+        type: Number,
+        default: 0
+    },
     sequence: {
         type: Number,
         default: 0

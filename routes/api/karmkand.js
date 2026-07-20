@@ -372,7 +372,7 @@ router.get('/category/:categoryId/:subcategoryId', async (req, res) => {
         let contents;
         try {
             contents = await KarmkandContent.find({ subCategory: subcategory._id })
-                .select('id hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image sequenceNo -_id')
+                .select('id hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image sequenceNo payment amount -_id')
                 .collation({ locale: 'hi', strength: 1 })
                 .sort({ hindiWord: 1 })
                 .skip(skip)
@@ -381,13 +381,24 @@ router.get('/category/:categoryId/:subcategoryId', async (req, res) => {
         } catch (collationError) {
             // Fallback: If collation fails, use a hybrid approach
             const allContentsForSort = await KarmkandContent.find({ subCategory: subcategory._id })
-                .select('id hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image sequenceNo -_id')
+                .select('id hindiWord englishWord hinglishWord meaning extra structure search youtubeLink image sequenceNo payment amount -_id')
                 .lean();
 
             // Sort using custom Hindi sorting
             const sortedContents = sortByHindiWord(allContentsForSort);
             contents = sortedContents.slice(skip, skip + limit);
         }
+
+        // Paid-content gating: hide the body of paid entries the user hasn't bought.
+        // The app passes ?email=... and/or ?phone=... to identify the user.
+        const { gateItems } = require('../../services/purchaseGating');
+        contents = await gateItems(contents, {
+            module: 'karmkand',
+            email: req.query.email,
+            phone: req.query.phone,
+            idField: 'id',
+            bodyFields: ['meaning', 'extra', 'structure'],
+        });
 
         res.json({
             success: true,

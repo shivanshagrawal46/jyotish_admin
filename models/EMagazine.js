@@ -16,7 +16,9 @@ const eMagazineSchema = new mongoose.Schema({
     explain: { type: String },
     summary: { type: String },
     reference: { type: String },
-    images: [{ type: String }]
+    images: [{ type: String }],
+    payment: { type: Boolean, default: false },
+    amount: { type: Number, default: 0 }
 }, {
     timestamps: true
 });

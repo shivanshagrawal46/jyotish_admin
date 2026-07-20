@@ -50,7 +50,7 @@ router.clearLookupCache = clearLookupCache;
 // ============================================
 // FAST: Get magazines without $lookup - use cached maps instead
 // ============================================
-async function getMagazinesFast(matchQuery = {}, skip = 0, limit = null, sort = { createdAt: -1 }) {
+async function getMagazinesFast(matchQuery = {}, skip = 0, limit = null, sort = { createdAt: -1 }, gate = null) {
     // Get cached lookup maps
     const { categories, subjects, writers } = await getLookupMaps();
     
@@ -67,8 +67,9 @@ async function getMagazinesFast(matchQuery = {}, skip = 0, limit = null, sort = 
     const magazines = await query;
     
     // Map names using cached data (super fast - O(1) per item)
-    return magazines.map(mag => ({
+    const mapped = magazines.map(mag => ({
         _id: mag._id,
+        id: mag.id,
         language: mag.language,
         category: mag.category ? categories.get(mag.category.toString()) || '' : '',
         subject: mag.subject ? subjects.get(mag.subject.toString()) || '' : '',
@@ -82,14 +83,32 @@ async function getMagazinesFast(matchQuery = {}, skip = 0, limit = null, sort = 
         explain: mag.explain,
         summary: mag.summary,
         reference: mag.reference,
-        images: mag.images
+        images: mag.images,
+        payment: mag.payment,
+        amount: mag.amount
     }));
+
+    return applyMagazineGate(mapped, gate);
+}
+
+// Paid-content gating for e-magazine issues: the whole issue body is paid,
+// only the title/metadata stays visible until the user has bought it.
+async function applyMagazineGate(items, gate) {
+    if (!gate || (!gate.email && !gate.phone)) return items;
+    const { gateItems } = require('../../services/purchaseGating');
+    return gateItems(items, {
+        module: 'emagazine',
+        email: gate.email,
+        phone: gate.phone,
+        idField: 'id',
+        bodyFields: ['introduction', 'subPoints', 'importance', 'explain', 'summary', 'reference', 'images'],
+    });
 }
 
 // ============================================
 // Helper function for aggregation with lookups (fallback - single query instead of multiple populates)
 // ============================================
-async function getMagazinesWithLookup(matchQuery = {}, skip = 0, limit = null, sort = { createdAt: -1 }) {
+async function getMagazinesWithLookup(matchQuery = {}, skip = 0, limit = null, sort = { createdAt: -1 }, gate = null) {
     const pipeline = [
         { $match: matchQuery },
         { $sort: sort },
@@ -122,6 +141,7 @@ async function getMagazinesWithLookup(matchQuery = {}, skip = 0, limit = null, s
         {
             $project: {
                 _id: 1,
+                id: 1,
                 language: 1,
                 category: { $arrayElemAt: ['$categoryData.name', 0] },
                 subject: { $arrayElemAt: ['$subjectData.name', 0] },
@@ -135,7 +155,9 @@ async function getMagazinesWithLookup(matchQuery = {}, skip = 0, limit = null, s
                 explain: 1,
                 summary: 1,
                 reference: 1,
-                images: 1
+                images: 1,
+                payment: 1,
+                amount: 1
             }
         }
     ];
@@ -150,7 +172,8 @@ async function getMagazinesWithLookup(matchQuery = {}, skip = 0, limit = null, s
         pipeline.push({ $limit: limit });
     }
 
-    return await EMagazine.aggregate(pipeline);
+    const rows = await EMagazine.aggregate(pipeline);
+    return applyMagazineGate(rows, gate);
 }
 
 // GET all categories - OPTIMIZED
@@ -173,7 +196,7 @@ router.get('/category/:categoryId', async (req, res) => {
         }
         
         // Use fast cached lookup method
-        const result = await getMagazinesFast({ category: category._id });
+        const result = await getMagazinesFast({ category: category._id }, 0, null, { createdAt: -1 }, { email: req.query.email, phone: req.query.phone });
         
         res.json({ success: true, magazines: result });
     } catch (err) {
@@ -211,7 +234,7 @@ router.get('/subject/:subjectId', async (req, res) => {
         }
         
         // Use fast cached lookup method
-        const result = await getMagazinesFast({ subject: subject._id });
+        const result = await getMagazinesFast({ subject: subject._id }, 0, null, { createdAt: -1 }, { email: req.query.email, phone: req.query.phone });
         
         res.json({ success: true, magazines: result });
     } catch (err) {
@@ -229,7 +252,7 @@ router.get('/writer/:writerId', async (req, res) => {
         }
         
         // Use fast cached lookup method
-        const result = await getMagazinesFast({ writer: writer._id });
+        const result = await getMagazinesFast({ writer: writer._id }, 0, null, { createdAt: -1 }, { email: req.query.email, phone: req.query.phone });
         
         res.json({ success: true, magazines: result });
     } catch (err) {
@@ -249,7 +272,7 @@ router.get('/all', async (req, res) => {
         const total = await EMagazine.countDocuments({});
 
         // Use fast cached lookup method (NO $lookup = much faster!)
-        const result = await getMagazinesFast({}, skip, limit, { createdAt: -1 });
+        const result = await getMagazinesFast({}, skip, limit, { createdAt: -1 }, { email: req.query.email, phone: req.query.phone });
 
         // Calculate total pages
         const totalPages = Math.ceil(total / limit);

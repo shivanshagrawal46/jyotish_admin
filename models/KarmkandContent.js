@@ -14,6 +14,8 @@ const karmkandContentSchema = new mongoose.Schema({
   search: { type: String },
   youtubeLink: { type: String },
   image: { type: String },
+  payment: { type: Boolean, default: false },
+  amount: { type: Number, default: 0 }, // charged when payment is true
   createdAt: { type: Date, default: Date.now }
 });
 
