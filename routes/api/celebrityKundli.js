@@ -45,7 +45,7 @@ router.get('/celebrity-kundli/:categoryId', async (req, res) => {
 
         // Get paginated kundlis
         const kundlis = await CelebrityKundli.find({ category: category._id })
-            .select('name dob time place about -_id')
+            .select('name dob time place latitude longitude about -_id')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);

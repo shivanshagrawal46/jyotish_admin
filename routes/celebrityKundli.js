@@ -40,8 +40,8 @@ router.get('/celebrity-kundli/add', requireAuth, async (req, res) => {
 // Handle add kundli
 router.post('/celebrity-kundli/add', requireAuth, async (req, res) => {
   try {
-    const { category, name, dob, time, place, about } = req.body;
-    await CelebrityKundli.create({ category, name, dob, time, place, about });
+    const { category, name, dob, time, place, latitude, longitude, about } = req.body;
+    await CelebrityKundli.create({ category, name, dob, time, place, latitude: latitude || undefined, longitude: longitude || undefined, about });
     res.redirect('/celebrity-kundli');
   } catch (err) {
     const categories = await CelebrityKundliCategory.find().sort({ name: 1 });
@@ -77,8 +77,8 @@ router.get('/celebrity-kundli/:id/edit', requireAuth, async (req, res) => {
 // Handle edit kundli
 router.post('/celebrity-kundli/:id/edit', requireAuth, async (req, res) => {
   try {
-    const { category, name, dob, time, place, about } = req.body;
-    await CelebrityKundli.findByIdAndUpdate(req.params.id, { category, name, dob, time, place, about });
+    const { category, name, dob, time, place, latitude, longitude, about } = req.body;
+    await CelebrityKundli.findByIdAndUpdate(req.params.id, { category, name, dob, time, place, latitude: latitude || undefined, longitude: longitude || undefined, about });
     res.redirect('/celebrity-kundli');
   } catch (err) {
     const kundli = await CelebrityKundli.findById(req.params.id);

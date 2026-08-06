@@ -14,6 +14,25 @@ const bookNameSchema = new mongoose.Schema({
     },
     book_image: {
         type: String
+    },
+    author: {
+        type: String,
+        trim: true
+    },
+    publications: {
+        type: String,
+        trim: true
+    },
+    acknowledgement_title: {
+        type: String,
+        trim: true
+    },
+    acknowledgement_content: {
+        type: String
+    },
+    isbn_no: {
+        type: String,
+        trim: true
     }
 }, {
     timestamps: true

@@ -193,7 +193,7 @@ router.get('/name/add', async (req, res) => {
 
 router.post('/name/add', upload.single('book_image'), async (req, res) => {
     try {
-        const { name, category } = req.body;
+        const { name, category, author, publications, acknowledgement_title, acknowledgement_content, isbn_no } = req.body;
         let book_image = '';
         
         if (req.file) {
@@ -203,7 +203,12 @@ router.post('/name/add', upload.single('book_image'), async (req, res) => {
         const book = new BookName({
             name,
             category,
-            book_image
+            book_image,
+            author,
+            publications,
+            acknowledgement_title,
+            acknowledgement_content,
+            isbn_no
         });
 
         await book.save();
@@ -244,9 +249,9 @@ router.get('/name/edit/:id', async (req, res) => {
 
 router.post('/name/edit/:id', upload.single('book_image'), async (req, res) => {
     try {
-        const { name, category } = req.body;
+        const { name, category, author, publications, acknowledgement_title, acknowledgement_content, isbn_no } = req.body;
         const returnPath = req.body.return || '/book/name';
-        const updateData = { name, category };
+        const updateData = { name, category, author, publications, acknowledgement_title, acknowledgement_content, isbn_no };
         
         if (req.file) {
             updateData.book_image = '/uploads/books/' + req.file.filename;

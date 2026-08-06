@@ -6,6 +6,8 @@ const celebrityKundliSchema = new mongoose.Schema({
   dob: { type: Date, required: true },
   time: { type: String, required: true },
   place: { type: String, required: true },
+  latitude: { type: Number },
+  longitude: { type: Number },
   about: { type: String },
   createdAt: { type: Date, default: Date.now }
 });

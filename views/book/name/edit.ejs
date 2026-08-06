@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/sidebar.css" rel="stylesheet">
+    <script src="https://cdn.ckeditor.com/4.22.1/full/ckeditor.js"></script>
     <style>
         :root {
             --primary: #2D3250;
@@ -135,6 +136,32 @@
                     </select>
                 </div>
 
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label for="author" class="form-label">Author</label>
+                        <input type="text" class="form-control" id="author" name="author" value="<%= book.author || '' %>">
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <label for="publications" class="form-label">Publications</label>
+                        <input type="text" class="form-control" id="publications" name="publications" value="<%= book.publications || '' %>">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="isbn_no" class="form-label">ISBN No.</label>
+                    <input type="text" class="form-control" id="isbn_no" name="isbn_no" value="<%= book.isbn_no || '' %>">
+                </div>
+
+                <div class="mb-4">
+                    <label for="acknowledgement_title" class="form-label">Acknowledgement Title</label>
+                    <input type="text" class="form-control" id="acknowledgement_title" name="acknowledgement_title" value="<%= book.acknowledgement_title || '' %>">
+                </div>
+
+                <div class="mb-4">
+                    <label for="acknowledgement_content" class="form-label">Acknowledgement Content</label>
+                    <textarea class="form-control" id="acknowledgement_content" name="acknowledgement_content"><%= book.acknowledgement_content || '' %></textarea>
+                </div>
+
                 <div class="mb-4">
                     <label for="book_image" class="form-label">Book Image</label>
                     <input type="file" class="form-control" id="book_image" name="book_image" accept="image/*">
@@ -159,5 +186,11 @@
     </main>
 
     <script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        CKEDITOR.replace('acknowledgement_content', {
+            height: 250,
+            removePlugins: 'elementspath,resize'
+        });
+    </script>
 </body>
 </html> 

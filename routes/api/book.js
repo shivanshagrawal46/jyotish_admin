@@ -56,7 +56,7 @@ router.get('/category/:categoryId', async (req, res) => {
         }
 
         const books = await BookName.find({ category: category._id })
-            .select('id name book_image')
+            .select('id name book_image author publications acknowledgement_title acknowledgement_content isbn_no')
             .sort({ id: 1 })
             .skip(skip)
             .limit(limit);
