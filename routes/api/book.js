@@ -40,6 +40,72 @@ router.get('/category', async (req, res) => {
     }
 });
 
+// Book index (table of contents): chapters -> topics, with auto-derived page
+// numbers. Accepts either the numeric book id or its _id.
+router.get('/index/:nameId', async (req, res) => {
+    try {
+        const { loadBookIndex, flattenIndex, DEFAULT_CHARS_PER_PAGE, DEFAULT_IMAGE_CHARS } = require('../../services/bookIndex');
+
+        const filters = [];
+        const numericId = parseInt(req.params.nameId, 10);
+        if (!Number.isNaN(numericId)) filters.push({ id: numericId });
+        if (mongoose.Types.ObjectId.isValid(req.params.nameId)) filters.push({ _id: req.params.nameId });
+        if (!filters.length) {
+            return res.status(400).json({ success: false, message: 'Invalid book id' });
+        }
+
+        const book = await BookName.findOne({ $or: filters })
+            .populate('category', 'id name')
+            .lean();
+
+        if (!book) {
+            return res.status(404).json({ success: false, message: 'Book not found' });
+        }
+
+        const clamp = (value, fallback, min, max) => {
+            const n = parseInt(value, 10);
+            if (Number.isNaN(n)) return fallback;
+            return Math.min(Math.max(n, min), max);
+        };
+
+        const index = await loadBookIndex({
+            book,
+            ChapterModel: BookChapter,
+            ContentModel: BookContent,
+            charsPerPage: clamp(req.query.chars_per_page, DEFAULT_CHARS_PER_PAGE, 200, 20000),
+            imageChars: clamp(req.query.image_chars, DEFAULT_IMAGE_CHARS, 0, 20000),
+            includeFrontMatter: req.query.front_matter !== '0',
+        });
+
+        res.json({
+            success: true,
+            data: {
+                book: {
+                    id: book.id,
+                    _id: book._id,
+                    name: book.name,
+                    book_image: book.book_image || '',
+                    author: book.author || '',
+                    publications: book.publications || '',
+                    isbn_no: book.isbn_no || '',
+                    acknowledgement_title: book.acknowledgement_title || '',
+                    category: book.category || null,
+                },
+                ...index,
+                ...(req.query.flat === '1' || req.query.flat === 'true'
+                    ? { flat: flattenIndex(index) }
+                    : {}),
+            },
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error building book index',
+            error: error.message
+        });
+    }
+});
+
 // Get books by category
 router.get('/category/:categoryId', async (req, res) => {
     try {
