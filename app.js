@@ -247,6 +247,8 @@ app.use('/api/kosh-subcategory', koshSubCategoryApi);
 app.use('/api/kosh-content', koshContentApi);
 app.use('/api/kosh-purchase', require('./routes/api/koshPurchase'));
 app.use('/api/purchase', require('./routes/api/purchase'));
+// Practice mode for the app; mounted ahead of the plain MCQ browse API.
+app.use('/api/mcq/practice', require('./routes/api/mcqPractice'));
 app.use('/api/mcq', mcqApiRouter);
 
 // React admin (JWT-authenticated) API + static hosting

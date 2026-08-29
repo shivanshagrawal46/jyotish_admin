@@ -38,8 +38,14 @@ export const resources = {
     singularLabel: 'Master',
     parent: { field: 'category' },
     children: [{ resource: 'mcqContent', label: 'Questions' }],
-    columns: ['position', 'name'],
-    fields: [f('name', 'Name', 'text', { required: true }), f('position', 'Position', 'number'), f('introduction', 'Introduction', 'textarea')],
+    columns: ['position', 'name', { name: 'payment', title: 'Paid', type: 'payment' }],
+    fields: [
+      f('name', 'Name', 'text', { required: true }),
+      f('position', 'Position', 'number'),
+      f('introduction', 'Introduction', 'textarea'),
+      f('payment', 'Paid Quiz Set', 'boolean', { col: 12 }),
+      f('amount', 'Amount (₹)', 'number', { col: 12, min: 0, showIf: { field: 'payment' } }),
+    ],
   },
   mcqContent: {
     label: 'MCQ Questions',

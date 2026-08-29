@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Purchase = require('../../models/Purchase');
 
-const ALLOWED_MODULES = ['karmkand', 'book', 'emagazine'];
+const ALLOWED_MODULES = ['karmkand', 'book', 'emagazine', 'mcq'];
 
 // Optional shared-secret guard (same as Kosh). If PURCHASE_API_KEY is set,
 // callers must send it as the `x-purchase-key` header.

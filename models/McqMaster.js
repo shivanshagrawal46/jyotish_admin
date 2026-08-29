@@ -7,6 +7,9 @@ const mcqMasterSchema = new mongoose.Schema({
   name: { type: String, required: true },
   position: { type: Number, required: true },
   introduction: { type: String },
+  // Paid quiz sets: locked in the app until the user buys them.
+  payment: { type: Boolean, default: false },
+  amount: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 });
 
