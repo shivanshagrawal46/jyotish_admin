@@ -8,5 +8,5 @@ export const updateAdvertisement = (id, data) => api.put(`/advertisements/${id}`
 export const deleteAdvertisement = (id) => api.delete(`/advertisements/${id}`).then((r) => r.data);
 export const toggleAdvertisement = (id) => api.post(`/advertisements/${id}/toggle`).then((r) => r.data);
 
-// Fixed placements + one per Kosh sub category, each flagged with `taken`.
+// Fixed placements + one per Kosh category, each flagged with `taken`.
 export const getPlacements = () => api.get('/advertisements/placements').then((r) => r.data);

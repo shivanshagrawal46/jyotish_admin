@@ -290,8 +290,8 @@ export default function Advertisements() {
       title: 'Placement', dataIndex: 'placementLabel', width: 220,
       render: (v, r) => (
         <div>
-          <Tag color={r.placementType === 'kosh_sub' ? 'purple' : 'geekblue'}>{r.placementType === 'kosh_sub' ? 'Kosh' : v}</Tag>
-          {r.placementType === 'kosh_sub' && <div style={{ fontSize: 12 }}>{v}</div>}
+          <Tag color={r.placementType === 'kosh_cat' ? 'purple' : 'geekblue'}>{r.placementType === 'kosh_cat' ? 'Kosh' : v}</Tag>
+          {r.placementType === 'kosh_cat' && <div style={{ fontSize: 12 }}>{v}</div>}
         </div>
       ),
     },
@@ -406,7 +406,7 @@ export default function Advertisements() {
             <Select
               showSearch
               optionFilterProp="label"
-              placeholder="Kundli, Panchang, a Kosh sub category…"
+              placeholder="Kundli, Panchang, a Kosh category…"
               options={placementOptions}
             />
           </Form.Item>

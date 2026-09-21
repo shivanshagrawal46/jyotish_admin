@@ -3,7 +3,7 @@
 //   GET  /api/advertisements/placements                     → all placement keys
 //   GET  /api/advertisements/active                         → every live ad, keyed by placement
 //   GET  /api/advertisements/active?placement=kundli        → the one live ad for a placement
-//   GET  /api/advertisements/active?koshSubCategoryId=<id>  → live ad for a Kosh sub category
+//   GET  /api/advertisements/active?koshCategoryId=<id>     → live ad for a Kosh category
 //   POST /api/advertisements/:id/impression                 → count a view
 //   POST /api/advertisements/:id/click/:sectionId           → count a tap on one section
 //
@@ -12,7 +12,7 @@
 const express = require('express');
 const router = express.Router();
 const Advertisement = require('../../models/Advertisement');
-const { listAllPlacements, koshSubKey } = require('../../services/adPlacements');
+const { listAllPlacements, koshCatKey } = require('../../services/adPlacements');
 
 const PUBLIC_FIELDS = 'placement placementType placementRef placementLabel title sections startsAt endsAt updatedAt';
 
@@ -65,8 +65,8 @@ router.get('/placements', async (req, res) => {
 
 router.get('/active', async (req, res) => {
   try {
-    const { placement, koshSubCategoryId } = req.query;
-    const key = placement || (koshSubCategoryId ? koshSubKey(koshSubCategoryId) : null);
+    const { placement, koshCategoryId } = req.query;
+    const key = placement || (koshCategoryId ? koshCatKey(koshCategoryId) : null);
 
     if (key) {
       const ad = await Advertisement.findOne({ ...liveFilter(), placement: key }).select(PUBLIC_FIELDS).lean();

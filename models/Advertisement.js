@@ -22,11 +22,11 @@ const adSectionSchema = new mongoose.Schema({
 const advertisementSchema = new mongoose.Schema({
     // Where in the app this advertisement shows. Exactly one ad per placement.
     // Fixed keys: kundli, kundli_match, panchang, karmkand, book, rashifal,
-    // numerology, emagazine. Kosh: one per sub category → 'kosh_sub:<subCategoryId>'.
+    // numerology, emagazine. Kosh: one per category → 'kosh_cat:<categoryId>'.
     placement: { type: String, required: true, unique: true, trim: true },
     placementType: { type: String, enum: PLACEMENT_TYPES, required: true },
-    // Kosh sub category id when placementType === 'kosh_sub'
-    placementRef: { type: ObjectId, ref: 'KoshSubCategory', default: null },
+    // Kosh category id when placementType === 'kosh_cat'
+    placementRef: { type: ObjectId, ref: 'KoshCategory', default: null },
     placementLabel: { type: String, default: '' },
 
     // Internal name shown in admin

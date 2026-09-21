@@ -75,7 +75,7 @@ function sendErr(res, err) {
   res.status(err.status || 400).json({ message: err.message });
 }
 
-// ---- Placements (fixed list + one per Kosh sub category, with "taken" info) ----
+// ---- Placements (fixed list + one per Kosh category, with "taken" info) ----
 router.get('/placements', async (req, res) => {
   try {
     const [placements, ads] = await Promise.all([

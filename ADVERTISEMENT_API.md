@@ -22,17 +22,17 @@ Admin UI: React admin → Engagement → Advertisements.
 | `rashifal` | Rashifal section |
 | `numerology` | Numerology section |
 | `emagazine` | E-Magazine section |
-| `kosh_sub:<subCategoryId>` | One placement **per Kosh sub category** (Mongo `_id` of the sub category) |
+| `kosh_cat:<categoryId>` | One placement **per Kosh category** (Mongo `_id` of the category) |
 
-`GET /api/advertisements/placements` returns the full list, including one entry per Kosh sub category with its numeric id:
+`GET /api/advertisements/placements` returns the full list, including one entry per Kosh category with its numeric id:
 
 ```json
 {
   "success": true,
   "placements": [
     { "key": "kundli", "label": "Kundli", "group": "App", "placementType": "kundli", "placementRef": null },
-    { "key": "kosh_sub:693d7f3a32c61cd646111061", "label": "Sanskrit › first chapter", "group": "Kosh",
-      "placementType": "kosh_sub", "placementRef": "693d7f3a32c61cd646111061", "koshSubCategoryNumericId": 3 }
+    { "key": "kosh_cat:682f6f022a55e7d6c51e2e62", "label": "Kosh › Sanskrit", "group": "Kosh",
+      "placementType": "kosh_cat", "placementRef": "682f6f022a55e7d6c51e2e62", "koshCategoryNumericId": 1 }
   ]
 }
 ```
@@ -45,8 +45,8 @@ Admin UI: React admin → Engagement → Advertisements.
 
 ```
 GET /api/advertisements/active?placement=kundli
-GET /api/advertisements/active?placement=kosh_sub:<subCategoryId>
-GET /api/advertisements/active?koshSubCategoryId=<subCategoryId>      (shortcut for the line above)
+GET /api/advertisements/active?placement=kosh_cat:<categoryId>
+GET /api/advertisements/active?koshCategoryId=<categoryId>            (shortcut for the line above)
 ```
 
 `data` is `null` when the placement has no live ad (inactive, not started yet, or ended).
@@ -101,7 +101,7 @@ GET /api/advertisements/active
 ```
 
 ```json
-{ "success": true, "count": 3, "data": { "kundli": { …ad… }, "panchang": { …ad… }, "kosh_sub:693d…": { …ad… } } }
+{ "success": true, "count": 3, "data": { "kundli": { …ad… }, "panchang": { …ad… }, "kosh_cat:682f…": { …ad… } } }
 ```
 
 ### Tracking
@@ -144,7 +144,7 @@ Create / update body:
 
 ```json
 {
-  "placement": "kosh_sub:693d7f3a32c61cd646111061",
+  "placement": "kosh_cat:682f6f022a55e7d6c51e2e62",
   "title": "Diwali promo",
   "isActive": true,
   "startsAt": null,
