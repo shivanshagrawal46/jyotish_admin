@@ -58,6 +58,7 @@ export default function AppLayout() {
   let selectedKey = 'koshCategories';
   if (path.startsWith('/r/')) selectedKey = path.split('/')[2];
   else if (path.startsWith('/notifications')) selectedKey = 'notifications';
+  else if (path.startsWith('/advertisements')) selectedKey = 'advertisements';
   else if (path.startsWith('/categories') || path.startsWith('/subcategories')) selectedKey = 'koshCategories';
 
   const openGroup = menuGroups.find((g) => g.items.some((it) => it.key === selectedKey));

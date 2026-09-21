@@ -25,3 +25,19 @@ export function buildDlPayload(section, selections) {
   }
   return p;
 }
+
+// Inverse of buildDlPayload: turn a stored deepLink document back into the
+// dl_* payload, so an edit form that doesn't touch the picker still keeps the
+// link when it re-submits.
+export function dlPayloadFromStored(dl) {
+  if (!dl || !dl.contentType || !dl.contentId) return {};
+  const p = {
+    dl_contentType: dl.contentType,
+    dl_contentId: dl.contentId,
+    dl_contentTitle: dl.contentTitle || undefined,
+  };
+  if (dl.categoryId) { p.dl_categoryId = dl.categoryId; p.dl_categoryName = dl.categoryName || undefined; }
+  if (dl.subCategoryId) { p.dl_subCategoryId = dl.subCategoryId; p.dl_subCategoryName = dl.subCategoryName || undefined; }
+  if (dl.level3Id) { p.dl_level3Id = dl.level3Id; p.dl_level3Name = dl.level3Name || undefined; }
+  return p;
+}

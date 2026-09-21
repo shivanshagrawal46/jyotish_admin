@@ -6,6 +6,7 @@ import Categories from './pages/Categories.jsx';
 import SubCategories from './pages/SubCategories.jsx';
 import Contents from './pages/Contents.jsx';
 import Notifications from './pages/Notifications.jsx';
+import Advertisements from './pages/Advertisements.jsx';
 import ResourceManager from './components/ResourceManager.jsx';
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/categories/:categoryId/subcategories" element={<SubCategories />} />
         <Route path="/subcategories/:subId/contents" element={<Contents />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/advertisements" element={<Advertisements />} />
         <Route path="/r/:resource" element={<ResourceManager />} />
       </Route>
       <Route path="*" element={<Navigate to="/categories" replace />} />

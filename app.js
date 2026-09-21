@@ -256,6 +256,8 @@ app.use('/api/admin', require('./routes/api/adminAuth'));
 app.use('/api/admin/kosh', require('./routes/api/adminKosh'));
 // Notifications get a dedicated API (deep-link builder + FCM push)
 app.use('/api/admin/notifications', require('./routes/api/adminNotifications'));
+// Advertisements: one per placement, multiple deep-linked sections each
+app.use('/api/admin/advertisements', require('./routes/api/adminAdvertisements'));
 // Generic config-driven CRUD for all other modules (upload, media, /resources/*)
 app.use('/api/admin', require('./routes/api/admin'));
 
@@ -313,6 +315,9 @@ app.use('/api/notification-content', require('./routes/api/notificationContent')
 
 // Deep link resolver — Flutter calls this when any notification is tapped
 app.use('/api/deep-link', require('./routes/api/deepLink'));
+
+// Advertisements public API — Flutter fetches the ad for a placement
+app.use('/api/advertisements', require('./routes/api/advertisements'));
 
 // Prashan Yantra routes
 app.use('/prashan-yantra', prashanYantraRouter);

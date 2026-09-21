@@ -880,6 +880,7 @@ export const menuGroups = [
     label: 'Engagement',
     items: [
       { key: 'notifications', label: 'Notifications', to: '/notifications' },
+      { key: 'advertisements', label: 'Advertisements', to: '/advertisements' },
       { key: 'comments', label: 'Comments', to: '/r/comments' },
       { key: 'divineQuotes', label: 'Divine Quotes', to: '/r/divineQuotes' },
       { key: 'divineSanskrit', label: 'Divine Sanskrit', to: '/r/divineSanskrit' },

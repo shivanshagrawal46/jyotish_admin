@@ -90,6 +90,7 @@ function createPaginator({ charsPerPage, imageChars }) {
  * @param {number} [params.charsPerPage]
  * @param {number} [params.imageChars]
  * @param {boolean} [params.includeFrontMatter] count acknowledgement pages before chapter 1
+ * @param {Set<string>} [params.purchasedIds] BookContent _ids the caller has paid for
  */
 function buildBookIndex({
   book,
@@ -98,6 +99,7 @@ function buildBookIndex({
   charsPerPage = DEFAULT_CHARS_PER_PAGE,
   imageChars = DEFAULT_IMAGE_CHARS,
   includeFrontMatter = true,
+  purchasedIds = null,
 } = {}) {
   const paginator = createPaginator({ charsPerPage, imageChars });
 
@@ -157,6 +159,12 @@ function buildBookIndex({
         page_count: endPage - startPage + 1,
         payment: !!topic.payment,
         amount: topic.amount || 0,
+        // What the app posts to /api/purchase as contentId for this topic.
+        content_id: String(topic._id),
+        // A paid topic is unlocked only for a caller who has bought it. With no
+        // email/phone supplied, every paid topic reads as locked.
+        locked: !!topic.payment && !(purchasedIds && purchasedIds.has(String(topic._id))),
+        purchased: !topic.payment || !!(purchasedIds && purchasedIds.has(String(topic._id))),
       };
     });
 
@@ -174,6 +182,8 @@ function buildBookIndex({
       end_page: chapterEnd,
       page_count: chapterEnd - chapterStart + 1,
       topic_count: topics.length,
+      paid_topic_count: topics.filter((t) => t.payment).length,
+      locked_topic_count: topics.filter((t) => t.locked).length,
       topics,
     };
   });
@@ -183,6 +193,20 @@ function buildBookIndex({
     total_chapters: indexedChapters.length,
     total_topics: indexedChapters.reduce((sum, ch) => sum + ch.topic_count, 0),
     skipped_empty_topics: skippedEmpty,
+    purchase: (() => {
+      const paid = indexedChapters.flatMap((ch) => ch.topics).filter((t) => t.payment);
+      const locked = paid.filter((t) => t.locked);
+      return {
+        // false when the caller sent no email/phone, so the app knows the lock
+        // flags are the "not signed in" view rather than a real entitlement.
+        identified: !!purchasedIds,
+        paid_topics: paid.length,
+        purchased_topics: paid.length - locked.length,
+        locked_topics: locked.length,
+        // Cost of everything still locked, for an "unlock all" price.
+        locked_amount: locked.reduce((sum, t) => sum + (t.amount || 0), 0),
+      };
+    })(),
     settings: { chars_per_page: charsPerPage, image_chars: imageChars },
     front_matter: frontMatter,
     chapters: indexedChapters,
@@ -212,6 +236,10 @@ function flattenIndex(index) {
         topic_no: t.topic_no,
         page: t.page,
         payment: t.payment,
+        amount: t.amount,
+        locked: t.locked,
+        purchased: t.purchased,
+        content_id: t.content_id,
       });
     });
   });

@@ -45,6 +45,7 @@ router.get('/category', async (req, res) => {
 router.get('/index/:nameId', async (req, res) => {
     try {
         const { loadBookIndex, flattenIndex, DEFAULT_CHARS_PER_PAGE, DEFAULT_IMAGE_CHARS } = require('../../services/bookIndex');
+        const { getPurchasedContentIds } = require('../../services/purchaseGating');
 
         const filters = [];
         const numericId = parseInt(req.params.nameId, 10);
@@ -68,10 +69,19 @@ router.get('/index/:nameId', async (req, res) => {
             return Math.min(Math.max(n, min), max);
         };
 
+        // Paid-topic lock state, the same way the content endpoints gate bodies.
+        // Books are keyed by BookContent._id since their topics have no numeric id.
+        const email = (req.query.email || '').trim();
+        const phone = (req.query.phone || '').trim();
+        const purchasedIds = (email || phone)
+            ? await getPurchasedContentIds('book', email, phone)
+            : null;
+
         const index = await loadBookIndex({
             book,
             ChapterModel: BookChapter,
             ContentModel: BookContent,
+            purchasedIds,
             charsPerPage: clamp(req.query.chars_per_page, DEFAULT_CHARS_PER_PAGE, 200, 20000),
             imageChars: clamp(req.query.image_chars, DEFAULT_IMAGE_CHARS, 0, 20000),
             includeFrontMatter: req.query.front_matter !== '0',
