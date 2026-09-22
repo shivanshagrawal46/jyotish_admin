@@ -3471,36 +3471,243 @@ function calculateSimpleNameAnalysis(fullName, rashi, nakshatra) {
 }
 
 // Jyotish Endpoints
+/**
+ * Resolve birth place for the kundli endpoints.
+ * Accepts a locationId (from /api/locations/search) or raw latitude/longitude.
+ */
+function resolveKundliLocation(body) {
+    const { locationId, latitude, longitude, placeName, timezoneOffset } = body;
+    const { getLocationById } = require('./locations');
+    let locationData = null;
+    if (locationId !== undefined && locationId !== null && locationId !== '') {
+        locationData = getLocationById(locationId);
+        if (!locationData) {
+            throw new Error('Invalid location ID. Use /api/locations/search to find valid location IDs.');
+        }
+    } else if (latitude !== undefined && longitude !== undefined) {
+        locationData = {
+            id: null,
+            name: placeName || 'Custom location',
+            state: '',
+            displayName: placeName || `${latitude}, ${longitude}`,
+            coordinates: { latitude: Number(latitude), longitude: Number(longitude) },
+            timezone: 'Asia/Kolkata'
+        };
+    } else {
+        throw new Error('Date of birth, time of birth, and location ID (or latitude/longitude) are required. Use /api/locations/search to find location ID.');
+    }
+    const tz = timezoneOffset !== undefined && timezoneOffset !== null && timezoneOffset !== ''
+        ? Number(timezoneOffset)
+        : 5.5; // all bundled locations are IST
+    return { locationData, timezoneOffset: tz };
+}
+
+/**
+ * Build the comprehensive-chart response from the real sidereal engine.
+ * Keeps the legacy field names (ascendant, planets, houseAnalysis, predictions,
+ * yogas, remedies, nameAnalysis) so existing app screens keep working, and adds
+ * kundliPhal (Hindi astrologer summary), navamsa (D9) and dasha.
+ */
+function buildComprehensiveKundliResponse({ dateOfBirth, timeOfBirth, fullName, gender, locationData, timezoneOffset }) {
+    const { generateKundliPhal } = require('../../services/kundliPhal');
+    const phal = generateKundliPhal({
+        dateOfBirth,
+        timeOfBirth,
+        latitude: locationData.coordinates.latitude,
+        longitude: locationData.coordinates.longitude,
+        timezoneOffset,
+        name: fullName,
+        gender
+    });
+    const k = phal.kundli;
+    const birthDate = new Date(`${dateOfBirth}T${timeOfBirth}`);
+    const age = Math.max(0, new Date().getFullYear() - birthDate.getFullYear());
+
+    // Legacy-compatible planet map
+    const planets = {};
+    Object.values(k.planets).forEach((p) => {
+        planets[p.name] = {
+            longitude: p.longitude,
+            sign: p.sign,
+            signHindi: p.signHindi,
+            degree: p.degree.toFixed(2),
+            degreeFormatted: p.degreeFormatted,
+            house: p.house,
+            strength: p.strength,
+            nakshatra: {
+                name: p.nakshatra.name,
+                nameHindi: p.nakshatra.nameHindi,
+                number: p.nakshatra.number,
+                pada: p.nakshatra.pada,
+                lord: p.nakshatra.lord
+            },
+            retrograde: p.retrograde,
+            combust: p.combust,
+            dignity: p.dignity,
+            dignityHindi: p.dignityHindi,
+            navamsa: p.navamsa
+        };
+    });
+
+    const ascendant = {
+        sign: k.lagna.sign,
+        signHindi: k.lagna.signHindi,
+        degree: k.lagna.degree.toFixed(2),
+        degreeFormatted: k.lagna.degreeFormatted,
+        lord: k.lagna.lord,
+        nakshatra: k.lagna.nakshatra
+    };
+
+    const rashi = { name: k.rashi.sign, nameHindi: k.rashi.signHindi, number: k.rashi.signIndex + 1, lord: k.rashi.lord };
+    const nakshatra = { name: k.nakshatra.name, nameHindi: k.nakshatra.nameHindi, number: k.nakshatra.number, pada: k.nakshatra.pada, lord: k.nakshatra.lord };
+
+    let houseAnalysis = null;
+    let predictions = null;
+    let nameAnalysis = null;
+    let remedies = null;
+    try {
+        houseAnalysis = generateSimplifiedHouseAnalysis(planets, ascendant);
+        predictions = {
+            careerAnalysis: generateWorkingCareerAnalysis(planets, houseAnalysis, ascendant, age, nameAnalysis),
+            marriageAnalysis: generateWorkingMarriageAnalysis(planets, houseAnalysis, ascendant, age, nameAnalysis)
+        };
+        // Replace the legacy strength-based Mangal dosha guess with the real detection
+        const md = phal.yogas.find((y) => y.name === 'Mangal Dosha');
+        predictions.marriageAnalysis.mangalDosha = {
+            present: Boolean(md),
+            severity: md ? (md.description.includes('परिहृत') ? 'Low (cancelled)' : md.description.includes('पूर्ण') ? 'High' : 'Medium') : 'None',
+            cancellation: md ? md.description.includes('परिहृत') : false,
+            description: md ? md.description : 'मंगल दोष नहीं है।',
+            remedies: md && !md.description.includes('परिहृत') ? ['Hanuman Chalisa daily', 'Tuesday fasting', 'Kundli milan before marriage'] : []
+        };
+    } catch (e) {
+        console.error('[Kundli] legacy prediction helpers failed:', e.message);
+    }
+    try {
+        if (fullName) nameAnalysis = calculateSimpleNameAnalysis(fullName, rashi, nakshatra);
+    } catch (e) {
+        nameAnalysis = null;
+    }
+    try {
+        const cd = k.dasha.current.mahadasha;
+        remedies = generateJyotishRemedies(rashi, nakshatra, { planet: cd.lord, startDate: cd.start, endDate: cd.end });
+    } catch (e) {
+        remedies = null;
+    }
+
+    return {
+        success: true,
+        birthDetails: {
+            date: dateOfBirth,
+            time: timeOfBirth,
+            coordinates: locationData.coordinates,
+            timezoneOffset,
+            name: fullName || null,
+            gender: gender || null
+        },
+        location: locationData,
+        calculation: k.meta,
+        // --- Hindi astrologer reading (every part starts with the Samhita line) ---
+        kundliPhal: {
+            language: 'hi',
+            prefix: phal.prefix,
+            shortSummary: phal.shortSummary,
+            sections: phal.sections,
+            fullText: phal.fullText,
+            yogas: phal.yogas,
+            grahaSthiti: phal.grahaSthiti
+        },
+        // --- Same reading in English (opening line rendered in English) ---
+        kundliPhalEnglish: phal.english,
+        lagna: k.lagna,
+        rashi,
+        nakshatra,
+        ascendant,
+        planets,
+        houses: k.houses,
+        navamsa: k.navamsa,
+        dasha: k.dasha,
+        atmakaraka: k.atmakaraka,
+        houseAnalysis,
+        nameAnalysis,
+        predictions,
+        yogas: phal.yogas,
+        remedies,
+        disclaimer: 'ज्योतिषविश्वकोश संहिता के सिद्धान्तों पर आधारित यह फलादेश मार्गदर्शन हेतु है; महत्वपूर्ण निर्णय से पूर्व योग्य ज्योतिषी से परामर्श लें।'
+    };
+}
+
 router.post('/jyotish/comprehensive-chart', async (req, res) => {
     try {
-        const { dateOfBirth, timeOfBirth, locationId, fullName } = req.body;
-        
-        if (!dateOfBirth || !timeOfBirth || !locationId) {
-            return res.status(400).json({ 
-                error: 'Date of birth, time of birth, and location ID are required. Use /api/locations/search to find location ID.' 
+        const { dateOfBirth, timeOfBirth, fullName, gender } = req.body;
+
+        if (!dateOfBirth || !timeOfBirth) {
+            return res.status(400).json({
+                error: 'Date of birth, time of birth, and location ID are required. Use /api/locations/search to find location ID.'
             });
         }
-        
-        // Get location coordinates directly from location data
-        const { getLocationById } = require('./locations');
-        const locationData = getLocationById(locationId);
-        
-        if (!locationData) {
-            return res.status(400).json({ error: 'Invalid location ID. Use /api/locations/search to find valid location IDs.' });
+
+        const { locationData, timezoneOffset } = resolveKundliLocation(req.body);
+        const chart = buildComprehensiveKundliResponse({ dateOfBirth, timeOfBirth, fullName, gender, locationData, timezoneOffset });
+
+        res.json({
+            ...chart,
+            description: 'Sidereal (Lahiri) kundli with lagna, navamsa (D9), Vimshottari dasha, yogas and a Hindi astrologer summary'
+        });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+/**
+ * Compact kundli reading only: the Hindi summary (with navamsa analysis),
+ * graha table, yogas and current dasha. Same inputs as comprehensive-chart.
+ */
+router.post('/jyotish/kundli-summary', async (req, res) => {
+    try {
+        const { dateOfBirth, timeOfBirth, fullName, gender } = req.body;
+        if (!dateOfBirth || !timeOfBirth) {
+            return res.status(400).json({
+                error: 'Date of birth, time of birth, and location ID (or latitude/longitude) are required.'
+            });
         }
-        
-        const coordinates = locationData.coordinates;
-        
-        // Use completely isolated Jyotish calculation
-        const chart = await calculateIsolatedJyotishChart(
-            dateOfBirth, timeOfBirth, coordinates, fullName, locationData
-        );
-        
+        const { locationData, timezoneOffset } = resolveKundliLocation(req.body);
+        const { generateKundliPhal } = require('../../services/kundliPhal');
+        const phal = generateKundliPhal({
+            dateOfBirth,
+            timeOfBirth,
+            latitude: locationData.coordinates.latitude,
+            longitude: locationData.coordinates.longitude,
+            timezoneOffset,
+            name: fullName,
+            gender
+        });
+        const k = phal.kundli;
+        // language: 'hi' (default) or 'en' picks which reading fills the top-level fields;
+        // both readings are always returned under `hindi` and `english`.
+        const language = String(req.body.language || req.query.language || 'hi').toLowerCase() === 'en' ? 'en' : 'hi';
+        const hindi = { language: 'hi', prefix: phal.prefix, shortSummary: phal.shortSummary, sections: phal.sections, fullText: phal.fullText, yogas: phal.yogas, grahaSthiti: phal.grahaSthiti };
+        const english = phal.english;
+        const primary = language === 'en' ? english : hindi;
         res.json({
             success: true,
-            ...chart,
-            location: locationData,
-            description: 'Enhanced Jyotish chart analysis with deep career and marriage predictions, planetary house analysis, and name compatibility'
+            language,
+            birthDetails: { date: dateOfBirth, time: timeOfBirth, name: fullName || null, gender: gender || null, location: locationData.displayName },
+            prefix: primary.prefix,
+            shortSummary: primary.shortSummary,
+            sections: primary.sections,
+            fullText: primary.fullText,
+            hindi,
+            english,
+            lagna: { sign: k.lagna.sign, signHindi: k.lagna.signHindi, degree: k.lagna.degreeFormatted, lord: k.lagna.lord, lordHindi: k.lagna.lordHindi },
+            rashi: { sign: k.rashi.sign, signHindi: k.rashi.signHindi },
+            nakshatra: k.nakshatra,
+            navamsaLagna: k.navamsa.lagna,
+            grahaSthiti: primary.grahaSthiti,
+            navamsaChart: k.navamsa.houses,
+            yogas: primary.yogas,
+            dasha: k.dasha.current,
+            calculation: k.meta
         });
     } catch (error) {
         res.status(400).json({ error: error.message });
